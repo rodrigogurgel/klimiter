@@ -6,7 +6,7 @@ data class RateLimitRequest(
     val hitsAddend: Int = 1
 ) {
     init {
-        require(domain.isNotBlank()) { "domain não pode ser vazio" }
-        require(descriptors.isNotEmpty()) { "descriptors não pode ser vazio" }
+        require(domain.isNotBlank()) { "domain must not be blank" }
+        require(descriptors.isNotEmpty()) { "descriptors must not be empty" }
     }
 }

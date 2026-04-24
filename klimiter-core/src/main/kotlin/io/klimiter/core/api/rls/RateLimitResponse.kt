@@ -1,10 +1,15 @@
+@file:Suppress("DEPRECATION")
+
 package io.klimiter.core.api.rls
 
 data class RateLimitResponse(
     val overallCode: RateLimitCode,
     val statuses: List<RateLimitStatus> = emptyList(),
+    @Deprecated("not implemented yet")
     val responseHeaders: List<RateLimitHeader> = emptyList(),
+    @Deprecated("not implemented yet")
     val requestHeaders: List<RateLimitHeader> = emptyList(),
+    @Deprecated("not implemented yet")
     val rawBody: ByteArray? = null
 ) {
     fun isOverLimit(): Boolean = overallCode == RateLimitCode.OVER_LIMIT
@@ -29,8 +34,3 @@ data class RateLimitResponse(
         return result
     }
 }
-
-fun RateLimitResponse.statusFor(index: Int): RateLimitStatus? = statuses.getOrNull(index)
-
-fun RateLimitResponse.allWithinLimit(): Boolean =
-    statuses.all { it.code == RateLimitCode.OK }

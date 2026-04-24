@@ -6,7 +6,7 @@ data class RateLimitKey(
     val cost: Long,
 ) {
     init {
-        require(key.isNotBlank()) { "key não pode ser vazio" }
-        require(cost >= 0L) { "cost não pode ser negativo" }
+        require(key.isNotBlank()) { "key must not be blank" }
+        require(cost >= 0L) { "cost must not be negative" }
     }
 }

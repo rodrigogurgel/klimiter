@@ -1,4 +1,4 @@
-package io.klimiter.core.internal.participant
+package io.klimiter.core.internal.operation
 
 import io.klimiter.core.api.common.RateLimitTimeUnit
 import io.klimiter.core.api.config.DescriptorPath
@@ -7,30 +7,28 @@ import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.internal.infra.store.InMemoryRateLimitStore
 import io.klimiter.core.internal.port.KeyGenerator
-import io.klimiter.core.internal.port.LockManager
 import io.klimiter.core.internal.port.TimeProvider
 import io.klimiter.core.api.rls.RateLimitDescriptor as RequestDescriptor
 
-internal class DefaultRateLimitParticipantFactory(
+internal class DefaultRateLimitOperationFactory(
     private val domains: Map<String, RateLimitDomain>,
     private val store: InMemoryRateLimitStore,
     private val keyGenerator: KeyGenerator,
-    private val lockManager: LockManager,
     private val timeProvider: TimeProvider,
-) : RateLimitParticipantFactory {
+) : RateLimitOperationFactory {
 
-    override fun create(request: RateLimitRequest): List<RateLimitParticipant> {
+    override fun create(request: RateLimitRequest): List<RateLimitOperation> {
         val domain = domains[request.domain] ?: return emptyList()
         return request.descriptors.mapNotNull { descriptor ->
-            buildParticipant(request, descriptor, domain)
+            buildOperation(request, descriptor, domain)
         }
     }
 
-    private fun buildParticipant(
+    private fun buildOperation(
         request: RateLimitRequest,
         descriptor: RequestDescriptor,
         domain: RateLimitDomain,
-    ): RateLimitParticipant? {
+    ): RateLimitOperation? {
         val paths = descriptor.entries
             .map { DescriptorPath(it.key, it.value.ifBlank { null }) }
             .toTypedArray()
@@ -58,13 +56,12 @@ internal class DefaultRateLimitParticipantFactory(
         )
         val counter = store.getOrCreate(key, windowSeconds)
 
-        return InMemoryRateLimitParticipant(
+        return InMemoryRateLimitOperation(
             key = key,
             limit = limit,
             hitsAddend = effectiveHitsAddend(request, descriptor),
             windowSeconds = windowSeconds,
             counter = counter,
-            lockManager = lockManager,
             timeProvider = timeProvider,
         )
     }
@@ -85,7 +82,7 @@ internal class DefaultRateLimitParticipantFactory(
         RateLimitTimeUnit.WEEK -> SECONDS_PER_WEEK
         RateLimitTimeUnit.MONTH -> SECONDS_PER_MONTH
         RateLimitTimeUnit.YEAR -> SECONDS_PER_YEAR
-        RateLimitTimeUnit.UNKNOWN -> error("RateLimitTimeUnit.UNKNOWN não é suportado")
+        RateLimitTimeUnit.UNKNOWN -> error("RateLimitTimeUnit.UNKNOWN is not supported")
     }
 
     private companion object {

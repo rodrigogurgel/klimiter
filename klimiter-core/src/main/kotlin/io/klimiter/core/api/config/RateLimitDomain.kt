@@ -6,10 +6,10 @@ data class RateLimitDomain(
 ) {
     init {
         require(id.isNotBlank()) {
-            "domain id não pode ser vazio"
+            "domain id must not be blank"
         }
         require(descriptors.isNotEmpty()) {
-            "domain precisa ter ao menos um descriptor"
+            "domain must have at least one descriptor"
         }
     }
 

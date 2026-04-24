@@ -4,18 +4,23 @@ data class RateLimitDescriptor(
     val key: String,
     val value: String? = null,
     val rule: RateLimitRule? = null,
+    @Deprecated("not implemented yet")
     val shadowMode: Boolean = false,
+    @Deprecated("not implemented yet")
     val detailedMetric: Boolean = false,
+    @Deprecated("not implemented yet")
     val valueToMetric: Boolean = false,
+    @Deprecated("not implemented yet")
     val shareThreshold: Boolean = false,
     val children: List<RateLimitDescriptor> = emptyList()
 ) {
     init {
         require(key.isNotBlank()) {
-            "key não pode ser vazio"
+            "key must not be blank"
         }
+        @Suppress("DEPRECATION")
         require(!shareThreshold || value?.endsWith("*") == true) {
-            "shareThreshold só pode ser usado com valores wildcard (*)"
+            "shareThreshold can only be used with wildcard values (*)"
         }
     }
 

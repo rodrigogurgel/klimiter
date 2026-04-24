@@ -7,14 +7,15 @@ data class RateLimitRule(
     val requestsPerUnit: Int,
     val name: String? = null,
     val unlimited: Boolean = false,
+    @Deprecated("not implemented yet")
     val replaces: List<String> = emptyList()
 ) {
     init {
         require(requestsPerUnit >= 0) {
-            "requestsPerUnit não pode ser negativo"
+            "requestsPerUnit must not be negative"
         }
         require(!unlimited || requestsPerUnit == 0) {
-            "Se unlimited=true, requestsPerUnit deve ser 0"
+            "if unlimited=true, requestsPerUnit must be 0"
         }
     }
 }

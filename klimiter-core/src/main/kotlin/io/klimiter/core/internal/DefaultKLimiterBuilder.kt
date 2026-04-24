@@ -4,18 +4,20 @@ import io.klimiter.core.api.KLimiter
 import io.klimiter.core.api.KLimiterBuilder
 import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.internal.infra.key.CompositeKeyGenerator
-import io.klimiter.core.internal.infra.lock.StripedLockManager
 import io.klimiter.core.internal.infra.store.InMemoryRateLimitStore
 import io.klimiter.core.internal.infra.time.SystemTimeProvider
-import io.klimiter.core.internal.participant.DefaultRateLimitParticipantFactory
+import io.klimiter.core.internal.operation.DefaultRateLimitOperationFactory
+import org.slf4j.LoggerFactory
+import kotlin.time.Duration
 
 internal class DefaultKLimiterBuilder : KLimiterBuilder {
     private val domains: MutableMap<String, RateLimitDomain> = mutableMapOf()
-    private var lockStripes: Int = DEFAULT_LOCK_STRIPES
+    private var maxCacheSize: Long? = null
+    private var gracePeriod: Duration = InMemoryRateLimitStore.DEFAULT_GRACE_PERIOD
 
     override fun addDomain(domain: RateLimitDomain): KLimiterBuilder = apply {
         require(domains.put(domain.id, domain) == null) {
-            "domain '${domain.id}' já registrado"
+            "domain '${domain.id}' already registered"
         }
     }
 
@@ -23,25 +25,39 @@ internal class DefaultKLimiterBuilder : KLimiterBuilder {
         domains.forEach { addDomain(it) }
     }
 
-    override fun lockStripes(count: Int): KLimiterBuilder = apply {
-        require(count > 0) { "lockStripes must be > 0" }
-        lockStripes = count
+    override fun maxCacheSize(size: Long): KLimiterBuilder = apply {
+        require(size > 0) { "maxCacheSize must be > 0" }
+        maxCacheSize = size
+    }
+
+    override fun gracePeriod(duration: Duration): KLimiterBuilder = apply {
+        require(!duration.isNegative()) { "gracePeriod must not be negative" }
+        gracePeriod = duration
     }
 
     override fun build(): KLimiter {
-        check(domains.isNotEmpty()) { "ao menos um domain precisa ser registrado" }
+        check(domains.isNotEmpty()) { "at least one domain must be registered" }
 
-        val factory = DefaultRateLimitParticipantFactory(
+        val store = InMemoryRateLimitStore(
+            maxCacheSize = maxCacheSize,
+            gracePeriod = gracePeriod,
+        )
+        val factory = DefaultRateLimitOperationFactory(
             domains = domains.toMap(),
-            store = InMemoryRateLimitStore(),
+            store = store,
             keyGenerator = CompositeKeyGenerator,
-            lockManager = StripedLockManager(lockStripes),
             timeProvider = SystemTimeProvider,
+        )
+        logger.info(
+            "KLimiter built domains={} maxCacheSize={} gracePeriod={}",
+            domains.keys,
+            maxCacheSize ?: "unbounded",
+            gracePeriod,
         )
         return DefaultKLimiter(factory)
     }
 
     private companion object {
-        const val DEFAULT_LOCK_STRIPES = 1024
+        private val logger = LoggerFactory.getLogger(DefaultKLimiterBuilder::class.java)
     }
 }

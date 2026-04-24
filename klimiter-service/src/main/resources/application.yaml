@@ -41,5 +41,5 @@ klimiter:
   domain-id: default
   stripes-count: 128
   default:
-    limit: 60
+    limit: 600
     unit: SECOND

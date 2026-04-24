@@ -15,8 +15,8 @@ internal object CompositeKeyGenerator : KeyGenerator {
         windowDivider: Long,
         timeProvider: TimeProvider
     ): String {
-        require(domain.isNotBlank()) { "domain não pode ser vazio" }
-        require(entries.isNotEmpty()) { "entries não pode ser vazio" }
+        require(domain.isNotBlank()) { "domain must not be blank" }
+        require(entries.isNotEmpty()) { "entries must not be empty" }
 
         val entriesSegment = entries.joinToString(SEPARATOR) { "${it.key}$SEPARATOR${it.value}" }
         val window = windowStart(windowDivider, timeProvider)

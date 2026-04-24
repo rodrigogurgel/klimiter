@@ -7,6 +7,6 @@ data class RateLimitDescriptor(
     val isNegativeHits: Boolean = false
 ) {
     init {
-        require(entries.isNotEmpty()) { "entries não pode ser vazio" }
+        require(entries.isNotEmpty()) { "entries must not be empty" }
     }
 }

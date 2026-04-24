@@ -81,5 +81,5 @@ internal fun RateLimitTimeUnit.toSeconds(): Long = when (this) {
     RateLimitTimeUnit.WEEK -> 604_800L
     RateLimitTimeUnit.MONTH -> 2_592_000L
     RateLimitTimeUnit.YEAR -> 31_536_000L
-    RateLimitTimeUnit.UNKNOWN -> error("RateLimitTimeUnit.UNKNOWN não é suportado")
+    RateLimitTimeUnit.UNKNOWN -> error("RateLimitTimeUnit.UNKNOWN is not supported")
 }

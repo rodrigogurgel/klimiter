@@ -4,15 +4,14 @@ import io.klimiter.core.api.KLimiter
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitResponse
 import io.klimiter.core.internal.coordinator.RateLimitCoordinator
-import io.klimiter.core.internal.participant.RateLimitParticipantFactory
+import io.klimiter.core.internal.operation.RateLimitOperationFactory
 
 internal class DefaultKLimiter(
-    private val participantFactory: RateLimitParticipantFactory,
+    private val operationFactory: RateLimitOperationFactory,
 ) : KLimiter {
 
     override suspend fun shouldRateLimit(request: RateLimitRequest): RateLimitResponse {
-        val participants = participantFactory.create(request)
-        val coordinator = RateLimitCoordinator(participants)
-        return coordinator.execute()
+        val operations = operationFactory.create(request)
+        return RateLimitCoordinator.execute(operations)
     }
 }

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.minutes
 import io.klimiter.core.api.rls.RateLimitDescriptor as RlsDescriptor
 
 @Component
@@ -37,7 +38,7 @@ class KLimiterCoreAdapter(
                 now = now,
             )
         }.getOrElse { cause ->
-            logger.error("Falha ao aplicar rate limit em key='{}' value='{}'", key.key, key.value, cause)
+            logger.error("Failed to apply rate limit on key='{}' value='{}'", key.key, key.value, cause)
             errorStatus(key, now)
         }
     }
@@ -68,7 +69,6 @@ class KLimiterCoreAdapter(
         )
         return KLimiterBuilder.create()
             .addDomain(domain)
-            .lockStripes(properties.stripesCount)
             .build()
     }
 
