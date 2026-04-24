@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package io.klimiter;
+
+option java_package = "io.klimiter.klimiterservice.proto";
+option java_multiple_files = true;
+
+service KLimiterService {
+  rpc ShouldRateLimit(ShouldRateLimitRequest) returns (ShouldRateLimitResponse);
+}
+
+message ShouldRateLimitRequest {
+  repeated KeyRequest keys = 1;
+}
+
+message KeyRequest {
+  string key = 1;
+  string value = 2;
+  int64 cost = 3;
+}
+
+message ShouldRateLimitResponse {
+  Decision overall_decision = 1;
+  repeated KeyStatus statuses = 2;
+}
+
+message KeyStatus {
+  string key = 1;
+  string value = 2;
+  Decision decision = 3;
+  int64 limit = 4;
+  int64 remaining = 5;
+  int64 window_seconds = 6;
+  int64 window_start_epoch_seconds = 7;
+  int64 reset_at_epoch_seconds = 8;
+}
+
+enum Decision {
+  OK = 0;
+  OVER_LIMIT = 1;
+  ERROR = 2;
+}

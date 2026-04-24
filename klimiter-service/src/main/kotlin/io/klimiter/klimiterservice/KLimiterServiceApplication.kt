@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class KLimiterServiceApplication
 
 fun main(args: Array<String>) {
-	runApplication<KLimiterServiceApplication>(*args)
+    runApplication<KLimiterServiceApplication>(*args)
 }
