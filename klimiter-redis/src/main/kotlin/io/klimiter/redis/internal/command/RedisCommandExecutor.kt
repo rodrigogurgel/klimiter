@@ -15,12 +15,7 @@ internal interface RedisCommandExecutor {
      * Runs a previously-loaded script by its SHA1. Callers must catch `NOSCRIPT` and reload
      * the script via [scriptLoad] before retrying.
      */
-    suspend fun <T> evalsha(
-        sha: String,
-        outputType: ScriptOutputType,
-        keys: Array<String>,
-        args: Array<String>,
-    ): T
+    suspend fun <T> evalsha(sha: String, outputType: ScriptOutputType, keys: Array<String>, args: Array<String>): T
 
     /**
      * Loads a Lua script and returns its SHA1. For cluster, the script is broadcast to every

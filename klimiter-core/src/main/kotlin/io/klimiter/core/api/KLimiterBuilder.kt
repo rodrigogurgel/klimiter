@@ -1,12 +1,22 @@
 package io.klimiter.core.api
 
+import io.klimiter.core.api.spi.CompositeKeyGenerator
 import io.klimiter.core.api.spi.KeyGenerator
 import io.klimiter.core.api.spi.RateLimitDomainRepository
 import io.klimiter.core.api.spi.RateLimitOperationFactory
-import io.klimiter.core.internal.DefaultKLimiterBuilder
+import io.klimiter.core.api.spi.SystemTimeProvider
+import io.klimiter.core.internal.DefaultKLimiter
+import io.klimiter.core.internal.infra.store.InMemoryRateLimitStore
+import io.klimiter.core.internal.operation.DefaultRateLimitOperationFactory
+import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 
-interface KLimiterBuilder {
+class KLimiterBuilder {
+    private var domainRepository: RateLimitDomainRepository? = null
+    private var maxCacheSize: Long? = null
+    private var gracePeriod: Duration = InMemoryRateLimitStore.DEFAULT_GRACE_PERIOD
+    private var keyGenerator: KeyGenerator = CompositeKeyGenerator
+    private var customFactory: RateLimitOperationFactory? = null
 
     /**
      * Provides the source of rate-limit domain configurations. Called on every
@@ -19,7 +29,9 @@ interface KLimiterBuilder {
      *
      * Must not be used together with [operationFactory].
      */
-    fun domainRepository(repository: RateLimitDomainRepository): KLimiterBuilder
+    fun domainRepository(repository: RateLimitDomainRepository): KLimiterBuilder = apply {
+        domainRepository = repository
+    }
 
     /**
      * Bounds the internal cache of rate-limit buckets. When unset the cache is unbounded,
@@ -29,7 +41,10 @@ interface KLimiterBuilder {
      *
      * Only applies to the default in-memory backend; must not be used with [operationFactory].
      */
-    fun maxCacheSize(size: Long): KLimiterBuilder
+    fun maxCacheSize(size: Long): KLimiterBuilder = apply {
+        require(size > 0) { "maxCacheSize must be > 0" }
+        maxCacheSize = size
+    }
 
     /**
      * Extra time each bucket stays in the cache beyond its logical window TTL, to absorb
@@ -42,7 +57,10 @@ interface KLimiterBuilder {
      *
      * Only applies to the default in-memory backend; must not be used with [operationFactory].
      */
-    fun gracePeriod(duration: Duration): KLimiterBuilder
+    fun gracePeriod(duration: Duration): KLimiterBuilder = apply {
+        require(!duration.isNegative()) { "gracePeriod must not be negative" }
+        gracePeriod = duration
+    }
 
     /**
      * Overrides the key generator used to derive bucket cache keys. Only applies to the
@@ -50,7 +68,9 @@ interface KLimiterBuilder {
      *
      * Default: [io.klimiter.core.api.spi.CompositeKeyGenerator].
      */
-    fun keyGenerator(generator: KeyGenerator): KLimiterBuilder
+    fun keyGenerator(generator: KeyGenerator): KLimiterBuilder = apply {
+        keyGenerator = generator
+    }
 
     /**
      * Replaces the default in-memory factory with a custom backend (e.g. Redis). The factory
@@ -58,11 +78,49 @@ interface KLimiterBuilder {
      *
      * Must not be combined with [domainRepository], [maxCacheSize], [gracePeriod], or [keyGenerator].
      */
-    fun operationFactory(factory: RateLimitOperationFactory): KLimiterBuilder
+    fun operationFactory(factory: RateLimitOperationFactory): KLimiterBuilder = apply {
+        customFactory = factory
+    }
 
-    fun build(): KLimiter
+    fun build(): KLimiter {
+        val custom = customFactory
+        if (custom != null) {
+            check(domainRepository == null) {
+                "domainRepository must not be used with operationFactory — the custom factory owns domain matching"
+            }
+            check(maxCacheSize == null) {
+                "maxCacheSize applies to the default in-memory backend only"
+            }
+            check(gracePeriod == InMemoryRateLimitStore.DEFAULT_GRACE_PERIOD) {
+                "gracePeriod applies to the default in-memory backend only"
+            }
+            check(keyGenerator === CompositeKeyGenerator) {
+                "keyGenerator applies to the default in-memory backend only"
+            }
+            logger.info("KLimiter built backend={}", custom::class.simpleName)
+            return DefaultKLimiter(custom)
+        }
+        val repo = checkNotNull(domainRepository) { "domainRepository must be configured" }
+        val store = InMemoryRateLimitStore(
+            maxCacheSize = maxCacheSize,
+            gracePeriod = gracePeriod,
+        )
+        val factory = DefaultRateLimitOperationFactory(
+            domainRepository = repo,
+            store = store,
+            keyGenerator = keyGenerator,
+            timeProvider = SystemTimeProvider,
+        )
+        logger.info(
+            "KLimiter built backend=in-memory maxCacheSize={} gracePeriod={}",
+            maxCacheSize ?: "unbounded",
+            gracePeriod,
+        )
+        return DefaultKLimiter(factory)
+    }
 
     companion object {
-        fun create(): KLimiterBuilder = DefaultKLimiterBuilder()
+        private val logger = LoggerFactory.getLogger(KLimiterBuilder::class.java)
+        fun create(): KLimiterBuilder = KLimiterBuilder()
     }
 }
