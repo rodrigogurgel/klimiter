@@ -1,11 +1,12 @@
 import com.google.protobuf.gradle.id
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.spring")
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    id("com.google.protobuf") version "0.9.5"
+    alias(libs.plugins.kotlin.jvm)
+    kotlin("kapt")
+    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.protobuf)
 }
 
 java {
@@ -14,45 +15,39 @@ java {
     }
 }
 
-extra["springGrpcVersion"] = "1.0.2"
-
-val protocGenGrpcKotlinVersion = "1.5.0"
-
 dependencies {
     implementation(project(":klimiter-core"))
     implementation(project(":klimiter-redis"))
 
-    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
-    implementation("io.grpc:grpc-services")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    implementation("org.springframework.grpc:spring-grpc-server-spring-boot-starter")
-    implementation("io.grpc:grpc-kotlin-stub:$protocGenGrpcKotlinVersion")
-    implementation("com.google.protobuf:protobuf-kotlin")
-    implementation("tools.jackson.module:jackson-module-kotlin")
+    implementation(libs.spring.boot.actuator)
+    implementation(libs.spring.boot.opentelemetry)
+    implementation(libs.reactor.kotlin.extensions)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.coroutines.reactor)
+    implementation(libs.spring.grpc.server.starter)
+    implementation(libs.grpc.kotlin.stub)
+    implementation(libs.protobuf.kotlin)
+    implementation(libs.jackson.module.kotlin)
 
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+    developmentOnly(libs.spring.boot.devtools)
+    developmentOnly(libs.spring.boot.docker.compose)
 
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    kapt(libs.spring.boot.configuration.processor)
 
-    testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-opentelemetry-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-    testImplementation("org.springframework.grpc:spring-grpc-test")
+    testImplementation(libs.spring.boot.actuator.test)
+    testImplementation(libs.spring.boot.opentelemetry.test)
+    testImplementation(libs.spring.boot.webflux.test)
+    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.spring.grpc.test)
 
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 dependencyManagement {
     imports {
         mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
-        mavenBom("org.springframework.grpc:spring-grpc-dependencies:${property("springGrpcVersion")}")
+        mavenBom("org.springframework.grpc:spring-grpc-dependencies:${libs.versions.spring.grpc.get()}")
     }
 }
 
@@ -72,7 +67,7 @@ protobuf {
         }
 
         id("grpckt") {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:$protocGenGrpcKotlinVersion:jdk8@jar"
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpc.kotlin.get()}:jdk8@jar"
         }
     }
     generateProtoTasks {

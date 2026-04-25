@@ -1,12 +1,12 @@
 import dev.detekt.gradle.extensions.DetektExtension
 
 plugins {
-    kotlin("jvm") version "2.3.0" apply false
-    kotlin("plugin.spring") version "2.3.0" apply false
-    id("org.springframework.boot") version "4.0.5" apply false
-    id("io.spring.dependency-management") version "1.1.7" apply false
-    id("dev.detekt") version "2.0.0-alpha.2" apply false
-    id("org.jetbrains.kotlinx.kover") version "0.9.8" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.spring) apply false
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.spring.dependency.management) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.kover) apply false
 }
 
 allprojects {
@@ -17,6 +17,8 @@ allprojects {
         mavenCentral()
     }
 }
+
+val detektRulesKtlint = libs.detekt.rules.ktlint
 
 subprojects {
     apply {
@@ -31,8 +33,6 @@ subprojects {
     }
 
     dependencies {
-        add("detektPlugins", "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2")
+        add("detektPlugins", detektRulesKtlint)
     }
 }
-
-extra["kotlinxCoroutinesVersion"] = "1.10.2"

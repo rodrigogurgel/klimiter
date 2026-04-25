@@ -46,7 +46,7 @@ internal class RedisRateLimitOperation(
         val max = limit.requestsPerUnit.toLong()
         return when {
             hitsAddend <= 0L -> {
-                if (hitsAddend < 0L) bucket.remaining.addAndGet(-hitsAddend)
+                if (hitsAddend < 0L) bucket.localRemaining.addAndGet(-hitsAddend)
                 status(RateLimitCode.OK)
             }
 
@@ -63,8 +63,12 @@ internal class RedisRateLimitOperation(
                     reserved = hitsAddend
                     return@withLock status(RateLimitCode.OK)
                 }
-                val granted = acquireLease(max)
-                if (granted > 0L) bucket.remaining.addAndGet(granted)
+                val (granted, remaining) = acquireLease(max)
+
+                if (granted > 0L) {
+                    bucket.localRemaining.addAndGet(granted)
+                    bucket.distributedRemaining.set(remaining)
+                }
                 if (tryReserve()) {
                     reserved = hitsAddend
                     status(RateLimitCode.OK)
@@ -77,12 +81,12 @@ internal class RedisRateLimitOperation(
 
     override suspend fun rollback() {
         if (reserved == 0L) return
-        bucket.remaining.addAndGet(reserved)
+        bucket.localRemaining.addAndGet(reserved)
         reserved = 0L
     }
 
     private fun tryReserve(): Boolean {
-        val counter = bucket.remaining
+        val counter = bucket.localRemaining
         while (true) {
             val current = counter.get()
             if (current < hitsAddend) return false
@@ -90,11 +94,11 @@ internal class RedisRateLimitOperation(
         }
     }
 
-    private suspend fun acquireLease(max: Long): Long {
+    private suspend fun acquireLease(max: Long): AcquireLeaseResult {
         val leaseSize = leaseSize(max)
-        val result = ACQUIRE_SCRIPT.execute(
+        val result = LEASE_ACQUIRE_SCRIPT.execute<List<Long>>(
             executor = executor,
-            outputType = ScriptOutputType.INTEGER,
+            outputType = ScriptOutputType.MULTI,
             keys = arrayOf(key),
             args = arrayOf(
                 max.toString(),
@@ -102,10 +106,18 @@ internal class RedisRateLimitOperation(
                 (windowSeconds + DEFAULT_GRACE_PERIOD.inWholeSeconds).toString(),
             ),
         )
-        val granted = (result.firstOrNull() as? Long) ?: 0L
+        val granted = result.getOrNull(0) ?: 0L
+        val remaining = result.getOrNull(1) ?: 0L
+
         if (logger.isDebugEnabled) logger.debug("Lease key={} requested={} granted={}", key, leaseSize, granted)
-        return granted
+
+        return AcquireLeaseResult(
+            granted = granted,
+            remaining = remaining,
+        )
     }
+
+    private data class AcquireLeaseResult(val granted: Long, val remaining: Long)
 
     private fun leaseSize(max: Long): Long {
         val proportional = ceil(max.toDouble() * leasePercentage / LEASE_PERCENT_BASE).toLong()
@@ -114,7 +126,10 @@ internal class RedisRateLimitOperation(
 
     private fun status(code: RateLimitCode): RateLimitStatus {
         val remaining = if (code == RateLimitCode.OK) {
-            bucket.remaining.get().coerceAtLeast(0L).toInt()
+            val distributedRemaining = bucket.distributedRemaining.get().coerceAtLeast(0).toInt()
+            val localRemaining = bucket.localRemaining.get().coerceAtLeast(0L).toInt()
+
+            localRemaining + distributedRemaining
         } else {
             0
         }
@@ -136,7 +151,7 @@ internal class RedisRateLimitOperation(
     private companion object {
         private const val LEASE_PERCENT_BASE = 100
         private val logger = LoggerFactory.getLogger(RedisRateLimitOperation::class.java)
-        private val ACQUIRE_SCRIPT = LuaScript(LeaseScripts.ACQUIRE)
+        private val LEASE_ACQUIRE_SCRIPT = LuaScript(LeaseScripts.LEASE_ACQUIRE)
         private val DEFAULT_GRACE_PERIOD: kotlin.time.Duration = 10.seconds
     }
 }

@@ -1,23 +1,21 @@
 plugins {
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
+    `java-library`
 }
 
 kotlin {
     jvmToolchain(21)
 }
 
-val kotlinxCoroutinesVersion: String by rootProject.extra
-
 dependencies {
-    api(project(":klimiter-core"))
+    implementation(project(":klimiter-core"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinxCoroutinesVersion}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:${kotlinxCoroutinesVersion}")
-    implementation("org.slf4j:slf4j-api:2.0.17")
-    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
-    implementation("io.lettuce:lettuce-core:7.5.1.RELEASE")
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.reactive)
+    implementation(libs.caffeine)
+    implementation(libs.lettuce.core)
 
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${kotlinxCoroutinesVersion}")
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(kotlin("test"))
 }
 

@@ -13,14 +13,13 @@ import kotlinx.coroutines.reactive.awaitSingle
 internal class ClusterRedisCommandExecutor(private val connection: StatefulRedisClusterConnection<String, String>) :
     RedisCommandExecutor {
 
-    override suspend fun evalsha(
+    override suspend fun <T> evalsha(
         sha: String,
         outputType: ScriptOutputType,
         keys: Array<String>,
         args: Array<String>,
-    ): List<Any?> = connection.reactive()
-        .evalsha<Any>(sha, outputType, keys, *args)
-        .collectList()
+    ): T = connection.reactive()
+        .evalsha<T>(sha, outputType, keys, *args)
         .awaitSingle()
 
     override suspend fun scriptLoad(script: String): String = connection.reactive().scriptLoad(script).awaitSingle()

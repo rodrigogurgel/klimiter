@@ -20,13 +20,14 @@ import java.util.concurrent.atomic.AtomicReference
 internal class LuaScript(private val source: String) {
     private val cachedSha = AtomicReference<String?>(null)
 
-    suspend fun execute(
+    suspend fun <T> execute(
         executor: RedisCommandExecutor,
         outputType: ScriptOutputType,
         keys: Array<String>,
         args: Array<String>,
-    ): List<Any?> {
+    ): T {
         val sha = cachedSha.get() ?: loadAndCache(executor)
+
         return try {
             executor.evalsha(sha, outputType, keys, args)
         } catch (_: RedisNoScriptException) {

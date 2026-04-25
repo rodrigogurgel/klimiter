@@ -11,4 +11,8 @@ import java.util.concurrent.atomic.AtomicLong
  * Lifecycle is managed by [LeasedBucketStore]; both fields are discarded together when the
  * bucket is evicted.
  */
-internal class LeasedBucket(val remaining: AtomicLong = AtomicLong(0L), val mutex: Mutex = Mutex())
+internal class LeasedBucket(
+    val localRemaining: AtomicLong = AtomicLong(0L),
+    val distributedRemaining: AtomicLong = AtomicLong(0L),
+    val mutex: Mutex = Mutex(),
+)
