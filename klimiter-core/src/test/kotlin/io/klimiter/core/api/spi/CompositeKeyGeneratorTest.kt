@@ -1,5 +1,6 @@
 package io.klimiter.core.api.spi
 
+import io.klimiter.core.FixedTimeProvider
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
 import java.time.Instant
 import kotlin.test.Test
@@ -117,9 +118,5 @@ class CompositeKeyGeneratorTest {
                 timeProvider = clock,
             )
         }
-    }
-
-    private class FixedTimeProvider(private val fixed: Instant) : TimeProvider {
-        override fun now(): Instant = fixed
     }
 }

@@ -1,6 +1,6 @@
 package io.klimiter.klimiterservice.config
 
-import io.klimiter.core.api.common.RateLimitTimeUnit
+import io.klimiter.core.api.config.RateLimitTimeUnit
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "klimiter")

@@ -49,7 +49,7 @@ Several fields on `RateLimitDescriptor` / `RateLimitRule` / `RateLimitResponse` 
 
 Implements `RateLimitOperationFactory` (and `RateLimitOperation`) from the core SPI using Lettuce and a **lease pattern**: each process holds a local budget (a fraction of the window limit) and only contacts Redis when the budget runs out.
 
-**Entry point:** `RedisRateLimitOperationFactories` (an `object`) — `standalone(domains, connection, config)` or `cluster(domains, connection, config)`. Both accept a `RedisKLimiterConfig` for tuning.
+**Entry point:** `RedisRateLimitOperationFactories` (an `object`) — `standalone(domainRepository, connection, config)` or `cluster(domainRepository, connection, config)`. Both accept a `RedisKLimiterConfig` for tuning.
 
 `RedisKLimiterConfig` — notable knobs:
 - `leasePercentage` (1–100, default 10): fraction of the per-window limit each node requests per renewal. Lower = more Redis round-trips, fairer distribution. Higher = more throughput, worse fairness.

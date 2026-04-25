@@ -1,4 +1,4 @@
-package io.klimiter.core.api.common
+package io.klimiter.core.api.config
 
 enum class RateLimitTimeUnit {
     UNKNOWN,

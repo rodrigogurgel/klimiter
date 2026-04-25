@@ -1,7 +1,5 @@
 package io.klimiter.core.api.config
 
-import io.klimiter.core.api.common.RateLimitTimeUnit
-
 data class RateLimitRule(
     val unit: RateLimitTimeUnit,
     val requestsPerUnit: Int,

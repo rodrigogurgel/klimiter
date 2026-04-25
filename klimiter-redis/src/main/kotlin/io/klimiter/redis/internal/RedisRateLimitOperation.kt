@@ -96,7 +96,11 @@ internal class RedisRateLimitOperation(
             executor = executor,
             outputType = ScriptOutputType.INTEGER,
             keys = arrayOf(key),
-            args = arrayOf(max.toString(), leaseSize.toString(), (windowSeconds + DEFAULT_GRACE_PERIOD.inWholeSeconds).toString()),
+            args = arrayOf(
+                max.toString(),
+                leaseSize.toString(),
+                (windowSeconds + DEFAULT_GRACE_PERIOD.inWholeSeconds).toString(),
+            ),
         )
         val granted = (result.firstOrNull() as? Long) ?: 0L
         if (logger.isDebugEnabled) logger.debug("Lease key={} requested={} granted={}", key, leaseSize, granted)

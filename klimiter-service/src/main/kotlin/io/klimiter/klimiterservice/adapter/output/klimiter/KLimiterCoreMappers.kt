@@ -1,6 +1,6 @@
 package io.klimiter.klimiterservice.adapter.output.klimiter
 
-import io.klimiter.core.api.common.RateLimitTimeUnit
+import io.klimiter.core.api.config.RateLimitTimeUnit
 import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitResponse
 import io.klimiter.core.api.rls.RateLimitStatus

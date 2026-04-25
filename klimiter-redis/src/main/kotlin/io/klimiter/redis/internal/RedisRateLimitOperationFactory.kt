@@ -4,16 +4,17 @@ import io.klimiter.core.api.config.DescriptorPath
 import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitRequest
+import io.klimiter.core.api.rls.RateLimitRequestDescriptor
 import io.klimiter.core.api.spi.KeyGenerator
+import io.klimiter.core.api.spi.RateLimitDomainRepository
 import io.klimiter.core.api.spi.RateLimitOperation
 import io.klimiter.core.api.spi.RateLimitOperationFactory
 import io.klimiter.core.api.spi.TimeProvider
 import io.klimiter.redis.internal.command.RedisCommandExecutor
 import io.klimiter.redis.internal.lease.LeasedBucketStore
-import io.klimiter.core.api.rls.RateLimitDescriptor as RequestDescriptor
 
 internal class RedisRateLimitOperationFactory(
-    private val domains: Map<String, RateLimitDomain>,
+    private val domainRepository: RateLimitDomainRepository,
     private val keyGenerator: KeyGenerator,
     private val timeProvider: TimeProvider,
     private val executor: RedisCommandExecutor,
@@ -23,7 +24,7 @@ internal class RedisRateLimitOperationFactory(
 ) : RateLimitOperationFactory {
 
     override fun create(request: RateLimitRequest): List<RateLimitOperation> {
-        val domain = domains[request.domain] ?: return emptyList()
+        val domain = domainRepository.findById(request.domain) ?: return emptyList()
         return request.descriptors.mapNotNull { descriptor ->
             buildOperation(request, descriptor, domain)
         }
@@ -31,7 +32,7 @@ internal class RedisRateLimitOperationFactory(
 
     private fun buildOperation(
         request: RateLimitRequest,
-        descriptor: RequestDescriptor,
+        descriptor: RateLimitRequestDescriptor,
         domain: RateLimitDomain,
     ): RateLimitOperation? {
         val paths = descriptor.entries
@@ -76,7 +77,7 @@ internal class RedisRateLimitOperationFactory(
 
     private fun prefixed(key: String): String = if (keyPrefix.isEmpty()) key else "$keyPrefix:$key"
 
-    private fun effectiveHitsAddend(request: RateLimitRequest, descriptor: RequestDescriptor): Long {
+    private fun effectiveHitsAddend(request: RateLimitRequest, descriptor: RateLimitRequestDescriptor): Long {
         val base = descriptor.hitsAddend ?: request.hitsAddend.toLong()
         return if (descriptor.isNegativeHits) -base else base
     }

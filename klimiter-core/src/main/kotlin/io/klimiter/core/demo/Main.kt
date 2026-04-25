@@ -1,15 +1,16 @@
 package io.klimiter.core.demo
 
-import io.klimiter.core.api.KLimiterBuilder
-import io.klimiter.core.api.common.RateLimitTimeUnit
+import io.klimiter.core.api.KLimiterFactory
 import io.klimiter.core.api.config.RateLimitDescriptor
 import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.api.config.RateLimitRule
+import io.klimiter.core.api.config.RateLimitTimeUnit
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
 import io.klimiter.core.api.rls.RateLimitRequest
+import io.klimiter.core.api.rls.RateLimitRequestDescriptor
+import io.klimiter.core.api.spi.StaticRateLimitDomainRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import io.klimiter.core.api.rls.RateLimitDescriptor as RlsDescriptor
 
 private const val REQUESTS_PER_BURST = 6
 private const val WINDOW_DELAY_MS = 1000L
@@ -28,14 +29,12 @@ fun main(): Unit = runBlocking {
         ),
     )
 
-    val limiter = KLimiterBuilder.create()
-        .addDomain(domain)
-        .build()
+    val limiter = KLimiterFactory.inMemory(StaticRateLimitDomainRepository(listOf(domain)))
 
     val request = RateLimitRequest(
         domain = "api",
         descriptors = listOf(
-            RlsDescriptor(entries = listOf(RateLimitDescriptorEntry("user_id", "rodrigo"))),
+            RateLimitRequestDescriptor(entries = listOf(RateLimitDescriptorEntry("user_id", "rodrigo"))),
         ),
     )
 

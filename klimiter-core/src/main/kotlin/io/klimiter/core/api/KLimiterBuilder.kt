@@ -1,13 +1,25 @@
 package io.klimiter.core.api
 
-import io.klimiter.core.api.config.RateLimitDomain
+import io.klimiter.core.api.spi.KeyGenerator
+import io.klimiter.core.api.spi.RateLimitDomainRepository
 import io.klimiter.core.api.spi.RateLimitOperationFactory
 import io.klimiter.core.internal.DefaultKLimiterBuilder
 import kotlin.time.Duration
 
 interface KLimiterBuilder {
-    fun addDomain(domain: RateLimitDomain): KLimiterBuilder
-    fun addDomains(domains: Collection<RateLimitDomain>): KLimiterBuilder
+
+    /**
+     * Provides the source of rate-limit domain configurations. Called on every
+     * [KLimiter.shouldRateLimit] invocation — the repository is responsible for any caching
+     * needed to keep the hot path fast.
+     *
+     * Use [io.klimiter.core.api.spi.StaticRateLimitDomainRepository] for fixed configurations
+     * known at startup; implement [RateLimitDomainRepository] directly for file-based,
+     * database-backed, or hot-reloadable configurations.
+     *
+     * Must not be used together with [operationFactory].
+     */
+    fun domainRepository(repository: RateLimitDomainRepository): KLimiterBuilder
 
     /**
      * Bounds the internal cache of rate-limit buckets. When unset the cache is unbounded,
@@ -15,7 +27,7 @@ interface KLimiterBuilder {
      * callers (e.g., adversarial user_id values). Under the limit the cache evicts least-
      * recently-used entries.
      *
-     * Only applies to the default in-memory backend; ignored when [operationFactory] is set.
+     * Only applies to the default in-memory backend; must not be used with [operationFactory].
      */
     fun maxCacheSize(size: Long): KLimiterBuilder
 
@@ -28,14 +40,23 @@ interface KLimiterBuilder {
      * swap/full-GC. Increase on constrained hosts (tight Kubernetes CPU limits, swap enabled,
      * very large heaps); decrease only if memory is tight and the runtime is well-tuned.
      *
-     * Only applies to the default in-memory backend; ignored when [operationFactory] is set.
+     * Only applies to the default in-memory backend; must not be used with [operationFactory].
      */
     fun gracePeriod(duration: Duration): KLimiterBuilder
 
     /**
+     * Overrides the key generator used to derive bucket cache keys. Only applies to the
+     * default in-memory backend; must not be used with [operationFactory].
+     *
+     * Default: [io.klimiter.core.api.spi.CompositeKeyGenerator].
+     */
+    fun keyGenerator(generator: KeyGenerator): KLimiterBuilder
+
+    /**
      * Replaces the default in-memory factory with a custom backend (e.g. Redis). The factory
-     * must be thread-safe and is expected to honor the registered [RateLimitDomain]s when
-     * deciding which operations to emit.
+     * must be thread-safe and is responsible for its own domain matching.
+     *
+     * Must not be combined with [domainRepository], [maxCacheSize], [gracePeriod], or [keyGenerator].
      */
     fun operationFactory(factory: RateLimitOperationFactory): KLimiterBuilder
 

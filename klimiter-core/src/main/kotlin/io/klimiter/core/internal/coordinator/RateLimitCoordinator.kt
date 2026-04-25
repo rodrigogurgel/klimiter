@@ -4,7 +4,6 @@ import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitResponse
 import io.klimiter.core.api.rls.RateLimitStatus
 import io.klimiter.core.api.spi.RateLimitOperation
-import io.klimiter.core.internal.rls.RateLimitOverallCodeResolver
 import org.slf4j.LoggerFactory
 
 /**

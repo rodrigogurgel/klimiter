@@ -1,11 +1,13 @@
 package io.klimiter.klimiterservice.config
 
 import io.klimiter.core.api.KLimiter
+import io.klimiter.core.api.KLimiterFactory
 import io.klimiter.core.api.config.RateLimitDescriptor
 import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.api.config.RateLimitRule
-import io.klimiter.redis.api.KLimiters
+import io.klimiter.core.api.spi.StaticRateLimitDomainRepository
 import io.klimiter.redis.api.RedisKLimiterConfig
+import io.klimiter.redis.api.RedisKLimiterFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -18,21 +20,22 @@ class KLimiterConfiguration {
     fun kLimiter(properties: KLimiterProperties): KLimiter {
         val domain = buildDomain(properties)
         val redisConfig = buildRedisConfig(properties)
+        val repository = StaticRateLimitDomainRepository(listOf(domain))
         return when (properties.mode) {
             KLimiterProperties.Mode.LOCAL ->
-                KLimiters.inMemory(listOf(domain))
+                KLimiterFactory.inMemory(repository)
 
             KLimiterProperties.Mode.STANDALONE ->
-                KLimiters.standalone(
+                RedisKLimiterFactory.standalone(
                     uri = properties.redis.uris.first(),
-                    domains = listOf(domain),
+                    domainRepository = repository,
                     config = redisConfig,
                 )
 
             KLimiterProperties.Mode.CLUSTER ->
-                KLimiters.cluster(
+                RedisKLimiterFactory.cluster(
                     uris = properties.redis.uris,
-                    domains = listOf(domain),
+                    domainRepository = repository,
                     config = redisConfig,
                 )
         }
