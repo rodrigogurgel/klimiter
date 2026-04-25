@@ -9,9 +9,7 @@ import io.klimiter.klimiterservice.domain.port.output.RateLimitEnforcerPort
 import org.springframework.stereotype.Service
 
 @Service
-class CheckRateLimitService(
-    private val enforcer: RateLimitEnforcerPort,
-) : CheckRateLimitUseCase {
+class CheckRateLimitService(private val enforcer: RateLimitEnforcerPort) : CheckRateLimitUseCase {
 
     override suspend fun check(keys: List<RateLimitKey>): RateLimitCheckResult {
         if (keys.isEmpty()) return RateLimitCheckResult.empty()

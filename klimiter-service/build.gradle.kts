@@ -20,7 +20,9 @@ val protocGenGrpcKotlinVersion = "1.5.0"
 
 dependencies {
     implementation(project(":klimiter-core"))
+    implementation(project(":klimiter-redis"))
 
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("io.grpc:grpc-services")

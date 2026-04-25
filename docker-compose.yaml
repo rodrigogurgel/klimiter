@@ -1,0 +1,147 @@
+x-app-base: &app-base
+  build: .
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+  environment:
+    JAVA_TOOL_OPTIONS: >-
+      -Xms128m
+      -Xmx384m
+      -Dspring.jmx.enabled=false
+      -Dfile.encoding=UTF-8
+    GRPC_PORT: 9090
+    # --- cluster mode (default) ---
+    KLIMITER_MODE: cluster
+    KLIMITER_REDIS_URIS: redis://redis-cluster-1:6379,redis://redis-cluster-2:6379,redis://redis-cluster-3:6379
+    # --- standalone mode (uncomment and remove cluster block above) ---
+    # KLIMITER_MODE: standalone
+    # KLIMITER_REDIS_URIS: redis://redis-standalone:6379
+#  depends_on:
+#    redis-cluster-init:
+#      condition: service_completed_successfully
+  networks:
+    - klimiter-network
+
+services:
+  redis-standalone:
+    image: redis:7.4-alpine
+    container_name: redis-standalone
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - klimiter-network
+
+  redis-cluster-1:
+    image: redis:7.4-alpine
+    container_name: redis-cluster-1
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    ports:
+      - "7001:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - klimiter-network
+
+  redis-cluster-2:
+    image: redis:7.4-alpine
+    container_name: redis-cluster-2
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    ports:
+      - "7002:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - klimiter-network
+
+  redis-cluster-3:
+    image: redis:7.4-alpine
+    container_name: redis-cluster-3
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    ports:
+      - "7003:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - klimiter-network
+
+  redis-cluster-init:
+    image: redis:7.4-alpine
+    container_name: redis-cluster-init
+    volumes:
+      - ./docker/redis-cluster/cluster-init.sh:/cluster-init.sh
+    entrypoint: [ "sh", "/cluster-init.sh" ]
+    depends_on:
+      redis-cluster-1:
+        condition: service_healthy
+      redis-cluster-2:
+        condition: service_healthy
+      redis-cluster-3:
+        condition: service_healthy
+    networks:
+      - klimiter-network
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    environment:
+      RI_ACCEPT_TERMS_AND_CONDITIONS: "true"
+      RI_REDIS_HOST0: redis-standalone
+      RI_REDIS_PORT0: "6379"
+      RI_REDIS_ALIAS0: standalone
+      RI_REDIS_HOST1: redis-cluster-1
+      RI_REDIS_PORT1: "6379"
+      RI_REDIS_ALIAS1: cluster-node-1
+    depends_on:
+      - redis-standalone
+    networks:
+      - klimiter-network
+
+  app-1:
+    <<: *app-base
+
+  app-2:
+    <<: *app-base
+
+  app-3:
+    <<: *app-base
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app-1
+      - app-2
+      - app-3
+    networks:
+      - klimiter-network
+
+networks:
+  klimiter-network:
+    driver: bridge
+
+volumes:
+  redis-standalone-data:
+  redis-cluster-1-data:
+  redis-cluster-2-data:
+  redis-cluster-3-data:
+  redis-insight-data:

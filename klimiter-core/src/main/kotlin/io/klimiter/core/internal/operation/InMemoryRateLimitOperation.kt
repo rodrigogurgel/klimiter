@@ -3,7 +3,8 @@ package io.klimiter.core.internal.operation
 import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitStatus
-import io.klimiter.core.internal.port.TimeProvider
+import io.klimiter.core.api.spi.RateLimitOperation
+import io.klimiter.core.api.spi.TimeProvider
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant

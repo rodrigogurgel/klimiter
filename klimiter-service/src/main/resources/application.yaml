@@ -38,8 +38,13 @@ logging:
     root: INFO
 
 klimiter:
-  domain-id: default
-  stripes-count: 128
+  domain-id: ${KLIMITER_DOMAIN_ID:default}
+  key: ${KLIMITER_KEY:user_id}
+  mode: ${KLIMITER_MODE:local}  # local | standalone | cluster
   default:
-    limit: 600
-    unit: SECOND
+    limit: ${KLIMITER_DEFAULT_LIMIT:60}
+    unit: ${KLIMITER_DEFAULT_UNIT:SECOND}
+  redis:
+    uris: ${KLIMITER_REDIS_URIS:redis://localhost:6379}
+    lease-percentage: ${KLIMITER_REDIS_LEASE_PERCENTAGE:10}
+    key-prefix: ${KLIMITER_REDIS_KEY_PREFIX:klimiter}

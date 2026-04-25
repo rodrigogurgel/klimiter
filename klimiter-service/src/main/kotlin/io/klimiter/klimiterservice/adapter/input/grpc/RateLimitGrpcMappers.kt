@@ -12,15 +12,13 @@ import io.klimiter.klimiterservice.proto.ShouldRateLimitResponse
 import io.klimiter.klimiterservice.proto.keyStatus
 import io.klimiter.klimiterservice.proto.shouldRateLimitResponse
 
-internal fun ShouldRateLimitRequest.toDomain(): List<RateLimitKey> =
-    keysList.map { it.toDomain() }
+internal fun ShouldRateLimitRequest.toDomain(): List<RateLimitKey> = keysList.map { it.toDomain() }
 
-private fun KeyRequest.toDomain(): RateLimitKey =
-    RateLimitKey(
-        key = key,
-        value = value,
-        cost = cost,
-    )
+private fun KeyRequest.toDomain(): RateLimitKey = RateLimitKey(
+    key = key,
+    value = value,
+    cost = cost,
+)
 
 internal fun RateLimitCheckResult.toProto(): ShouldRateLimitResponse = shouldRateLimitResponse {
     overallDecision = overall.toProto()

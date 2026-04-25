@@ -11,6 +11,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import io.klimiter.core.api.rls.RateLimitDescriptor as RlsDescriptor
 
+private const val REQUESTS_PER_BURST = 6
+private const val WINDOW_DELAY_MS = 1000L
+
 fun main(): Unit = runBlocking {
     val domain = RateLimitDomain(
         id = "api",
@@ -20,9 +23,9 @@ fun main(): Unit = runBlocking {
                 rule = RateLimitRule(
                     unit = RateLimitTimeUnit.SECOND,
                     requestsPerUnit = 5,
-                )
-            )
-        )
+                ),
+            ),
+        ),
     )
 
     val limiter = KLimiterBuilder.create()
@@ -33,15 +36,15 @@ fun main(): Unit = runBlocking {
         domain = "api",
         descriptors = listOf(
             RlsDescriptor(entries = listOf(RateLimitDescriptorEntry("user_id", "rodrigo"))),
-        )
+        ),
     )
 
-    repeat(6) { i ->
+    repeat(REQUESTS_PER_BURST) { i ->
         val response = limiter.shouldRateLimit(request)
         println("#${i + 1} -> ${response.overallCode} | statuses=${response.statuses}")
     }
-    delay(1000)
-    repeat(6) { i ->
+    delay(WINDOW_DELAY_MS)
+    repeat(REQUESTS_PER_BURST) { i ->
         val response = limiter.shouldRateLimit(request)
         println("#${i + 1} -> ${response.overallCode} | statuses=${response.statuses}")
     }

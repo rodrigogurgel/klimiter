@@ -6,5 +6,5 @@ data class RateLimitStatus(
     val code: RateLimitCode,
     val currentLimit: RateLimit? = null,
     val limitRemaining: Int = 0,
-    val durationUntilReset: Duration? = null
+    val durationUntilReset: Duration? = null,
 )

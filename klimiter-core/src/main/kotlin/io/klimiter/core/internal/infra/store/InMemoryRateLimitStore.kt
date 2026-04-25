@@ -10,10 +10,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
-internal class InMemoryRateLimitStore(
-    maxCacheSize: Long? = null,
-    gracePeriod: Duration = DEFAULT_GRACE_PERIOD,
-) {
+internal class InMemoryRateLimitStore(maxCacheSize: Long? = null, gracePeriod: Duration = DEFAULT_GRACE_PERIOD) {
     private val cache: Cache<String, Entry> = Caffeine.newBuilder()
         .expireAfter(EntryExpiry(gracePeriod.inWholeNanoseconds))
         .apply { if (maxCacheSize != null) maximumSize(maxCacheSize) }
@@ -59,19 +56,11 @@ internal class InMemoryRateLimitStore(
         override fun expireAfterCreate(key: String, value: Entry, currentTime: Long): Long =
             TimeUnit.SECONDS.toNanos(value.ttlSeconds) + gracePeriodNanos
 
-        override fun expireAfterUpdate(
-            key: String,
-            value: Entry,
-            currentTime: Long,
-            currentDuration: Long,
-        ): Long = currentDuration
+        override fun expireAfterUpdate(key: String, value: Entry, currentTime: Long, currentDuration: Long): Long =
+            currentDuration
 
-        override fun expireAfterRead(
-            key: String,
-            value: Entry,
-            currentTime: Long,
-            currentDuration: Long,
-        ): Long = currentDuration
+        override fun expireAfterRead(key: String, value: Entry, currentTime: Long, currentDuration: Long): Long =
+            currentDuration
     }
 
     companion object {

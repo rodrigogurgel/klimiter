@@ -1,4 +1,4 @@
-package io.klimiter.core.internal.operation
+package io.klimiter.core.api.spi
 
 import io.klimiter.core.api.rls.RateLimitStatus
 
@@ -9,10 +9,10 @@ import io.klimiter.core.api.rls.RateLimitStatus
  * [rollback] undoes a reservation made by a successful [execute]; it is idempotent — calling
  * without a prior reservation (or more than once) is a no-op.
  *
- * Implementations must not perform blocking I/O on the hot path; the in-process rate limiter
- * relies on lock-free CAS for correctness.
+ * The in-process implementation relies on lock-free CAS; distributed implementations (e.g. Redis)
+ * must achieve the same atomicity through the backing store (Lua scripts, CAS, transactions).
  */
-internal interface RateLimitOperation {
+interface RateLimitOperation {
     suspend fun execute(): RateLimitStatus
     suspend fun rollback()
 }

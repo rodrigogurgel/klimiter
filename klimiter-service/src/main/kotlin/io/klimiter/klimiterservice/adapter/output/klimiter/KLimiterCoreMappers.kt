@@ -31,7 +31,7 @@ private fun RateLimitStatus.toDomain(
     now: Instant,
 ): RateLimitKeyStatus {
     val unit = currentLimit?.unit ?: fallbackUnit
-    val windowSeconds = unit.toSeconds()
+    val windowSeconds = unit.windowSeconds()
     val limit = currentLimit?.requestsPerUnit?.toLong() ?: fallbackLimit.toLong()
     val resetDuration = durationUntilReset ?: Duration.ofSeconds(windowSeconds)
     val resetAt = now.plus(resetDuration).epochSecond
@@ -53,7 +53,7 @@ private fun unlimitedStatus(
     fallbackUnit: RateLimitTimeUnit,
     now: Instant,
 ): RateLimitKeyStatus {
-    val windowSeconds = fallbackUnit.toSeconds()
+    val windowSeconds = fallbackUnit.windowSeconds()
     val resetAt = now.epochSecond + windowSeconds
     return RateLimitKeyStatus(
         key = key.key,
@@ -71,15 +71,4 @@ private fun RateLimitCode.toDecision(): RateLimitDecision = when (this) {
     RateLimitCode.OK -> RateLimitDecision.OK
     RateLimitCode.OVER_LIMIT -> RateLimitDecision.OVER_LIMIT
     RateLimitCode.UNKNOWN -> RateLimitDecision.ERROR
-}
-
-internal fun RateLimitTimeUnit.toSeconds(): Long = when (this) {
-    RateLimitTimeUnit.SECOND -> 1L
-    RateLimitTimeUnit.MINUTE -> 60L
-    RateLimitTimeUnit.HOUR -> 3_600L
-    RateLimitTimeUnit.DAY -> 86_400L
-    RateLimitTimeUnit.WEEK -> 604_800L
-    RateLimitTimeUnit.MONTH -> 2_592_000L
-    RateLimitTimeUnit.YEAR -> 31_536_000L
-    RateLimitTimeUnit.UNKNOWN -> error("RateLimitTimeUnit.UNKNOWN is not supported")
 }

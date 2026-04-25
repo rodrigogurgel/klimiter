@@ -7,9 +7,8 @@ import io.klimiter.klimiterservice.proto.ShouldRateLimitResponse
 import org.springframework.stereotype.Service
 
 @Service
-class RateLimitGrpcAdapter(
-    private val useCase: CheckRateLimitUseCase,
-) : KLimiterServiceGrpcKt.KLimiterServiceCoroutineImplBase() {
+class RateLimitGrpcAdapter(private val useCase: CheckRateLimitUseCase) :
+    KLimiterServiceGrpcKt.KLimiterServiceCoroutineImplBase() {
 
     override suspend fun shouldRateLimit(request: ShouldRateLimitRequest): ShouldRateLimitResponse {
         val keys = request.toDomain()

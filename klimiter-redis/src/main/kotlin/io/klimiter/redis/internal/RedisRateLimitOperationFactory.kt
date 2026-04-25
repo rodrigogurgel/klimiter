@@ -1,0 +1,83 @@
+package io.klimiter.redis.internal
+
+import io.klimiter.core.api.config.DescriptorPath
+import io.klimiter.core.api.config.RateLimitDomain
+import io.klimiter.core.api.rls.RateLimit
+import io.klimiter.core.api.rls.RateLimitRequest
+import io.klimiter.core.api.spi.KeyGenerator
+import io.klimiter.core.api.spi.RateLimitOperation
+import io.klimiter.core.api.spi.RateLimitOperationFactory
+import io.klimiter.core.api.spi.TimeProvider
+import io.klimiter.redis.internal.command.RedisCommandExecutor
+import io.klimiter.redis.internal.lease.LeasedBucketStore
+import io.klimiter.core.api.rls.RateLimitDescriptor as RequestDescriptor
+
+internal class RedisRateLimitOperationFactory(
+    private val domains: Map<String, RateLimitDomain>,
+    private val keyGenerator: KeyGenerator,
+    private val timeProvider: TimeProvider,
+    private val executor: RedisCommandExecutor,
+    private val bucketStore: LeasedBucketStore,
+    private val keyPrefix: String,
+    private val leasePercentage: Int,
+) : RateLimitOperationFactory {
+
+    override fun create(request: RateLimitRequest): List<RateLimitOperation> {
+        val domain = domains[request.domain] ?: return emptyList()
+        return request.descriptors.mapNotNull { descriptor ->
+            buildOperation(request, descriptor, domain)
+        }
+    }
+
+    private fun buildOperation(
+        request: RateLimitRequest,
+        descriptor: RequestDescriptor,
+        domain: RateLimitDomain,
+    ): RateLimitOperation? {
+        val paths = descriptor.entries
+            .map { DescriptorPath(it.key, it.value.ifBlank { null }) }
+            .toTypedArray()
+
+        val rule = domain.findByPath(*paths)
+            ?.takeUnless { it.isWhitelisted }
+            ?.rule
+            ?.takeUnless { it.unlimited }
+            ?: return null
+
+        val requestsPerUnit = descriptor.limit?.requestsPerUnit ?: rule.requestsPerUnit
+        val unit = descriptor.limit?.unit ?: rule.unit
+        val windowSeconds = unit.windowSeconds()
+
+        val baseKey = keyGenerator.generate(
+            domain = request.domain,
+            entries = descriptor.entries,
+            windowDivider = windowSeconds,
+            timeProvider = timeProvider,
+        )
+        val key = prefixed(baseKey)
+
+        val limit = RateLimit(
+            requestsPerUnit = requestsPerUnit,
+            unit = unit,
+            name = rule.name,
+        )
+
+        return RedisRateLimitOperation(
+            key = key,
+            limit = limit,
+            hitsAddend = effectiveHitsAddend(request, descriptor),
+            windowSeconds = windowSeconds,
+            bucket = bucketStore.getOrCreate(key, windowSeconds),
+            executor = executor,
+            timeProvider = timeProvider,
+            leasePercentage = leasePercentage,
+        )
+    }
+
+    private fun prefixed(key: String): String = if (keyPrefix.isEmpty()) key else "$keyPrefix:$key"
+
+    private fun effectiveHitsAddend(request: RateLimitRequest, descriptor: RequestDescriptor): Long {
+        val base = descriptor.hitsAddend ?: request.hitsAddend.toLong()
+        return if (descriptor.isNegativeHits) -base else base
+    }
+}
