@@ -6,10 +6,12 @@
 - *(core)* Stabilize rate limiting workflow
 - *(core)* Improve core module structure
 - *(redis)* Add Redis backend module
+- *(load-test)* Add --save-responses flag to capture full gRPC responses
 
 ### 🐛 Bug Fixes
 
 - *(core)* Fix rate limit coordinator behavior
+- *(redis)* Make gracePeriod configurable for Redis key TTL
 
 ### 💼 Other
 
@@ -24,6 +26,9 @@
 
 - *(project)* Add documentation and task automation files
 - *(project)* Update project documentation
+- Update changelog
+- Add comprehensive documentation and adjust example domain config
+- Document --save-responses flag and configurable Redis gracePeriod
 
 ### 🧪 Testing
 
