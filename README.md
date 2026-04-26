@@ -93,12 +93,16 @@ grpcurl \
 | Document | Description |
 |---|---|
 | [Getting Started](docs/GETTING_STARTED.md) | Build, run, and send your first request |
+| [Development](docs/DEVELOPMENT.md) | Local setup, build commands, tests, and tooling |
 | [Configuration](docs/CONFIGURATION.md) | Domain rules, environment variables, backend modes |
-| [Architecture](docs/ARCHITECTURE.md) | Module design, dependency rules, request flows |
+| [Architecture](docs/ARCHITECTURE.md) | C4 component diagrams across all modules |
+| [Flows](docs/FLOWS.md) | Sequence diagrams: happy path, rollback, Redis lease renewal |
+| [Algorithms](docs/ALGORITHMS.md) | Rate limit decision flowchart, descriptor matching, state machine |
 | [Architecture Review](docs/ARCHITECTURE_REVIEW.md) | Findings, risks, and recommended next steps |
 | [Redis Backend](docs/REDIS.md) | Lease pattern, standalone vs cluster, tuning |
 | [Docker Deployment](docs/DOCKER.md) | Docker Compose profiles and networking |
 | [Testing](docs/TESTING.md) | Unit, architecture, and load tests |
+| [Release](docs/RELEASE.md) | Versioning, changelog automation, and release steps |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and debug tips |
 
 ## Tech stack

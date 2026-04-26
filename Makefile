@@ -124,12 +124,12 @@ redis-cluster-nodes: ## Show Redis Cluster nodes
 
 clean: down-volumes ## Alias for down-volumes
 
-changelog:
+changelog: ## Generate CHANGELOG.md using git-cliff
 	git-cliff -c cliff.toml -o CHANGELOG.md
 
-changelog-check:
+changelog-check: ## Check if CHANGELOG.md is up to date
 	git-cliff -c cliff.toml --output /tmp/CHANGELOG.md
 	diff -u CHANGELOG.md /tmp/CHANGELOG.md
 
-release-dry-run:
+release-dry-run: ## Print generated changelog without writing file
 	git-cliff -c cliff.toml

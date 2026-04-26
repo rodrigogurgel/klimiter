@@ -70,3 +70,6 @@ tmp/
 
 # Local generated files
 tree.output
+
+# Env
+.env

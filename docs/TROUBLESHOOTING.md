@@ -211,3 +211,7 @@ docker compose logs -f app-1 app-2 app-3
 # Redis Cluster init
 docker compose logs redis-cluster-init
 ```
+
+## Load testing and high-volume traffic
+
+- [Local high-volume traffic with gRPC, Nginx, Docker, and WSL](./troubleshooting/HIGH_VOLUME_LOAD_TESTING.md)

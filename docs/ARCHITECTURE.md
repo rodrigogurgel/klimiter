@@ -1,220 +1,160 @@
-# KLimiter Architecture
+# Architecture
 
-## Overview
+KLimiter is a multi-module Gradle project. The three core modules have a strict layering: **klimiter-core** is the rate-limiter library, **klimiter-redis** is an optional Redis backend implementing the core SPI, and **klimiter-service** is the deployable Spring Boot gRPC service.
 
-KLimiter is organized as a multi-module Gradle project with a clean separation between reusable rate-limit logic, Redis-backed distributed execution, and a Spring/gRPC service adapter.
+---
 
-Current modules:
+## C4 — System Context
 
-```text
-klimiter
-├── klimiter-core                  Gradle module — rate-limit library
-├── klimiter-redis                 Gradle module — Redis SPI implementation
-├── klimiter-service               Gradle module — Spring Boot gRPC service
-├── klimiter-architecture-tests    Gradle module — Konsist boundary tests
-└── klimiter-load-test             Standalone — k6 + Python load test harness (not a Gradle module)
+```mermaid
+C4Context
+    title System Context — KLimiter
+
+    Person_Ext(client, "API Client", "Envoy proxy or any application that needs distributed rate limiting")
+    System(klimiter, "KLimiter Service", "Coroutine-native rate limiter implementing the Envoy RLS protocol")
+    System_Ext(redis, "Redis", "Optional distributed counter store (standalone or cluster)")
+
+    Rel(client, klimiter, "ShouldRateLimit", "gRPC :9090")
+    Rel(klimiter, redis, "Lease acquire / counter increment", "Lettuce reactive")
 ```
 
-## Module responsibilities
+---
 
-### `klimiter-core`
+## C4 — Container Diagram
 
-Purpose: reusable Kotlin library containing the public API, configuration model, SPI contracts, in-memory backend, and core orchestration.
+```mermaid
+C4Container
+    title Container Diagram — KLimiter
 
-Main packages:
+    Person_Ext(client, "API Client", "e.g. Envoy proxy")
 
-```text
-io.klimiter.core.api
-io.klimiter.core.api.config
-io.klimiter.core.api.rls
-io.klimiter.core.api.spi
-io.klimiter.core.internal
-io.klimiter.core.internal.coordinator
-io.klimiter.core.internal.infra.store
-io.klimiter.core.internal.operation
+    System_Boundary(b, "KLimiter") {
+        Container(svc, "klimiter-service", "Spring Boot 4 / Kotlin 2.3", "Deployable gRPC service. Wires the library to HTTP/gRPC transport and Spring lifecycle.")
+        Container(core, "klimiter-core", "Kotlin library", "Public API, SPI contracts, in-memory Caffeine backend, all-or-nothing coordinator.")
+        Container(rmod, "klimiter-redis", "Kotlin library", "Redis SPI implementation using a local-lease pattern to minimise round-trips.")
+        Container(archtests, "klimiter-architecture-tests", "Konsist test module", "Verifies module-boundary rules at compile time.")
+    }
+
+    System_Ext(redis, "Redis", "Standalone or Cluster")
+
+    Rel(client, svc, "ShouldRateLimit", "gRPC :9090")
+    Rel(svc, core, "KLimiterFactory / KLimiter API")
+    Rel(svc, rmod, "RedisKLimiterFactory (optional, controlled by BackendMode)")
+    Rel(rmod, core, "implements RateLimitOperationFactory SPI")
+    Rel(rmod, redis, "EVALSHA / SCRIPT LOAD", "Lettuce reactive + coroutine bridge")
 ```
 
-Responsibilities:
+---
 
-- Expose `KLimiter` as the main API.
-- Expose `KLimiterBuilder` and `KLimiterFactory` for construction.
-- Expose request/response models under `api.rls`.
-- Expose rate-limit configuration models under `api.config`.
-- Expose extension points under `api.spi`.
-- Provide the default in-memory backend using Caffeine.
-- Coordinate multiple rate-limit operations with rollback semantics.
+## C4 — Component Diagram: klimiter-service
 
-Expected dependencies:
+```mermaid
+C4Component
+    title Component Diagram — klimiter-service
 
-- Kotlin standard library.
-- Coroutines.
-- SLF4J API.
-- Caffeine for the in-memory implementation.
+    Container_Boundary(cb, "klimiter-service") {
+        Component(grpc, "RateLimitGrpcAdapter", "@GrpcService", "Receives ShouldRateLimit RPC. Maps proto ↔ core domain types via RateLimitGrpcMappers. Returns UNKNOWN on unhandled exceptions.")
+        Component(app, "CheckRateLimitService", "@Service / CheckRateLimitUseCase", "Single application use case. Delegates unconditionally to the output port.")
+        Component(ca, "KLimiterCoreAdapter", "@Component / RateLimitEnforcerPort", "Calls kLimiter.shouldRateLimit() wrapped in runCatching. Returns RateLimitCode.UNKNOWN on failure.")
+        Component(cfg, "KLimiterConfiguration", "@Configuration", "Reads KLimiterProperties and wires the KLimiter bean: IN_MEMORY, REDIS_STANDALONE, or REDIS_CLUSTER. Builds StaticRateLimitDomainRepository.")
+        Component(props, "KLimiterProperties", "@ConfigurationProperties(klimiter.*)", "Typed binding for backend mode, Redis URI/URIs, lease percentage, key prefix, and domain descriptor trees.")
+    }
 
-Forbidden dependencies:
+    Container_Ext(core, "klimiter-core", "Public KLimiter API + SPI")
+    Container_Ext(rmod, "klimiter-redis", "Redis factory + SPI implementation")
 
-- Redis/Lettuce.
-- Spring.
-- gRPC/protobuf.
-- `klimiter-service`.
-
-### `klimiter-redis`
-
-Purpose: distributed Redis-backed implementation of the core SPI.
-
-Main packages:
-
-```text
-io.klimiter.redis.api
-io.klimiter.redis.internal
-io.klimiter.redis.internal.command
-io.klimiter.redis.internal.lease
-io.klimiter.redis.internal.script
+    Rel(grpc, app, "check(CoreRateLimitRequest)")
+    Rel(app, ca, "enforce(CoreRateLimitRequest)")
+    Rel(ca, core, "kLimiter.shouldRateLimit(request)")
+    Rel(cfg, core, "KLimiterFactory.inMemory(domainRepository)")
+    Rel(cfg, rmod, "RedisKLimiterFactory.standalone/cluster(uri, domainRepository, config)")
+    Rel(cfg, props, "reads")
 ```
 
-Responsibilities:
+---
 
-- Expose Redis construction APIs through `RedisKLimiterFactory` and `RedisRateLimitOperationFactory`.
-- Implement `RateLimitOperationFactory` using Redis leases.
-- Support standalone/Sentinel-style connections and Redis Cluster connections.
-- Hide Lettuce command execution, Lua script loading, and leased bucket tracking behind internal packages.
+## C4 — Component Diagram: klimiter-core
 
-Expected dependencies:
+```mermaid
+C4Component
+    title Component Diagram — klimiter-core
 
-- `klimiter-core`.
-- Lettuce.
-- Coroutines/reactive bridge.
-- Caffeine for local leased bucket tracking.
+    Container_Boundary(cb, "klimiter-core") {
+        Component(pub, "KLimiter / KLimiterFactory", "api (public surface)", "KLimiter is the main suspend entry point. KLimiterFactory provides static convenience constructors.")
+        Component(builder, "KLimiterBuilder", "public builder", "Fluent builder. Accepts optional operationFactory; if absent, builds the in-memory backend. Also accepts domainRepository, keyGenerator, timeProvider, maxCacheSize, gracePeriod.")
+        Component(defkl, "DefaultKLimiter", "internal", "Delegates to RateLimitOperationFactory.create() then RateLimitCoordinator.execute(). No state of its own.")
+        Component(coord, "RateLimitCoordinator", "internal object", "Runs all operations sequentially. On any non-OK result, rolls back every previously-OK reservation. Single-op fast path avoids list allocation.")
+        Component(resolver, "RateLimitOverallCodeResolver", "internal object", "OVER_LIMIT wins over OK; all-OK → OK; mixed-unknown → UNKNOWN.")
+        Component(factory, "DefaultRateLimitOperationFactory", "internal", "Per-request: looks up domain, walks descriptor tree via MatchEngine, generates time-bucketed key via CompositeKeyGenerator, retrieves AtomicLong counter from InMemoryRateLimitStore.")
+        Component(store, "InMemoryRateLimitStore", "internal", "Caffeine cache keyed by bucket key. TTL = windowSeconds + gracePeriod (default 30 s). Side-cache detects concurrent-window leak and logs WARN.")
+        Component(op, "InMemoryRateLimitOperation", "internal", "Lock-free CAS loop on AtomicLong. Tracks reserved hits for idempotent rollback.")
+        Component(spi, "RateLimitOperationFactory / RateLimitOperation", "api.spi (public)", "Extension points. Implement these to plug in a custom backend.")
+        Component(keygen, "CompositeKeyGenerator", "spi (public)", "Produces klimiter|domain|k=v|…|windowStart. Rejects '|' in domain/key/value.")
+        Component(timeprov, "TimeProvider / SystemTimeProvider", "spi (public)", "Clock abstraction. Inject FixedTimeProvider in tests for deterministic window behaviour.")
+    }
 
-Forbidden dependencies:
-
-- `klimiter-service`.
-- Spring service-layer code.
-
-### `klimiter-service`
-
-Purpose: runnable Spring Boot application exposing KLimiter through gRPC.
-
-Main packages:
-
-```text
-io.klimiter.service
-io.klimiter.service.config
-io.klimiter.service.domain.model
-io.klimiter.service.domain.port.input
-io.klimiter.service.domain.port.output
-io.klimiter.service.application
-io.klimiter.service.adapter.input.grpc
-io.klimiter.service.adapter.output.klimiter
+    Rel(pub, builder, "delegates construction to")
+    Rel(builder, defkl, "builds DefaultKLimiter(operationFactory)")
+    Rel(defkl, factory, "create(request)")
+    Rel(defkl, coord, "execute(operations)")
+    Rel(coord, resolver, "resolve(statuses)")
+    Rel(factory, store, "getOrCreate(key, ttlSeconds)")
+    Rel(factory, keygen, "generate(domain, entries, windowDivider)")
+    Rel(factory, op, "creates per descriptor")
+    Rel(factory, spi, "implements RateLimitOperationFactory")
+    Rel(op, spi, "implements RateLimitOperation")
 ```
 
-Responsibilities:
+---
 
-- Configure a `KLimiter` bean in local, standalone Redis, or cluster mode.
-- Expose gRPC input adapter.
-- Map protobuf requests/responses to service-domain models.
-- Keep application use cases independent of transport and backend details.
-- Delegate enforcement to a domain output port.
+## C4 — Component Diagram: klimiter-redis
 
-Expected architecture style: hexagonal/ports-and-adapters.
+```mermaid
+C4Component
+    title Component Diagram — klimiter-redis
 
-## Dependency direction
+    Container_Boundary(cb, "klimiter-redis") {
+        Component(factory, "RedisKLimiterFactory", "public object", "Entry point. standalone() and cluster() convenience constructors. Returns a CloseableKLimiter that owns the Lettuce connection.")
+        Component(opfact, "RedisRateLimitOperationFactory", "internal / RateLimitOperationFactory", "Same domain-lookup + descriptor-matching logic as the in-memory factory. Prefixes the generated key with keyPrefix. Looks up LeasedBucket from LeasedBucketStore.")
+        Component(op, "RedisRateLimitOperation", "internal / RateLimitOperation", "Hot path: CAS on LeasedBucket.localRemaining. On exhaustion: acquires bucket.mutex, retries, then calls acquireLease() → LuaScript. Rollback returns hits to local pool only.")
+        Component(bucket, "LeasedBucket", "internal data class", "Per-key local state: localRemaining (AtomicLong), distributedRemaining (AtomicLong), mutex (Mutex).")
+        Component(bstore, "LeasedBucketStore", "internal", "Caffeine cache of LeasedBuckets, TTL = windowSeconds + gracePeriod. Evicts stale windows automatically.")
+        Component(lua, "LuaScript", "internal", "Wraps Lua source with lazy SCRIPT LOAD and EVALSHA. Transparent NOSCRIPT reload on Redis restart or failover.")
+        Component(scripts, "LeaseScripts.LEASE_ACQUIRE", "internal object", "Atomic Lua: reads leased-so-far, grants min(requested, remaining), INCRBY, EXPIRE if no TTL. Returns [granted, remaining].")
+        Component(exec, "RedisCommandExecutor", "internal interface", "Abstracts Lettuce standalone vs. cluster surfaces. StandaloneRedisCommandExecutor and ClusterRedisCommandExecutor implement it.")
+        Component(cfg, "RedisKLimiterConfig", "api (public)", "leasePercentage (default 10), keyPrefix (default 'klimiter'), gracePeriod, maxTrackedBuckets.")
+    }
 
-Allowed module dependency direction:
+    Container_Ext(core, "klimiter-core SPI")
+    System_Ext(redis, "Redis")
 
-```text
+    Rel(factory, opfact, "creates RedisRateLimitOperationFactory")
+    Rel(factory, exec, "creates StandaloneRedisCommandExecutor or ClusterRedisCommandExecutor")
+    Rel(factory, cfg, "reads")
+    Rel(opfact, op, "creates per descriptor")
+    Rel(opfact, bstore, "getOrCreate(key, ttl)")
+    Rel(op, bucket, "CAS on localRemaining / mutex.withLock")
+    Rel(op, lua, "execute(LEASE_ACQUIRE, keys, args)")
+    Rel(lua, exec, "evalsha / scriptLoad")
+    Rel(exec, redis, "EVALSHA / SCRIPT LOAD / GET", "Lettuce reactive")
+    Rel(opfact, core, "implements RateLimitOperationFactory")
+    Rel(op, core, "implements RateLimitOperation")
+```
+
+---
+
+## Module dependency direction
+
+```
 klimiter-service ──▶ klimiter-redis ──▶ klimiter-core
-       │                                   ▲
-       └───────────────────────────────────┘
+       │                                     ▲
+       └─────────────────────────────────────┘
 ```
 
-Rules:
+Rules enforced by `klimiter-architecture-tests` (Konsist):
 
-- `klimiter-core` must not depend on `klimiter-redis` or `klimiter-service`.
-- `klimiter-redis` may depend on `klimiter-core`, but not on `klimiter-service`.
-- `klimiter-service` may depend on both `klimiter-core` and `klimiter-redis`.
-- Domain and application code in `klimiter-service` should not depend directly on gRPC, protobuf, Redis, or core implementation details.
-
-## Core request flow
-
-```text
-RateLimitRequest
-   │
-   ▼
-KLimiter.shouldRateLimit
-   │
-   ▼
-RateLimitOperationFactory.create(request)
-   │
-   ▼
-List<RateLimitOperation>
-   │
-   ▼
-RateLimitCoordinator.execute(operations)
-   │
-   ├── no operation: OK
-   ├── one operation: execute directly
-   └── multiple operations: execute sequentially and rollback previous reservations on failure
-```
-
-## Redis backend flow
-
-```text
-RedisKLimiterFactory
-   │
-   ▼
-RedisRateLimitOperationFactory
-   │
-   ├── StandaloneRedisCommandExecutor
-   └── ClusterRedisCommandExecutor
-   │
-   ▼
-RedisRateLimitOperation
-   │
-   ├── LeasedBucketStore
-   ├── LeasedBucket
-   ├── LeaseScripts
-   └── LuaScript
-```
-
-The Redis backend uses a lease-based strategy: a node obtains a local share of capacity from Redis, consumes that share locally, and renews synchronously when needed.
-
-## Service flow
-
-```text
-gRPC request
-   │
-   ▼
-RateLimitGrpcAdapter
-   │
-   ▼
-CheckRateLimitUseCase
-   │
-   ▼
-CheckRateLimitService
-   │
-   ▼
-RateLimitEnforcerPort
-   │
-   ▼
-KLimiterCoreAdapter
-   │
-   ▼
-KLimiter
-```
-
-This is a good ports-and-adapters shape. The service domain remains small and independent, while external details are isolated in adapters and configuration.
-
-## Architectural test strategy
-
-The generated `klimiter-architecture-tests` module validates:
-
-- Expected module existence.
-- Core has no Redis/Spring/gRPC dependencies.
-- Core SPI does not import core internal implementation.
-- Redis does not depend on service.
-- Service domain does not depend on adapters, Spring, gRPC, core, or Redis.
-- Service application layer does not depend on transport/backend adapters.
-- Hexagonal package layout exists.
-
-A strict API-boundary test is included but disabled because the current project intentionally uses API facade objects/builders that instantiate internal implementations.
+- `klimiter-core` must not depend on Redis, Spring, or gRPC.
+- `klimiter-redis` must not depend on `klimiter-service`.
+- Service domain (`domain.model`, `domain.port`) must not import adapters, Spring, gRPC, core, or Redis directly.
+- Service application layer must not import transport or backend adapters.
+- Hexagonal package layout (`adapter`, `application`, `domain`) must exist in the service module.
