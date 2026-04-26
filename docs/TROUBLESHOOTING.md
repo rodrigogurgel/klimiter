@@ -168,6 +168,20 @@ The coordinator executes operations sequentially. If a request has many descript
 
 The in-memory store uses `expireAfterCreate = windowSeconds + gracePeriod`. Old buckets linger for up to `gracePeriod` (default 30 s) after their window ends. This is intentional — see the "concurrent-window leak" note in [klimiter-core/README.md](../klimiter-core/README.md). Reduce `gracePeriod` only if memory is a concern and you understand the trade-off.
 
+### Redis key TTL shorter than expected
+
+The Redis key TTL is `windowSeconds + gracePeriod`, using `RedisKLimiterConfig.gracePeriod` (default 30 s) — the same value applied to the local Caffeine cache. If keys expire before the window ends, your `gracePeriod` is set too low. Increase it:
+
+```bash
+KLIMITER_BACKEND_REDIS_GRACE_PERIOD=60s
+```
+
+Or via code:
+
+```kotlin
+RedisKLimiterConfig(gracePeriod = 60.seconds)
+```
+
 ## Build issues
 
 ### Detekt violations
@@ -215,3 +229,27 @@ docker compose logs redis-cluster-init
 ## Load testing and high-volume traffic
 
 - [Local high-volume traffic with gRPC, Nginx, Docker, and WSL](./troubleshooting/HIGH_VOLUME_LOAD_TESTING.md)
+
+### Capturing full gRPC responses for debugging
+
+Use `--save-responses` to write every gRPC response body to a file alongside the normal results:
+
+```bash
+python3 runner.py run --save-responses
+```
+
+This creates `runs/<run_id>/responses.jsonl`. Each line is a JSON log envelope from k6; the `msg` field contains the serialized response. To inspect:
+
+```bash
+cat runs/<run_id>/responses.jsonl | python3 -c "
+import sys, json
+for line in sys.stdin:
+    row = json.loads(line)
+    inner = json.loads(row['msg'])
+    if inner.get('type') == 'response':
+        print(json.dumps(inner, indent=2))
+        break
+"
+```
+
+At high request rates (e.g. 4000 req/s) this file grows quickly. Use only for short diagnostic runs.
