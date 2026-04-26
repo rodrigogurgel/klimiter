@@ -15,7 +15,8 @@ plugins {
 
 dependencies {
     kover(project(":klimiter-core"))
-    kover(project(":klimiter-redis"))
+    // klimiter-redis is intentionally excluded from the aggregate: it needs integration tests
+    // backed by a real Redis instance (Testcontainers). Unit coverage would be misleading.
     kover(project(":klimiter-service"))
 }
 
@@ -72,6 +73,7 @@ kover {
                     // Spring Boot entrypoints/configs
                     "*.Application",
                     "*Application",
+                    "*ApplicationKt",
                     "*.config.*",
                     "*.configuration.*",
 
@@ -102,7 +104,7 @@ kover {
             verify {
                 rule("Minimum aggregated line coverage") {
                     bound {
-                        minValue = 80
+                        minValue = 90
                         coverageUnits = CoverageUnit.LINE
                         aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                     }
@@ -110,7 +112,7 @@ kover {
 
                 rule("Minimum aggregated branch coverage") {
                     bound {
-                        minValue = 70
+                        minValue = 90
                         coverageUnits = CoverageUnit.BRANCH
                         aggregationForGroup = AggregationType.COVERED_PERCENTAGE
                     }

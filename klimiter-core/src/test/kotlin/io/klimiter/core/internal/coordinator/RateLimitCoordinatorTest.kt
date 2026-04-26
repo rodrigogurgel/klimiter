@@ -54,6 +54,17 @@ class RateLimitCoordinatorTest {
     }
 
     @Test
+    fun `UNKNOWN status among OK statuses resolves to UNKNOWN overall`() = runTest {
+        val op1 = RecordingOperation(status = statusOf(RateLimitCode.OK))
+        val op2 = RecordingOperation(status = statusOf(RateLimitCode.UNKNOWN))
+        val response = RateLimitCoordinator.execute(listOf(op1, op2))
+        assertEquals(RateLimitCode.UNKNOWN, response.overallCode)
+        assertEquals(2, response.statuses.size)
+        assertTrue(op1.rolledBack, "OK op is rolled back when overall is non-OK")
+        assertFalse(op2.rolledBack, "UNKNOWN op is not rolled back — it never reserved")
+    }
+
+    @Test
     fun `rollback exception does not prevent sibling rollbacks`() = runTest {
         val first = RecordingOperation(status = statusOf(RateLimitCode.OK), throwOnRollback = true)
         val second = RecordingOperation(status = statusOf(RateLimitCode.OK))

@@ -1,0 +1,2324 @@
+.
+├── CLAUDE.md
+├── Dockerfile
+├── Makefile
+├── README.md
+├── TaskFile.yaml
+├── build
+│   ├── kover
+│   ├── reports
+│   │   ├── kover
+│   │   │   ├── html
+│   │   │   │   ├── css
+│   │   │   │   │   ├── coverage.css
+│   │   │   │   │   └── idea.min.css
+│   │   │   │   ├── img
+│   │   │   │   │   ├── arrowDown.gif
+│   │   │   │   │   └── arrowUp.gif
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   ├── js
+│   │   │   │   │   ├── highlight.min.js
+│   │   │   │   │   └── highlightjs-line-numbers.min.js
+│   │   │   │   ├── ns-1
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-10
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-11
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-12
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-13
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-14
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-2
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-3
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       ├── source-2.html
+│   │   │   │   │       ├── source-3.html
+│   │   │   │   │       ├── source-4.html
+│   │   │   │   │       ├── source-5.html
+│   │   │   │   │       ├── source-6.html
+│   │   │   │   │       ├── source-7.html
+│   │   │   │   │       └── source-8.html
+│   │   │   │   ├── ns-4
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-5
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-6
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-7
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       └── source-1.html
+│   │   │   │   ├── ns-8
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       ├── source-2.html
+│   │   │   │   │       ├── source-3.html
+│   │   │   │   │       ├── source-4.html
+│   │   │   │   │       ├── source-5.html
+│   │   │   │   │       ├── source-6.html
+│   │   │   │   │       ├── source-7.html
+│   │   │   │   │       └── source-8.html
+│   │   │   │   ├── ns-9
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-a
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-b
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       ├── source-2.html
+│   │   │   │   │       └── source-3.html
+│   │   │   │   ├── ns-c
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       ├── source-2.html
+│   │   │   │   │       └── source-3.html
+│   │   │   │   ├── ns-d
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   ├── ns-e
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK.html
+│   │   │   │   │   ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS.html
+│   │   │   │   │   ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_LINE.html
+│   │   │   │   │   ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD.html
+│   │   │   │   │   ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT.html
+│   │   │   │   │   ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │   │   └── sources
+│   │   │   │   │       ├── source-1.html
+│   │   │   │   │       └── source-2.html
+│   │   │   │   └── ns-f
+│   │   │   │       ├── index.html
+│   │   │   │       ├── index_SORT_BY_BLOCK.html
+│   │   │   │       ├── index_SORT_BY_BLOCK_DESC.html
+│   │   │   │       ├── index_SORT_BY_CLASS.html
+│   │   │   │       ├── index_SORT_BY_CLASS_DESC.html
+│   │   │   │       ├── index_SORT_BY_LINE.html
+│   │   │   │       ├── index_SORT_BY_LINE_DESC.html
+│   │   │   │       ├── index_SORT_BY_METHOD.html
+│   │   │   │       ├── index_SORT_BY_METHOD_DESC.html
+│   │   │   │       ├── index_SORT_BY_NAME_DESC.html
+│   │   │   │       ├── index_SORT_BY_STATEMENT.html
+│   │   │   │       ├── index_SORT_BY_STATEMENT_DESC.html
+│   │   │   │       └── sources
+│   │   │   │           └── source-1.html
+│   │   │   ├── report.xml
+│   │   │   └── verify.err
+│   │   └── problems
+│   │       └── problems-report.html
+│   └── tmp
+│       ├── koverCachedVerify
+│       │   ├── agg-ic.ic
+│       │   └── agg-smap.smap
+│       ├── koverHtmlReport
+│       └── koverXmlReport
+├── build.gradle.kts
+├── config
+│   └── detekt
+│       └── detekt.yml
+├── docker
+│   ├── nginx
+│   │   └── nginx.conf
+│   └── redis-cluster
+│       └── cluster-init.sh
+├── docker-compose.yaml
+├── docs
+│   ├── ARCHITECTURE.md
+│   ├── ARCHITECTURE_REVIEW.md
+│   ├── CONFIGURATION.md
+│   ├── DOCKER.md
+│   ├── GETTING_STARTED.md
+│   ├── REDIS.md
+│   ├── TESTING.md
+│   └── TROUBLESHOOTING.md
+├── gradle
+│   ├── libs.versions.toml
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+├── klimiter-architecture-tests
+│   ├── build
+│   │   ├── classes
+│   │   │   └── kotlin
+│   │   │       └── test
+│   │   │           ├── META-INF
+│   │   │           │   └── klimiter-architecture-tests_test.kotlin_module
+│   │   │           └── io
+│   │   │               └── klimiter
+│   │   │                   └── architecture
+│   │   │                       ├── ArchitectureTestSupport.class
+│   │   │                       ├── CoreModuleArchitectureTest.class
+│   │   │                       ├── KonsistSmokeArchitectureTest.class
+│   │   │                       ├── NamingConventionArchitectureTest.class
+│   │   │                       ├── ProjectStructureArchitectureTest.class
+│   │   │                       ├── RedisModuleArchitectureTest.class
+│   │   │                       ├── ServiceModuleArchitectureTest.class
+│   │   │                       └── StrictApiBoundaryArchitectureTest.class
+│   │   ├── kotlin
+│   │   │   └── compileTestKotlin
+│   │   │       ├── cacheable
+│   │   │       │   ├── caches-jvm
+│   │   │       │   │   ├── compilerPluginFiles
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │       │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │       │   │   ├── inputs
+│   │   │       │   │   │   ├── source-to-output.tab
+│   │   │       │   │   │   ├── source-to-output.tab.keystream
+│   │   │       │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │       │   │   │   ├── source-to-output.tab.len
+│   │   │       │   │   │   ├── source-to-output.tab.values.at
+│   │   │       │   │   │   ├── source-to-output.tab_i
+│   │   │       │   │   │   └── source-to-output.tab_i.len
+│   │   │       │   │   ├── jvm
+│   │   │       │   │   │   └── kotlin
+│   │   │       │   │   │       ├── class-attributes.tab
+│   │   │       │   │   │       ├── class-attributes.tab.keystream
+│   │   │       │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │       │   │   │       ├── class-attributes.tab.len
+│   │   │       │   │   │       ├── class-attributes.tab.values.at
+│   │   │       │   │   │       ├── class-attributes.tab_i
+│   │   │       │   │   │       ├── class-attributes.tab_i.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── proto.tab
+│   │   │       │   │   │       ├── proto.tab.keystream
+│   │   │       │   │   │       ├── proto.tab.keystream.len
+│   │   │       │   │   │       ├── proto.tab.len
+│   │   │       │   │   │       ├── proto.tab.values.at
+│   │   │       │   │   │       ├── proto.tab_i
+│   │   │       │   │   │       ├── proto.tab_i.len
+│   │   │       │   │   │       ├── source-to-classes.tab
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │       │   │   │       ├── source-to-classes.tab.len
+│   │   │       │   │   │       ├── source-to-classes.tab.values.at
+│   │   │       │   │   │       ├── source-to-classes.tab_i
+│   │   │       │   │   │       └── source-to-classes.tab_i.len
+│   │   │       │   │   └── lookups
+│   │   │       │   │       ├── counters.tab
+│   │   │       │   │       ├── file-to-id.tab
+│   │   │       │   │       ├── file-to-id.tab.keystream
+│   │   │       │   │       ├── file-to-id.tab.keystream.len
+│   │   │       │   │       ├── file-to-id.tab.len
+│   │   │       │   │       ├── file-to-id.tab.values.at
+│   │   │       │   │       ├── file-to-id.tab_i
+│   │   │       │   │       ├── file-to-id.tab_i.len
+│   │   │       │   │       ├── id-to-file.tab
+│   │   │       │   │       ├── id-to-file.tab.keystream
+│   │   │       │   │       ├── id-to-file.tab.keystream.len
+│   │   │       │   │       ├── id-to-file.tab.len
+│   │   │       │   │       ├── id-to-file.tab.values.at
+│   │   │       │   │       ├── id-to-file.tab_i
+│   │   │       │   │       ├── id-to-file.tab_i.len
+│   │   │       │   │       ├── lookups.tab
+│   │   │       │   │       ├── lookups.tab.keystream
+│   │   │       │   │       ├── lookups.tab.keystream.len
+│   │   │       │   │       ├── lookups.tab.len
+│   │   │       │   │       ├── lookups.tab.values.at
+│   │   │       │   │       ├── lookups.tab_i
+│   │   │       │   │       └── lookups.tab_i.len
+│   │   │       │   └── last-build.bin
+│   │   │       ├── classpath-snapshot
+│   │   │       │   └── shrunk-classpath-snapshot.bin
+│   │   │       └── local-state
+│   │   ├── kover
+│   │   │   ├── bin-reports
+│   │   │   │   └── test.ic
+│   │   │   ├── jvm.artifact
+│   │   │   └── kover-jvm-agent-0.9.8.jar
+│   │   ├── libs
+│   │   │   └── klimiter-architecture-tests-0.0.1-SNAPSHOT.jar
+│   │   ├── reports
+│   │   │   ├── detekt
+│   │   │   │   ├── detekt.html
+│   │   │   │   ├── detekt.md
+│   │   │   │   ├── detekt.sarif
+│   │   │   │   └── detekt.xml
+│   │   │   ├── kover
+│   │   │   │   ├── report.xml
+│   │   │   │   └── verify.err
+│   │   │   └── tests
+│   │   │       └── test
+│   │   │           ├── GnWxwQhDfGM
+│   │   │           │   └── index.html
+│   │   │           ├── JrRfL-MOwwc
+│   │   │           │   └── index.html
+│   │   │           ├── MfwuWrB1lL8
+│   │   │           │   └── index.html
+│   │   │           ├── RdtkV4ZVx8k
+│   │   │           │   └── index.html
+│   │   │           ├── W83feBeLQDg
+│   │   │           │   └── index.html
+│   │   │           ├── css
+│   │   │           │   ├── base-style.css
+│   │   │           │   └── style.css
+│   │   │           ├── index.html
+│   │   │           ├── js
+│   │   │           │   └── report.js
+│   │   │           ├── ka14ahp6fyM
+│   │   │           │   └── index.html
+│   │   │           └── qI-_WyfoIQc
+│   │   │               └── index.html
+│   │   ├── test-results
+│   │   │   └── test
+│   │   │       ├── TEST-io.klimiter.architecture.CoreModuleArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.KonsistSmokeArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.NamingConventionArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.ProjectStructureArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.RedisModuleArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.ServiceModuleArchitectureTest.xml
+│   │   │       ├── TEST-io.klimiter.architecture.StrictApiBoundaryArchitectureTest.xml
+│   │   │       └── binary
+│   │   │           ├── output-events.bin
+│   │   │           └── results-generic.bin
+│   │   └── tmp
+│   │       ├── jar
+│   │       │   └── MANIFEST.MF
+│   │       ├── koverCachedVerify
+│   │       │   ├── agg-ic.ic
+│   │       │   └── agg-smap.smap
+│   │       ├── koverXmlReport
+│   │       └── test
+│   │           └── kover-agent.args
+│   ├── build.gradle.kts
+│   └── src
+│       └── test
+│           └── kotlin
+│               └── io
+│                   └── klimiter
+│                       └── architecture
+│                           ├── ArchitectureTestSupport.kt
+│                           ├── CoreModuleArchitectureTest.kt
+│                           ├── KonsistSmokeArchitectureTest.kt
+│                           ├── NamingConventionArchitectureTest.kt
+│                           ├── ProjectStructureArchitectureTest.kt
+│                           ├── RedisModuleArchitectureTest.kt
+│                           ├── ServiceModuleArchitectureTest.kt
+│                           └── StrictApiBoundaryArchitectureTest.kt
+├── klimiter-core
+│   ├── README.md
+│   ├── build
+│   │   ├── classes
+│   │   │   └── kotlin
+│   │   │       ├── main
+│   │   │       │   ├── META-INF
+│   │   │       │   │   └── klimiter-core.kotlin_module
+│   │   │       │   └── io
+│   │   │       │       └── klimiter
+│   │   │       │           └── core
+│   │   │       │               ├── KLimiterBuilder$Companion.class
+│   │   │       │               ├── KLimiterBuilder.class
+│   │   │       │               ├── api
+│   │   │       │               │   ├── KLimiter.class
+│   │   │       │               │   ├── KLimiterFactory.class
+│   │   │       │               │   ├── config
+│   │   │       │               │   │   ├── DescriptorPath.class
+│   │   │       │               │   │   ├── MatchEngineKt.class
+│   │   │       │               │   │   ├── RateLimitDescriptor.class
+│   │   │       │               │   │   ├── RateLimitDomain.class
+│   │   │       │               │   │   ├── RateLimitRule.class
+│   │   │       │               │   │   ├── RateLimitTimeUnit$Companion.class
+│   │   │       │               │   │   ├── RateLimitTimeUnit$WhenMappings.class
+│   │   │       │               │   │   └── RateLimitTimeUnit.class
+│   │   │       │               │   └── rls
+│   │   │       │               │       ├── RateLimit.class
+│   │   │       │               │       ├── RateLimitCode.class
+│   │   │       │               │       ├── RateLimitDescriptorEntry.class
+│   │   │       │               │       ├── RateLimitOverride.class
+│   │   │       │               │       ├── RateLimitRequest.class
+│   │   │       │               │       ├── RateLimitRequestDescriptor.class
+│   │   │       │               │       ├── RateLimitResponse.class
+│   │   │       │               │       └── RateLimitStatus.class
+│   │   │       │               ├── internal
+│   │   │       │               │   ├── DefaultKLimiter.class
+│   │   │       │               │   ├── coordinator
+│   │   │       │               │   │   ├── RateLimitCoordinator$execute$1.class
+│   │   │       │               │   │   ├── RateLimitCoordinator$executeMultiple$1.class
+│   │   │       │               │   │   ├── RateLimitCoordinator$rollbackSuccessful$1.class
+│   │   │       │               │   │   ├── RateLimitCoordinator.class
+│   │   │       │               │   │   └── RateLimitOverallCodeResolver.class
+│   │   │       │               │   ├── operation
+│   │   │       │               │   │   ├── DefaultRateLimitOperationFactory$Companion.class
+│   │   │       │               │   │   ├── DefaultRateLimitOperationFactory.class
+│   │   │       │               │   │   ├── InMemoryRateLimitOperation$Companion.class
+│   │   │       │               │   │   └── InMemoryRateLimitOperation.class
+│   │   │       │               │   └── store
+│   │   │       │               │       ├── InMemoryRateLimitStore$Companion.class
+│   │   │       │               │       ├── InMemoryRateLimitStore$Entry.class
+│   │   │       │               │       ├── InMemoryRateLimitStore$EntryExpiry.class
+│   │   │       │               │       ├── InMemoryRateLimitStore$cache$2.class
+│   │   │       │               │       └── InMemoryRateLimitStore.class
+│   │   │       │               └── spi
+│   │   │       │                   ├── CompositeKeyGenerator.class
+│   │   │       │                   ├── KeyGenerator.class
+│   │   │       │                   ├── RateLimitDomainRepository.class
+│   │   │       │                   ├── RateLimitOperation.class
+│   │   │       │                   ├── RateLimitOperationFactory.class
+│   │   │       │                   ├── StaticRateLimitDomainRepository.class
+│   │   │       │                   ├── SystemTimeProvider.class
+│   │   │       │                   └── TimeProvider.class
+│   │   │       └── test
+│   │   │           ├── META-INF
+│   │   │           │   └── klimiter-core_test.kotlin_module
+│   │   │           └── io
+│   │   │               └── klimiter
+│   │   │                   └── core
+│   │   │                       ├── FixedTimeProvider.class
+│   │   │                       ├── api
+│   │   │                       │   └── spi
+│   │   │                       ├── internal
+│   │   │                       │   ├── DefaultKLimiterBuilderTest$custom keyGenerator is invoked on shouldRateLimit$1$generator$1.class
+│   │   │                       │   ├── DefaultKLimiterBuilderTest$custom keyGenerator is invoked on shouldRateLimit$1.class
+│   │   │                       │   ├── DefaultKLimiterBuilderTest$noopFactory$1.class
+│   │   │                       │   ├── DefaultKLimiterBuilderTest$operationFactory combined with custom keyGenerator throws at build$generator$1.class
+│   │   │                       │   ├── DefaultKLimiterBuilderTest.class
+│   │   │                       │   ├── DefaultKLimiterTest$partial failure rolls back the first descriptor$1.class
+│   │   │                       │   ├── DefaultKLimiterTest$request beyond limit returns OVER_LIMIT$1.class
+│   │   │                       │   ├── DefaultKLimiterTest$request to unknown domain is allowed$1.class
+│   │   │                       │   ├── DefaultKLimiterTest$request within limit returns OK$1.class
+│   │   │                       │   ├── DefaultKLimiterTest$statuses list reflects all matched descriptors$1.class
+│   │   │                       │   ├── DefaultKLimiterTest.class
+│   │   │                       │   ├── coordinator
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$RecordingOperation.class
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$all operations are executed and OK ones are rolled back on failure$1.class
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$empty list returns OK with no statuses$1.class
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$rollback exception does not prevent sibling rollbacks$1.class
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$single OK operation returns OK$1.class
+│   │   │                       │   │   ├── RateLimitCoordinatorTest$single OVER_LIMIT operation does not trigger rollback$1.class
+│   │   │                       │   │   └── RateLimitCoordinatorTest.class
+│   │   │                       │   ├── operation
+│   │   │                       │   │   ├── DefaultRateLimitOperationFactoryTest$hitsAddend from descriptor overrides request-level addend$1.class
+│   │   │                       │   │   ├── DefaultRateLimitOperationFactoryTest$isNegativeHits inverts the addend$1.class
+│   │   │                       │   │   ├── DefaultRateLimitOperationFactoryTest$per-descriptor limit override is applied$1.class
+│   │   │                       │   │   ├── DefaultRateLimitOperationFactoryTest$same key within same window reuses shared counter$1.class
+│   │   │                       │   │   ├── DefaultRateLimitOperationFactoryTest.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$concurrent executions never exceed limit$1$jobs$1$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$concurrent executions never exceed limit$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$durationUntilReset is positive and within one window$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$first request within limit returns OK$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$limitRemaining is correct after partial consumption$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$negative hitsAddend decrements the counter$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$request that exhausts limit returns OVER_LIMIT$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$rollback decrements counter$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$rollback is idempotent$1.class
+│   │   │                       │   │   ├── InMemoryRateLimitOperationTest$rollback without execute is no-op$1.class
+│   │   │                       │   │   └── InMemoryRateLimitOperationTest.class
+│   │   │                       │   └── store
+│   │   │                       │       ├── InMemoryRateLimitStoreTest$concurrent calls for the same key return the same instance$1$jobs$1$1.class
+│   │   │                       │       ├── InMemoryRateLimitStoreTest$concurrent calls for the same key return the same instance$1.class
+│   │   │                       │       └── InMemoryRateLimitStoreTest.class
+│   │   │                       └── spi
+│   │   │                           └── CompositeKeyGeneratorTest.class
+│   │   ├── kotlin
+│   │   │   ├── compileKotlin
+│   │   │   │   ├── cacheable
+│   │   │   │   │   ├── caches-jvm
+│   │   │   │   │   │   ├── compilerPluginFiles
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │   │   │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │   │   │   │   ├── inputs
+│   │   │   │   │   │   │   ├── source-to-output.tab
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.values.at
+│   │   │   │   │   │   │   ├── source-to-output.tab_i
+│   │   │   │   │   │   │   └── source-to-output.tab_i.len
+│   │   │   │   │   │   ├── jvm
+│   │   │   │   │   │   │   └── kotlin
+│   │   │   │   │   │   │       ├── class-attributes.tab
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.values.at
+│   │   │   │   │   │   │       ├── class-attributes.tab_i
+│   │   │   │   │   │   │       ├── class-attributes.tab_i.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── constants.tab
+│   │   │   │   │   │   │       ├── constants.tab.keystream
+│   │   │   │   │   │   │       ├── constants.tab.keystream.len
+│   │   │   │   │   │   │       ├── constants.tab.len
+│   │   │   │   │   │   │       ├── constants.tab.values.at
+│   │   │   │   │   │   │       ├── constants.tab_i
+│   │   │   │   │   │   │       ├── constants.tab_i.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── package-parts.tab
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream.len
+│   │   │   │   │   │   │       ├── package-parts.tab.len
+│   │   │   │   │   │   │       ├── package-parts.tab.values.at
+│   │   │   │   │   │   │       ├── package-parts.tab_i
+│   │   │   │   │   │   │       ├── package-parts.tab_i.len
+│   │   │   │   │   │   │       ├── proto.tab
+│   │   │   │   │   │   │       ├── proto.tab.keystream
+│   │   │   │   │   │   │       ├── proto.tab.keystream.len
+│   │   │   │   │   │   │       ├── proto.tab.len
+│   │   │   │   │   │   │       ├── proto.tab.values.at
+│   │   │   │   │   │   │       ├── proto.tab_i
+│   │   │   │   │   │   │       ├── proto.tab_i.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.values.at
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i.len
+│   │   │   │   │   │   │       ├── subtypes.tab
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── subtypes.tab.len
+│   │   │   │   │   │   │       ├── subtypes.tab.values.at
+│   │   │   │   │   │   │       ├── subtypes.tab_i
+│   │   │   │   │   │   │       ├── subtypes.tab_i.len
+│   │   │   │   │   │   │       ├── supertypes.tab
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── supertypes.tab.len
+│   │   │   │   │   │   │       ├── supertypes.tab.values.at
+│   │   │   │   │   │   │       ├── supertypes.tab_i
+│   │   │   │   │   │   │       └── supertypes.tab_i.len
+│   │   │   │   │   │   └── lookups
+│   │   │   │   │   │       ├── counters.tab
+│   │   │   │   │   │       ├── file-to-id.tab
+│   │   │   │   │   │       ├── file-to-id.tab.keystream
+│   │   │   │   │   │       ├── file-to-id.tab.keystream.len
+│   │   │   │   │   │       ├── file-to-id.tab.len
+│   │   │   │   │   │       ├── file-to-id.tab.values.at
+│   │   │   │   │   │       ├── file-to-id.tab_i
+│   │   │   │   │   │       ├── file-to-id.tab_i.len
+│   │   │   │   │   │       ├── id-to-file.tab
+│   │   │   │   │   │       ├── id-to-file.tab.keystream
+│   │   │   │   │   │       ├── id-to-file.tab.keystream.len
+│   │   │   │   │   │       ├── id-to-file.tab.len
+│   │   │   │   │   │       ├── id-to-file.tab.values.at
+│   │   │   │   │   │       ├── id-to-file.tab_i
+│   │   │   │   │   │       ├── id-to-file.tab_i.len
+│   │   │   │   │   │       ├── lookups.tab
+│   │   │   │   │   │       ├── lookups.tab.keystream
+│   │   │   │   │   │       ├── lookups.tab.keystream.len
+│   │   │   │   │   │       ├── lookups.tab.len
+│   │   │   │   │   │       ├── lookups.tab.values.at
+│   │   │   │   │   │       ├── lookups.tab_i
+│   │   │   │   │   │       └── lookups.tab_i.len
+│   │   │   │   │   └── last-build.bin
+│   │   │   │   ├── classpath-snapshot
+│   │   │   │   │   └── shrunk-classpath-snapshot.bin
+│   │   │   │   └── local-state
+│   │   │   └── compileTestKotlin
+│   │   │       ├── cacheable
+│   │   │       │   ├── caches-jvm
+│   │   │       │   │   ├── compilerPluginFiles
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │       │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │       │   │   ├── inputs
+│   │   │       │   │   │   ├── source-to-output.tab
+│   │   │       │   │   │   ├── source-to-output.tab.keystream
+│   │   │       │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │       │   │   │   ├── source-to-output.tab.len
+│   │   │       │   │   │   ├── source-to-output.tab.values.at
+│   │   │       │   │   │   ├── source-to-output.tab_i
+│   │   │       │   │   │   └── source-to-output.tab_i.len
+│   │   │       │   │   ├── jvm
+│   │   │       │   │   │   └── kotlin
+│   │   │       │   │   │       ├── class-attributes.tab
+│   │   │       │   │   │       ├── class-attributes.tab.keystream
+│   │   │       │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │       │   │   │       ├── class-attributes.tab.len
+│   │   │       │   │   │       ├── class-attributes.tab.values.at
+│   │   │       │   │   │       ├── class-attributes.tab_i
+│   │   │       │   │   │       ├── class-attributes.tab_i.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── proto.tab
+│   │   │       │   │   │       ├── proto.tab.keystream
+│   │   │       │   │   │       ├── proto.tab.keystream.len
+│   │   │       │   │   │       ├── proto.tab.len
+│   │   │       │   │   │       ├── proto.tab.values.at
+│   │   │       │   │   │       ├── proto.tab_i
+│   │   │       │   │   │       ├── proto.tab_i.len
+│   │   │       │   │   │       ├── source-to-classes.tab
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │       │   │   │       ├── source-to-classes.tab.len
+│   │   │       │   │   │       ├── source-to-classes.tab.values.at
+│   │   │       │   │   │       ├── source-to-classes.tab_i
+│   │   │       │   │   │       ├── source-to-classes.tab_i.len
+│   │   │       │   │   │       ├── subtypes.tab
+│   │   │       │   │   │       ├── subtypes.tab.keystream
+│   │   │       │   │   │       ├── subtypes.tab.keystream.len
+│   │   │       │   │   │       ├── subtypes.tab.len
+│   │   │       │   │   │       ├── subtypes.tab.values.at
+│   │   │       │   │   │       ├── subtypes.tab_i
+│   │   │       │   │   │       ├── subtypes.tab_i.len
+│   │   │       │   │   │       ├── supertypes.tab
+│   │   │       │   │   │       ├── supertypes.tab.keystream
+│   │   │       │   │   │       ├── supertypes.tab.keystream.len
+│   │   │       │   │   │       ├── supertypes.tab.len
+│   │   │       │   │   │       ├── supertypes.tab.values.at
+│   │   │       │   │   │       ├── supertypes.tab_i
+│   │   │       │   │   │       └── supertypes.tab_i.len
+│   │   │       │   │   └── lookups
+│   │   │       │   │       ├── counters.tab
+│   │   │       │   │       ├── file-to-id.tab
+│   │   │       │   │       ├── file-to-id.tab.keystream
+│   │   │       │   │       ├── file-to-id.tab.keystream.len
+│   │   │       │   │       ├── file-to-id.tab.len
+│   │   │       │   │       ├── file-to-id.tab.values.at
+│   │   │       │   │       ├── file-to-id.tab_i
+│   │   │       │   │       ├── file-to-id.tab_i.len
+│   │   │       │   │       ├── id-to-file.tab
+│   │   │       │   │       ├── id-to-file.tab.keystream
+│   │   │       │   │       ├── id-to-file.tab.keystream.len
+│   │   │       │   │       ├── id-to-file.tab.len
+│   │   │       │   │       ├── id-to-file.tab.values.at
+│   │   │       │   │       ├── id-to-file.tab_i
+│   │   │       │   │       ├── id-to-file.tab_i.len
+│   │   │       │   │       ├── lookups.tab
+│   │   │       │   │       ├── lookups.tab.keystream
+│   │   │       │   │       ├── lookups.tab.keystream.len
+│   │   │       │   │       ├── lookups.tab.len
+│   │   │       │   │       ├── lookups.tab.values.at
+│   │   │       │   │       ├── lookups.tab_i
+│   │   │       │   │       └── lookups.tab_i.len
+│   │   │       │   └── last-build.bin
+│   │   │       ├── classpath-snapshot
+│   │   │       │   └── shrunk-classpath-snapshot.bin
+│   │   │       └── local-state
+│   │   ├── kover
+│   │   │   ├── bin-reports
+│   │   │   │   └── test.ic
+│   │   │   ├── jvm.artifact
+│   │   │   └── kover-jvm-agent-0.9.8.jar
+│   │   ├── libs
+│   │   │   └── klimiter-core-0.0.1-SNAPSHOT.jar
+│   │   ├── reports
+│   │   │   ├── detekt
+│   │   │   │   ├── detekt.html
+│   │   │   │   ├── detekt.md
+│   │   │   │   ├── detekt.sarif
+│   │   │   │   └── detekt.xml
+│   │   │   ├── kover
+│   │   │   │   ├── report.xml
+│   │   │   │   └── verify.err
+│   │   │   └── tests
+│   │   │       └── test
+│   │   │           ├── 4bh7i2QWywI
+│   │   │           │   └── index.html
+│   │   │           ├── 4dueTz2X9sQ
+│   │   │           │   ├── RrbyCvO4W50.html
+│   │   │           │   └── index.html
+│   │   │           ├── 5i1KVqpfJHA
+│   │   │           ├── GqoPinWhLyc
+│   │   │           │   └── index.html
+│   │   │           ├── OsC9LiUTTH0
+│   │   │           │   └── index.html
+│   │   │           ├── PZUs_C3jDJY
+│   │   │           │   └── index.html
+│   │   │           ├── UEjbn0tM3HM
+│   │   │           │   └── index.html
+│   │   │           ├── css
+│   │   │           │   ├── base-style.css
+│   │   │           │   └── style.css
+│   │   │           ├── index.html
+│   │   │           ├── js
+│   │   │           │   └── report.js
+│   │   │           └── oI_sx0y9me0
+│   │   │               └── index.html
+│   │   ├── test-results
+│   │   │   └── test
+│   │   │       ├── TEST-io.klimiter.core.internal.DefaultKLimiterBuilderTest.xml
+│   │   │       ├── TEST-io.klimiter.core.internal.DefaultKLimiterTest.xml
+│   │   │       ├── TEST-io.klimiter.core.internal.coordinator.RateLimitCoordinatorTest.xml
+│   │   │       ├── TEST-io.klimiter.core.internal.operation.DefaultRateLimitOperationFactoryTest.xml
+│   │   │       ├── TEST-io.klimiter.core.internal.operation.InMemoryRateLimitOperationTest.xml
+│   │   │       ├── TEST-io.klimiter.core.internal.store.InMemoryRateLimitStoreTest.xml
+│   │   │       ├── TEST-io.klimiter.core.spi.CompositeKeyGeneratorTest.xml
+│   │   │       └── binary
+│   │   │           ├── output-events.bin
+│   │   │           └── results-generic.bin
+│   │   └── tmp
+│   │       ├── jar
+│   │       │   └── MANIFEST.MF
+│   │       ├── koverCachedVerify
+│   │       │   ├── agg-ic.ic
+│   │       │   └── agg-smap.smap
+│   │       ├── koverXmlReport
+│   │       └── test
+│   │           └── kover-agent.args
+│   ├── build.gradle.kts
+│   └── src
+│       ├── main
+│       │   └── kotlin
+│       │       └── io
+│       │           └── klimiter
+│       │               └── core
+│       │                   ├── KLimiterBuilder.kt
+│       │                   ├── api
+│       │                   │   ├── KLimiter.kt
+│       │                   │   ├── KLimiterFactory.kt
+│       │                   │   ├── config
+│       │                   │   │   ├── DescriptorPath.kt
+│       │                   │   │   ├── MatchEngine.kt
+│       │                   │   │   ├── RateLimitDescriptor.kt
+│       │                   │   │   ├── RateLimitDomain.kt
+│       │                   │   │   ├── RateLimitRule.kt
+│       │                   │   │   └── RateLimitTimeUnit.kt
+│       │                   │   └── rls
+│       │                   │       ├── RateLimit.kt
+│       │                   │       ├── RateLimitCode.kt
+│       │                   │       ├── RateLimitDescriptorEntry.kt
+│       │                   │       ├── RateLimitOverride.kt
+│       │                   │       ├── RateLimitRequest.kt
+│       │                   │       ├── RateLimitRequestDescriptor.kt
+│       │                   │       ├── RateLimitResponse.kt
+│       │                   │       └── RateLimitStatus.kt
+│       │                   ├── internal
+│       │                   │   ├── DefaultKLimiter.kt
+│       │                   │   ├── coordinator
+│       │                   │   │   ├── RateLimitCoordinator.kt
+│       │                   │   │   └── RateLimitOverallCodeResolver.kt
+│       │                   │   ├── operation
+│       │                   │   │   ├── DefaultRateLimitOperationFactory.kt
+│       │                   │   │   └── InMemoryRateLimitOperation.kt
+│       │                   │   └── store
+│       │                   │       └── InMemoryRateLimitStore.kt
+│       │                   └── spi
+│       │                       ├── CompositeKeyGenerator.kt
+│       │                       ├── KeyGenerator.kt
+│       │                       ├── RateLimitDomainRepository.kt
+│       │                       ├── RateLimitOperation.kt
+│       │                       ├── RateLimitOperationFactory.kt
+│       │                       ├── StaticRateLimitDomainRepository.kt
+│       │                       ├── SystemTimeProvider.kt
+│       │                       └── TimeProvider.kt
+│       └── test
+│           └── kotlin
+│               └── io
+│                   └── klimiter
+│                       └── core
+│                           ├── FixedTimeProvider.kt
+│                           ├── internal
+│                           │   ├── DefaultKLimiterBuilderTest.kt
+│                           │   ├── DefaultKLimiterTest.kt
+│                           │   ├── coordinator
+│                           │   │   └── RateLimitCoordinatorTest.kt
+│                           │   ├── operation
+│                           │   │   ├── DefaultRateLimitOperationFactoryTest.kt
+│                           │   │   └── InMemoryRateLimitOperationTest.kt
+│                           │   └── store
+│                           │       └── InMemoryRateLimitStoreTest.kt
+│                           └── spi
+│                               └── CompositeKeyGeneratorTest.kt
+├── klimiter-load-test
+│   ├── README.md
+│   ├── k6
+│   │   └── rate-limit.js
+│   ├── klimiter_load
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── aggregation.cpython-312.pyc
+│   │   │   ├── cli.cpython-312.pyc
+│   │   │   ├── commands.cpython-312.pyc
+│   │   │   ├── executor.cpython-312.pyc
+│   │   │   ├── io_utils.cpython-312.pyc
+│   │   │   ├── models.cpython-312.pyc
+│   │   │   ├── paths.cpython-312.pyc
+│   │   │   └── report.cpython-312.pyc
+│   │   ├── aggregation.py
+│   │   ├── cli.py
+│   │   ├── commands.py
+│   │   ├── executor.py
+│   │   ├── io_utils.py
+│   │   ├── models.py
+│   │   ├── paths.py
+│   │   └── report.py
+│   ├── requests
+│   │   └── rate-limit-request.json
+│   ├── runner.py
+│   └── runs
+│       ├── 20260425_235843
+│       │   └── results.json
+│       ├── 20260426_000722
+│       │   ├── aggregated.json
+│       │   ├── metadata.json
+│       │   ├── report.html
+│       │   └── results.json
+│       └── index.html
+├── klimiter-redis
+│   ├── README.md
+│   ├── build
+│   │   ├── classes
+│   │   │   └── kotlin
+│   │   │       └── main
+│   │   │           ├── META-INF
+│   │   │           │   └── klimiter-redis.kotlin_module
+│   │   │           └── io
+│   │   │               └── klimiter
+│   │   │                   └── redis
+│   │   │                       ├── RedisKLimiterFactory$cluster$2.class
+│   │   │                       ├── RedisKLimiterFactory$standalone$1.class
+│   │   │                       ├── RedisKLimiterFactory.class
+│   │   │                       ├── RedisRateLimitOperationFactory.class
+│   │   │                       ├── api
+│   │   │                       │   ├── CloseableKLimiter.class
+│   │   │                       │   ├── RedisKLimiterConfig$Companion.class
+│   │   │                       │   └── RedisKLimiterConfig.class
+│   │   │                       └── internal
+│   │   │                           ├── DefaultCloseableKLimiter.class
+│   │   │                           ├── RedisRateLimitOperation$AcquireLeaseResult.class
+│   │   │                           ├── RedisRateLimitOperation$Companion.class
+│   │   │                           ├── RedisRateLimitOperation$acquireLease$1.class
+│   │   │                           ├── RedisRateLimitOperation$execute$1.class
+│   │   │                           ├── RedisRateLimitOperation.class
+│   │   │                           ├── RedisRateLimitOperationFactory$Companion.class
+│   │   │                           ├── RedisRateLimitOperationFactory.class
+│   │   │                           ├── command
+│   │   │                           │   ├── ClusterRedisCommandExecutor$scriptLoad$1.class
+│   │   │                           │   ├── ClusterRedisCommandExecutor.class
+│   │   │                           │   ├── RedisCommandExecutor.class
+│   │   │                           │   ├── StandaloneRedisCommandExecutor$scriptLoad$1.class
+│   │   │                           │   └── StandaloneRedisCommandExecutor.class
+│   │   │                           ├── lease
+│   │   │                           │   ├── LeasedBucket.class
+│   │   │                           │   ├── LeasedBucketStore$Companion.class
+│   │   │                           │   ├── LeasedBucketStore$Entry.class
+│   │   │                           │   ├── LeasedBucketStore$EntryExpiry.class
+│   │   │                           │   ├── LeasedBucketStore$cache$2.class
+│   │   │                           │   └── LeasedBucketStore.class
+│   │   │                           └── script
+│   │   │                               ├── LeaseScripts.class
+│   │   │                               ├── LuaScript$Companion.class
+│   │   │                               ├── LuaScript$execute$1.class
+│   │   │                               ├── LuaScript$loadAndCache$1.class
+│   │   │                               └── LuaScript.class
+│   │   ├── kotlin
+│   │   │   └── compileKotlin
+│   │   │       ├── cacheable
+│   │   │       │   ├── caches-jvm
+│   │   │       │   │   ├── compilerPluginFiles
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │       │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │       │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │       │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │       │   │   ├── inputs
+│   │   │       │   │   │   ├── source-to-output.tab
+│   │   │       │   │   │   ├── source-to-output.tab.keystream
+│   │   │       │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │       │   │   │   ├── source-to-output.tab.len
+│   │   │       │   │   │   ├── source-to-output.tab.values.at
+│   │   │       │   │   │   ├── source-to-output.tab_i
+│   │   │       │   │   │   └── source-to-output.tab_i.len
+│   │   │       │   │   ├── jvm
+│   │   │       │   │   │   └── kotlin
+│   │   │       │   │   │       ├── class-attributes.tab
+│   │   │       │   │   │       ├── class-attributes.tab.keystream
+│   │   │       │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │       │   │   │       ├── class-attributes.tab.len
+│   │   │       │   │   │       ├── class-attributes.tab.values.at
+│   │   │       │   │   │       ├── class-attributes.tab_i
+│   │   │       │   │   │       ├── class-attributes.tab_i.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │       │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── constants.tab
+│   │   │       │   │   │       ├── constants.tab.keystream
+│   │   │       │   │   │       ├── constants.tab.keystream.len
+│   │   │       │   │   │       ├── constants.tab.len
+│   │   │       │   │   │       ├── constants.tab.values.at
+│   │   │       │   │   │       ├── constants.tab_i
+│   │   │       │   │   │       ├── constants.tab_i.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │       │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.len
+│   │   │       │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i
+│   │   │       │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │       │   │   │       ├── proto.tab
+│   │   │       │   │   │       ├── proto.tab.keystream
+│   │   │       │   │   │       ├── proto.tab.keystream.len
+│   │   │       │   │   │       ├── proto.tab.len
+│   │   │       │   │   │       ├── proto.tab.values.at
+│   │   │       │   │   │       ├── proto.tab_i
+│   │   │       │   │   │       ├── proto.tab_i.len
+│   │   │       │   │   │       ├── source-to-classes.tab
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream
+│   │   │       │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │       │   │   │       ├── source-to-classes.tab.len
+│   │   │       │   │   │       ├── source-to-classes.tab.values.at
+│   │   │       │   │   │       ├── source-to-classes.tab_i
+│   │   │       │   │   │       ├── source-to-classes.tab_i.len
+│   │   │       │   │   │       ├── subtypes.tab
+│   │   │       │   │   │       ├── subtypes.tab.keystream
+│   │   │       │   │   │       ├── subtypes.tab.keystream.len
+│   │   │       │   │   │       ├── subtypes.tab.len
+│   │   │       │   │   │       ├── subtypes.tab.values.at
+│   │   │       │   │   │       ├── subtypes.tab_i
+│   │   │       │   │   │       ├── subtypes.tab_i.len
+│   │   │       │   │   │       ├── supertypes.tab
+│   │   │       │   │   │       ├── supertypes.tab.keystream
+│   │   │       │   │   │       ├── supertypes.tab.keystream.len
+│   │   │       │   │   │       ├── supertypes.tab.len
+│   │   │       │   │   │       ├── supertypes.tab.values.at
+│   │   │       │   │   │       ├── supertypes.tab_i
+│   │   │       │   │   │       └── supertypes.tab_i.len
+│   │   │       │   │   └── lookups
+│   │   │       │   │       ├── counters.tab
+│   │   │       │   │       ├── file-to-id.tab
+│   │   │       │   │       ├── file-to-id.tab.keystream
+│   │   │       │   │       ├── file-to-id.tab.keystream.len
+│   │   │       │   │       ├── file-to-id.tab.len
+│   │   │       │   │       ├── file-to-id.tab.values.at
+│   │   │       │   │       ├── file-to-id.tab_i
+│   │   │       │   │       ├── file-to-id.tab_i.len
+│   │   │       │   │       ├── id-to-file.tab
+│   │   │       │   │       ├── id-to-file.tab.keystream
+│   │   │       │   │       ├── id-to-file.tab.keystream.len
+│   │   │       │   │       ├── id-to-file.tab.len
+│   │   │       │   │       ├── id-to-file.tab.values.at
+│   │   │       │   │       ├── id-to-file.tab_i
+│   │   │       │   │       ├── id-to-file.tab_i.len
+│   │   │       │   │       ├── lookups.tab
+│   │   │       │   │       ├── lookups.tab.keystream
+│   │   │       │   │       ├── lookups.tab.keystream.len
+│   │   │       │   │       ├── lookups.tab.len
+│   │   │       │   │       ├── lookups.tab.values.at
+│   │   │       │   │       ├── lookups.tab_i
+│   │   │       │   │       └── lookups.tab_i.len
+│   │   │       │   └── last-build.bin
+│   │   │       ├── classpath-snapshot
+│   │   │       │   └── shrunk-classpath-snapshot.bin
+│   │   │       └── local-state
+│   │   ├── kover
+│   │   │   ├── jvm.artifact
+│   │   │   └── kover-jvm-agent-0.9.8.jar
+│   │   ├── libs
+│   │   │   └── klimiter-redis-0.0.1-SNAPSHOT.jar
+│   │   ├── reports
+│   │   │   ├── detekt
+│   │   │   │   ├── detekt.html
+│   │   │   │   ├── detekt.md
+│   │   │   │   ├── detekt.sarif
+│   │   │   │   └── detekt.xml
+│   │   │   └── kover
+│   │   │       ├── report.xml
+│   │   │       └── verify.err
+│   │   └── tmp
+│   │       ├── jar
+│   │       │   └── MANIFEST.MF
+│   │       ├── koverCachedVerify
+│   │       │   ├── agg-ic.ic
+│   │       │   └── agg-smap.smap
+│   │       ├── koverXmlReport
+│   │       └── test
+│   ├── build.gradle.kts
+│   └── src
+│       └── main
+│           └── kotlin
+│               └── io
+│                   └── klimiter
+│                       └── redis
+│                           ├── RedisKLimiterFactory.kt
+│                           ├── RedisRateLimitOperationFactory.kt
+│                           ├── api
+│                           │   ├── CloseableKLimiter.kt
+│                           │   └── RedisKLimiterConfig.kt
+│                           └── internal
+│                               ├── DefaultCloseableKLimiter.kt
+│                               ├── RedisRateLimitOperation.kt
+│                               ├── RedisRateLimitOperationFactory.kt
+│                               ├── command
+│                               │   ├── ClusterRedisCommandExecutor.kt
+│                               │   ├── RedisCommandExecutor.kt
+│                               │   └── StandaloneRedisCommandExecutor.kt
+│                               ├── lease
+│                               │   ├── LeasedBucket.kt
+│                               │   └── LeasedBucketStore.kt
+│                               └── script
+│                                   ├── LeaseScripts.kt
+│                                   └── LuaScript.kt
+├── klimiter-service
+│   ├── README.md
+│   ├── build
+│   │   ├── classes
+│   │   │   ├── java
+│   │   │   │   └── main
+│   │   │   │       └── io
+│   │   │   │           └── klimiter
+│   │   │   │               └── generated
+│   │   │   │                   └── service
+│   │   │   │                       └── proto
+│   │   │   │                           ├── HeaderValue$1.class
+│   │   │   │                           ├── HeaderValue$Builder.class
+│   │   │   │                           ├── HeaderValue.class
+│   │   │   │                           ├── HeaderValueOrBuilder.class
+│   │   │   │                           ├── Klimiter.class
+│   │   │   │                           ├── RateLimitDescriptor$1.class
+│   │   │   │                           ├── RateLimitDescriptor$Builder.class
+│   │   │   │                           ├── RateLimitDescriptor$Entry$1.class
+│   │   │   │                           ├── RateLimitDescriptor$Entry$Builder.class
+│   │   │   │                           ├── RateLimitDescriptor$Entry.class
+│   │   │   │                           ├── RateLimitDescriptor$EntryOrBuilder.class
+│   │   │   │                           ├── RateLimitDescriptor.class
+│   │   │   │                           ├── RateLimitDescriptorOrBuilder.class
+│   │   │   │                           ├── RateLimitOverride$1.class
+│   │   │   │                           ├── RateLimitOverride$Builder.class
+│   │   │   │                           ├── RateLimitOverride.class
+│   │   │   │                           ├── RateLimitOverrideOrBuilder.class
+│   │   │   │                           ├── RateLimitRequest$1.class
+│   │   │   │                           ├── RateLimitRequest$Builder.class
+│   │   │   │                           ├── RateLimitRequest.class
+│   │   │   │                           ├── RateLimitRequestOrBuilder.class
+│   │   │   │                           ├── RateLimitResponse$1.class
+│   │   │   │                           ├── RateLimitResponse$Builder.class
+│   │   │   │                           ├── RateLimitResponse$Code$1.class
+│   │   │   │                           ├── RateLimitResponse$Code.class
+│   │   │   │                           ├── RateLimitResponse$DescriptorStatus$1.class
+│   │   │   │                           ├── RateLimitResponse$DescriptorStatus$Builder.class
+│   │   │   │                           ├── RateLimitResponse$DescriptorStatus.class
+│   │   │   │                           ├── RateLimitResponse$DescriptorStatusOrBuilder.class
+│   │   │   │                           ├── RateLimitResponse$Quota$1.class
+│   │   │   │                           ├── RateLimitResponse$Quota$Builder.class
+│   │   │   │                           ├── RateLimitResponse$Quota.class
+│   │   │   │                           ├── RateLimitResponse$QuotaOrBuilder.class
+│   │   │   │                           ├── RateLimitResponse$RateLimit$1.class
+│   │   │   │                           ├── RateLimitResponse$RateLimit$Builder.class
+│   │   │   │                           ├── RateLimitResponse$RateLimit$Unit$1.class
+│   │   │   │                           ├── RateLimitResponse$RateLimit$Unit.class
+│   │   │   │                           ├── RateLimitResponse$RateLimit.class
+│   │   │   │                           ├── RateLimitResponse$RateLimitOrBuilder.class
+│   │   │   │                           ├── RateLimitResponse.class
+│   │   │   │                           ├── RateLimitResponseOrBuilder.class
+│   │   │   │                           ├── RateLimitServiceGrpc$1.class
+│   │   │   │                           ├── RateLimitServiceGrpc$2.class
+│   │   │   │                           ├── RateLimitServiceGrpc$3.class
+│   │   │   │                           ├── RateLimitServiceGrpc$4.class
+│   │   │   │                           ├── RateLimitServiceGrpc$AsyncService.class
+│   │   │   │                           ├── RateLimitServiceGrpc$MethodHandlers.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceBaseDescriptorSupplier.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceBlockingStub.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceBlockingV2Stub.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceFileDescriptorSupplier.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceFutureStub.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceImplBase.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceMethodDescriptorSupplier.class
+│   │   │   │                           ├── RateLimitServiceGrpc$RateLimitServiceStub.class
+│   │   │   │                           ├── RateLimitServiceGrpc.class
+│   │   │   │                           ├── RateLimitUnit$1.class
+│   │   │   │                           ├── RateLimitUnit.class
+│   │   │   │                           ├── UInt64Value$1.class
+│   │   │   │                           ├── UInt64Value$Builder.class
+│   │   │   │                           ├── UInt64Value.class
+│   │   │   │                           └── UInt64ValueOrBuilder.class
+│   │   │   └── kotlin
+│   │   │       └── main
+│   │   │           ├── META-INF
+│   │   │           │   └── klimiter-service.kotlin_module
+│   │   │           └── io
+│   │   │               └── klimiter
+│   │   │                   ├── generated
+│   │   │                   │   └── service
+│   │   │                   │       └── proto
+│   │   │                   │           ├── HeaderValueKt$Dsl$Companion.class
+│   │   │                   │           ├── HeaderValueKt$Dsl.class
+│   │   │                   │           ├── HeaderValueKt.class
+│   │   │                   │           ├── HeaderValueKtKt.class
+│   │   │                   │           ├── RateLimitDescriptorKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitDescriptorKt$Dsl$EntriesProxy.class
+│   │   │                   │           ├── RateLimitDescriptorKt$Dsl.class
+│   │   │                   │           ├── RateLimitDescriptorKt$EntryKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitDescriptorKt$EntryKt$Dsl.class
+│   │   │                   │           ├── RateLimitDescriptorKt$EntryKt.class
+│   │   │                   │           ├── RateLimitDescriptorKt.class
+│   │   │                   │           ├── RateLimitDescriptorKtKt.class
+│   │   │                   │           ├── RateLimitOverrideKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitOverrideKt$Dsl.class
+│   │   │                   │           ├── RateLimitOverrideKt.class
+│   │   │                   │           ├── RateLimitOverrideKtKt.class
+│   │   │                   │           ├── RateLimitRequestKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitRequestKt$Dsl$DescriptorsProxy.class
+│   │   │                   │           ├── RateLimitRequestKt$Dsl.class
+│   │   │                   │           ├── RateLimitRequestKt.class
+│   │   │                   │           ├── RateLimitRequestKtKt.class
+│   │   │                   │           ├── RateLimitResponseKt$DescriptorStatusKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitResponseKt$DescriptorStatusKt$Dsl.class
+│   │   │                   │           ├── RateLimitResponseKt$DescriptorStatusKt.class
+│   │   │                   │           ├── RateLimitResponseKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitResponseKt$Dsl$RequestHeadersToAddProxy.class
+│   │   │                   │           ├── RateLimitResponseKt$Dsl$ResponseHeadersToAddProxy.class
+│   │   │                   │           ├── RateLimitResponseKt$Dsl$StatusesProxy.class
+│   │   │                   │           ├── RateLimitResponseKt$Dsl.class
+│   │   │                   │           ├── RateLimitResponseKt$QuotaKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitResponseKt$QuotaKt$Dsl.class
+│   │   │                   │           ├── RateLimitResponseKt$QuotaKt.class
+│   │   │                   │           ├── RateLimitResponseKt$RateLimitKt$Dsl$Companion.class
+│   │   │                   │           ├── RateLimitResponseKt$RateLimitKt$Dsl.class
+│   │   │                   │           ├── RateLimitResponseKt$RateLimitKt.class
+│   │   │                   │           ├── RateLimitResponseKt.class
+│   │   │                   │           ├── RateLimitResponseKtKt.class
+│   │   │                   │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineImplBase$bindService$1.class
+│   │   │                   │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineImplBase.class
+│   │   │                   │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineStub$shouldRateLimit$1.class
+│   │   │                   │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineStub.class
+│   │   │                   │           ├── RateLimitServiceGrpcKt.class
+│   │   │                   │           ├── UInt64ValueKt$Dsl$Companion.class
+│   │   │                   │           ├── UInt64ValueKt$Dsl.class
+│   │   │                   │           ├── UInt64ValueKt.class
+│   │   │                   │           └── UInt64ValueKtKt.class
+│   │   │                   └── service
+│   │   │                       ├── KLimiterServiceApplication.class
+│   │   │                       ├── KLimiterServiceApplicationKt.class
+│   │   │                       ├── adapter
+│   │   │                       │   ├── input
+│   │   │                       │   │   └── grpc
+│   │   │                       │   │       ├── RateLimitGrpcAdapter$Companion.class
+│   │   │                       │   │       ├── RateLimitGrpcAdapter$shouldRateLimit$1.class
+│   │   │                       │   │       ├── RateLimitGrpcAdapter.class
+│   │   │                       │   │       ├── RateLimitGrpcMappersKt$WhenMappings.class
+│   │   │                       │   │       └── RateLimitGrpcMappersKt.class
+│   │   │                       │   └── output
+│   │   │                       │       └── klimiter
+│   │   │                       │           ├── KLimiterCoreAdapter$Companion.class
+│   │   │                       │           ├── KLimiterCoreAdapter$enforce$1.class
+│   │   │                       │           └── KLimiterCoreAdapter.class
+│   │   │                       ├── application
+│   │   │                       │   └── CheckRateLimitService.class
+│   │   │                       ├── config
+│   │   │                       │   ├── KLimiterConfiguration$Companion.class
+│   │   │                       │   ├── KLimiterConfiguration$WhenMappings.class
+│   │   │                       │   ├── KLimiterConfiguration.class
+│   │   │                       │   ├── KLimiterConfigurationKt.class
+│   │   │                       │   ├── KLimiterProperties$BackendMode.class
+│   │   │                       │   ├── KLimiterProperties$BackendProperties.class
+│   │   │                       │   ├── KLimiterProperties$DescriptorProperties.class
+│   │   │                       │   ├── KLimiterProperties$DomainProperties.class
+│   │   │                       │   ├── KLimiterProperties$RedisProperties.class
+│   │   │                       │   ├── KLimiterProperties$RuleProperties.class
+│   │   │                       │   └── KLimiterProperties.class
+│   │   │                       └── domain
+│   │   │                           └── port
+│   │   │                               ├── input
+│   │   │                               │   └── CheckRateLimitUseCase.class
+│   │   │                               └── output
+│   │   │                                   └── RateLimitEnforcerPort.class
+│   │   ├── extracted-include-protos
+│   │   │   ├── main
+│   │   │   │   ├── google
+│   │   │   │   │   ├── api
+│   │   │   │   │   │   ├── annotations.proto
+│   │   │   │   │   │   ├── auth.proto
+│   │   │   │   │   │   ├── backend.proto
+│   │   │   │   │   │   ├── billing.proto
+│   │   │   │   │   │   ├── client.proto
+│   │   │   │   │   │   ├── config_change.proto
+│   │   │   │   │   │   ├── consumer.proto
+│   │   │   │   │   │   ├── context.proto
+│   │   │   │   │   │   ├── control.proto
+│   │   │   │   │   │   ├── distribution.proto
+│   │   │   │   │   │   ├── documentation.proto
+│   │   │   │   │   │   ├── endpoint.proto
+│   │   │   │   │   │   ├── error_reason.proto
+│   │   │   │   │   │   ├── field_behavior.proto
+│   │   │   │   │   │   ├── field_info.proto
+│   │   │   │   │   │   ├── http.proto
+│   │   │   │   │   │   ├── httpbody.proto
+│   │   │   │   │   │   ├── label.proto
+│   │   │   │   │   │   ├── launch_stage.proto
+│   │   │   │   │   │   ├── log.proto
+│   │   │   │   │   │   ├── logging.proto
+│   │   │   │   │   │   ├── metric.proto
+│   │   │   │   │   │   ├── monitored_resource.proto
+│   │   │   │   │   │   ├── monitoring.proto
+│   │   │   │   │   │   ├── policy.proto
+│   │   │   │   │   │   ├── quota.proto
+│   │   │   │   │   │   ├── resource.proto
+│   │   │   │   │   │   ├── routing.proto
+│   │   │   │   │   │   ├── service.proto
+│   │   │   │   │   │   ├── source_info.proto
+│   │   │   │   │   │   ├── system_parameter.proto
+│   │   │   │   │   │   ├── usage.proto
+│   │   │   │   │   │   └── visibility.proto
+│   │   │   │   │   ├── apps
+│   │   │   │   │   │   └── card
+│   │   │   │   │   │       └── v1
+│   │   │   │   │   │           └── card.proto
+│   │   │   │   │   ├── cloud
+│   │   │   │   │   │   ├── audit
+│   │   │   │   │   │   │   └── audit_log.proto
+│   │   │   │   │   │   ├── extended_operations.proto
+│   │   │   │   │   │   └── location
+│   │   │   │   │   │       └── locations.proto
+│   │   │   │   │   ├── geo
+│   │   │   │   │   │   └── type
+│   │   │   │   │   │       └── viewport.proto
+│   │   │   │   │   ├── logging
+│   │   │   │   │   │   └── type
+│   │   │   │   │   │       ├── http_request.proto
+│   │   │   │   │   │       └── log_severity.proto
+│   │   │   │   │   ├── longrunning
+│   │   │   │   │   │   └── operations.proto
+│   │   │   │   │   ├── protobuf
+│   │   │   │   │   │   ├── any.proto
+│   │   │   │   │   │   ├── api.proto
+│   │   │   │   │   │   ├── descriptor.proto
+│   │   │   │   │   │   ├── duration.proto
+│   │   │   │   │   │   ├── empty.proto
+│   │   │   │   │   │   ├── field_mask.proto
+│   │   │   │   │   │   ├── java_features.proto
+│   │   │   │   │   │   ├── source_context.proto
+│   │   │   │   │   │   ├── struct.proto
+│   │   │   │   │   │   ├── timestamp.proto
+│   │   │   │   │   │   ├── type.proto
+│   │   │   │   │   │   └── wrappers.proto
+│   │   │   │   │   ├── rpc
+│   │   │   │   │   │   ├── code.proto
+│   │   │   │   │   │   ├── context
+│   │   │   │   │   │   │   ├── attribute_context.proto
+│   │   │   │   │   │   │   └── audit_context.proto
+│   │   │   │   │   │   ├── error_details.proto
+│   │   │   │   │   │   └── status.proto
+│   │   │   │   │   ├── shopping
+│   │   │   │   │   │   └── type
+│   │   │   │   │   │       └── types.proto
+│   │   │   │   │   └── type
+│   │   │   │   │       ├── calendar_period.proto
+│   │   │   │   │       ├── color.proto
+│   │   │   │   │       ├── date.proto
+│   │   │   │   │       ├── datetime.proto
+│   │   │   │   │       ├── dayofweek.proto
+│   │   │   │   │       ├── decimal.proto
+│   │   │   │   │       ├── expr.proto
+│   │   │   │   │       ├── fraction.proto
+│   │   │   │   │       ├── interval.proto
+│   │   │   │   │       ├── latlng.proto
+│   │   │   │   │       ├── localized_text.proto
+│   │   │   │   │       ├── money.proto
+│   │   │   │   │       ├── month.proto
+│   │   │   │   │       ├── phone_number.proto
+│   │   │   │   │       ├── postal_address.proto
+│   │   │   │   │       ├── quaternion.proto
+│   │   │   │   │       └── timeofday.proto
+│   │   │   │   ├── grpc
+│   │   │   │   │   ├── binlog
+│   │   │   │   │   │   └── v1
+│   │   │   │   │   │       └── binarylog.proto
+│   │   │   │   │   ├── channelz
+│   │   │   │   │   │   └── v1
+│   │   │   │   │   │       └── channelz.proto
+│   │   │   │   │   ├── health
+│   │   │   │   │   │   └── v1
+│   │   │   │   │   │       └── health.proto
+│   │   │   │   │   └── reflection
+│   │   │   │   │       ├── v1
+│   │   │   │   │       │   └── reflection.proto
+│   │   │   │   │       └── v1alpha
+│   │   │   │   │           └── reflection.proto
+│   │   │   │   ├── opentelemetry
+│   │   │   │   │   └── proto
+│   │   │   │   │       ├── collector
+│   │   │   │   │       │   ├── logs
+│   │   │   │   │       │   │   └── v1
+│   │   │   │   │       │   │       └── logs_service.proto
+│   │   │   │   │       │   ├── metrics
+│   │   │   │   │       │   │   └── v1
+│   │   │   │   │       │   │       └── metrics_service.proto
+│   │   │   │   │       │   ├── profiles
+│   │   │   │   │       │   │   └── v1development
+│   │   │   │   │       │   │       └── profiles_service.proto
+│   │   │   │   │       │   └── trace
+│   │   │   │   │       │       └── v1
+│   │   │   │   │       │           └── trace_service.proto
+│   │   │   │   │       ├── common
+│   │   │   │   │       │   └── v1
+│   │   │   │   │       │       └── common.proto
+│   │   │   │   │       ├── logs
+│   │   │   │   │       │   └── v1
+│   │   │   │   │       │       └── logs.proto
+│   │   │   │   │       ├── metrics
+│   │   │   │   │       │   └── v1
+│   │   │   │   │       │       └── metrics.proto
+│   │   │   │   │       ├── profiles
+│   │   │   │   │       │   └── v1development
+│   │   │   │   │       │       └── profiles.proto
+│   │   │   │   │       ├── resource
+│   │   │   │   │       │   └── v1
+│   │   │   │   │       │       └── resource.proto
+│   │   │   │   │       └── trace
+│   │   │   │   │           └── v1
+│   │   │   │   │               └── trace.proto
+│   │   │   │   └── src
+│   │   │   │       └── google
+│   │   │   │           └── protobuf
+│   │   │   │               ├── any.proto
+│   │   │   │               ├── api.proto
+│   │   │   │               ├── descriptor.proto
+│   │   │   │               ├── duration.proto
+│   │   │   │               ├── empty.proto
+│   │   │   │               ├── field_mask.proto
+│   │   │   │               ├── source_context.proto
+│   │   │   │               ├── struct.proto
+│   │   │   │               ├── timestamp.proto
+│   │   │   │               ├── type.proto
+│   │   │   │               └── wrappers.proto
+│   │   │   └── test
+│   │   │       ├── google
+│   │   │       │   ├── api
+│   │   │       │   │   ├── annotations.proto
+│   │   │       │   │   ├── auth.proto
+│   │   │       │   │   ├── backend.proto
+│   │   │       │   │   ├── billing.proto
+│   │   │       │   │   ├── client.proto
+│   │   │       │   │   ├── config_change.proto
+│   │   │       │   │   ├── consumer.proto
+│   │   │       │   │   ├── context.proto
+│   │   │       │   │   ├── control.proto
+│   │   │       │   │   ├── distribution.proto
+│   │   │       │   │   ├── documentation.proto
+│   │   │       │   │   ├── endpoint.proto
+│   │   │       │   │   ├── error_reason.proto
+│   │   │       │   │   ├── field_behavior.proto
+│   │   │       │   │   ├── field_info.proto
+│   │   │       │   │   ├── http.proto
+│   │   │       │   │   ├── httpbody.proto
+│   │   │       │   │   ├── label.proto
+│   │   │       │   │   ├── launch_stage.proto
+│   │   │       │   │   ├── log.proto
+│   │   │       │   │   ├── logging.proto
+│   │   │       │   │   ├── metric.proto
+│   │   │       │   │   ├── monitored_resource.proto
+│   │   │       │   │   ├── monitoring.proto
+│   │   │       │   │   ├── policy.proto
+│   │   │       │   │   ├── quota.proto
+│   │   │       │   │   ├── resource.proto
+│   │   │       │   │   ├── routing.proto
+│   │   │       │   │   ├── service.proto
+│   │   │       │   │   ├── source_info.proto
+│   │   │       │   │   ├── system_parameter.proto
+│   │   │       │   │   ├── usage.proto
+│   │   │       │   │   └── visibility.proto
+│   │   │       │   ├── apps
+│   │   │       │   │   └── card
+│   │   │       │   │       └── v1
+│   │   │       │   │           └── card.proto
+│   │   │       │   ├── cloud
+│   │   │       │   │   ├── audit
+│   │   │       │   │   │   └── audit_log.proto
+│   │   │       │   │   ├── extended_operations.proto
+│   │   │       │   │   └── location
+│   │   │       │   │       └── locations.proto
+│   │   │       │   ├── geo
+│   │   │       │   │   └── type
+│   │   │       │   │       └── viewport.proto
+│   │   │       │   ├── logging
+│   │   │       │   │   └── type
+│   │   │       │   │       ├── http_request.proto
+│   │   │       │   │       └── log_severity.proto
+│   │   │       │   ├── longrunning
+│   │   │       │   │   └── operations.proto
+│   │   │       │   ├── protobuf
+│   │   │       │   │   ├── any.proto
+│   │   │       │   │   ├── api.proto
+│   │   │       │   │   ├── descriptor.proto
+│   │   │       │   │   ├── duration.proto
+│   │   │       │   │   ├── empty.proto
+│   │   │       │   │   ├── field_mask.proto
+│   │   │       │   │   ├── java_features.proto
+│   │   │       │   │   ├── source_context.proto
+│   │   │       │   │   ├── struct.proto
+│   │   │       │   │   ├── timestamp.proto
+│   │   │       │   │   ├── type.proto
+│   │   │       │   │   └── wrappers.proto
+│   │   │       │   ├── rpc
+│   │   │       │   │   ├── code.proto
+│   │   │       │   │   ├── context
+│   │   │       │   │   │   ├── attribute_context.proto
+│   │   │       │   │   │   └── audit_context.proto
+│   │   │       │   │   ├── error_details.proto
+│   │   │       │   │   └── status.proto
+│   │   │       │   ├── shopping
+│   │   │       │   │   └── type
+│   │   │       │   │       └── types.proto
+│   │   │       │   └── type
+│   │   │       │       ├── calendar_period.proto
+│   │   │       │       ├── color.proto
+│   │   │       │       ├── date.proto
+│   │   │       │       ├── datetime.proto
+│   │   │       │       ├── dayofweek.proto
+│   │   │       │       ├── decimal.proto
+│   │   │       │       ├── expr.proto
+│   │   │       │       ├── fraction.proto
+│   │   │       │       ├── interval.proto
+│   │   │       │       ├── latlng.proto
+│   │   │       │       ├── localized_text.proto
+│   │   │       │       ├── money.proto
+│   │   │       │       ├── month.proto
+│   │   │       │       ├── phone_number.proto
+│   │   │       │       ├── postal_address.proto
+│   │   │       │       ├── quaternion.proto
+│   │   │       │       └── timeofday.proto
+│   │   │       ├── grpc
+│   │   │       │   ├── binlog
+│   │   │       │   │   └── v1
+│   │   │       │   │       └── binarylog.proto
+│   │   │       │   ├── channelz
+│   │   │       │   │   └── v1
+│   │   │       │   │       └── channelz.proto
+│   │   │       │   ├── health
+│   │   │       │   │   └── v1
+│   │   │       │   │       └── health.proto
+│   │   │       │   └── reflection
+│   │   │       │       ├── v1
+│   │   │       │       │   └── reflection.proto
+│   │   │       │       └── v1alpha
+│   │   │       │           └── reflection.proto
+│   │   │       ├── opentelemetry
+│   │   │       │   └── proto
+│   │   │       │       ├── collector
+│   │   │       │       │   ├── logs
+│   │   │       │       │   │   └── v1
+│   │   │       │       │   │       └── logs_service.proto
+│   │   │       │       │   ├── metrics
+│   │   │       │       │   │   └── v1
+│   │   │       │       │   │       └── metrics_service.proto
+│   │   │       │       │   ├── profiles
+│   │   │       │       │   │   └── v1development
+│   │   │       │       │   │       └── profiles_service.proto
+│   │   │       │       │   └── trace
+│   │   │       │       │       └── v1
+│   │   │       │       │           └── trace_service.proto
+│   │   │       │       ├── common
+│   │   │       │       │   └── v1
+│   │   │       │       │       └── common.proto
+│   │   │       │       ├── logs
+│   │   │       │       │   └── v1
+│   │   │       │       │       └── logs.proto
+│   │   │       │       ├── metrics
+│   │   │       │       │   └── v1
+│   │   │       │       │       └── metrics.proto
+│   │   │       │       ├── profiles
+│   │   │       │       │   └── v1development
+│   │   │       │       │       └── profiles.proto
+│   │   │       │       ├── resource
+│   │   │       │       │   └── v1
+│   │   │       │       │       └── resource.proto
+│   │   │       │       └── trace
+│   │   │       │           └── v1
+│   │   │       │               └── trace.proto
+│   │   │       └── src
+│   │   │           └── google
+│   │   │               └── protobuf
+│   │   │                   ├── any.proto
+│   │   │                   ├── api.proto
+│   │   │                   ├── descriptor.proto
+│   │   │                   ├── duration.proto
+│   │   │                   ├── empty.proto
+│   │   │                   ├── field_mask.proto
+│   │   │                   ├── source_context.proto
+│   │   │                   ├── struct.proto
+│   │   │                   ├── timestamp.proto
+│   │   │                   ├── type.proto
+│   │   │                   └── wrappers.proto
+│   │   ├── extracted-protos
+│   │   │   ├── main
+│   │   │   └── test
+│   │   ├── generated
+│   │   │   ├── source
+│   │   │   │   ├── kapt
+│   │   │   │   │   ├── main
+│   │   │   │   │   └── test
+│   │   │   │   └── kaptKotlin
+│   │   │   │       ├── main
+│   │   │   │       └── test
+│   │   │   └── sources
+│   │   │       ├── annotationProcessor
+│   │   │       │   └── java
+│   │   │       │       └── main
+│   │   │       ├── headers
+│   │   │       │   └── java
+│   │   │       │       └── main
+│   │   │       └── proto
+│   │   │           └── main
+│   │   │               ├── grpc
+│   │   │               │   └── io
+│   │   │               │       └── klimiter
+│   │   │               │           └── generated
+│   │   │               │               └── service
+│   │   │               │                   └── proto
+│   │   │               │                       └── RateLimitServiceGrpc.java
+│   │   │               ├── grpckt
+│   │   │               │   └── io
+│   │   │               │       └── klimiter
+│   │   │               │           └── generated
+│   │   │               │               └── service
+│   │   │               │                   └── proto
+│   │   │               │                       └── KlimiterGrpcKt.kt
+│   │   │               ├── java
+│   │   │               │   └── io
+│   │   │               │       └── klimiter
+│   │   │               │           └── generated
+│   │   │               │               └── service
+│   │   │               │                   └── proto
+│   │   │               │                       ├── HeaderValue.java
+│   │   │               │                       ├── HeaderValueOrBuilder.java
+│   │   │               │                       ├── Klimiter.java
+│   │   │               │                       ├── RateLimitDescriptor.java
+│   │   │               │                       ├── RateLimitDescriptorOrBuilder.java
+│   │   │               │                       ├── RateLimitOverride.java
+│   │   │               │                       ├── RateLimitOverrideOrBuilder.java
+│   │   │               │                       ├── RateLimitRequest.java
+│   │   │               │                       ├── RateLimitRequestOrBuilder.java
+│   │   │               │                       ├── RateLimitResponse.java
+│   │   │               │                       ├── RateLimitResponseOrBuilder.java
+│   │   │               │                       ├── RateLimitUnit.java
+│   │   │               │                       ├── UInt64Value.java
+│   │   │               │                       └── UInt64ValueOrBuilder.java
+│   │   │               └── kotlin
+│   │   │                   └── io
+│   │   │                       └── klimiter
+│   │   │                           └── generated
+│   │   │                               └── service
+│   │   │                                   └── proto
+│   │   │                                       ├── HeaderValueKt.kt
+│   │   │                                       ├── KlimiterKt.proto.kt
+│   │   │                                       ├── RateLimitDescriptorKt.kt
+│   │   │                                       ├── RateLimitOverrideKt.kt
+│   │   │                                       ├── RateLimitRequestKt.kt
+│   │   │                                       ├── RateLimitResponseKt.kt
+│   │   │                                       └── UInt64ValueKt.kt
+│   │   ├── kotlin
+│   │   │   ├── compileKotlin
+│   │   │   │   ├── cacheable
+│   │   │   │   │   ├── caches-jvm
+│   │   │   │   │   │   ├── compilerPluginFiles
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │   │   │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │   │   │   │   ├── inputs
+│   │   │   │   │   │   │   ├── source-to-output.tab
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.values.at
+│   │   │   │   │   │   │   ├── source-to-output.tab_i
+│   │   │   │   │   │   │   └── source-to-output.tab_i.len
+│   │   │   │   │   │   ├── jvm
+│   │   │   │   │   │   │   └── kotlin
+│   │   │   │   │   │   │       ├── class-attributes.tab
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.values.at
+│   │   │   │   │   │   │       ├── class-attributes.tab_i
+│   │   │   │   │   │   │       ├── class-attributes.tab_i.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── constants.tab
+│   │   │   │   │   │   │       ├── constants.tab.keystream
+│   │   │   │   │   │   │       ├── constants.tab.keystream.len
+│   │   │   │   │   │   │       ├── constants.tab.len
+│   │   │   │   │   │   │       ├── constants.tab.values.at
+│   │   │   │   │   │   │       ├── constants.tab_i
+│   │   │   │   │   │   │       ├── constants.tab_i.len
+│   │   │   │   │   │   │       ├── inline-functions.tab
+│   │   │   │   │   │   │       ├── inline-functions.tab.keystream
+│   │   │   │   │   │   │       ├── inline-functions.tab.keystream.len
+│   │   │   │   │   │   │       ├── inline-functions.tab.len
+│   │   │   │   │   │   │       ├── inline-functions.tab.values.at
+│   │   │   │   │   │   │       ├── inline-functions.tab_i
+│   │   │   │   │   │   │       ├── inline-functions.tab_i.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── package-parts.tab
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream.len
+│   │   │   │   │   │   │       ├── package-parts.tab.len
+│   │   │   │   │   │   │       ├── package-parts.tab.values.at
+│   │   │   │   │   │   │       ├── package-parts.tab_i
+│   │   │   │   │   │   │       ├── package-parts.tab_i.len
+│   │   │   │   │   │   │       ├── proto.tab
+│   │   │   │   │   │   │       ├── proto.tab.keystream
+│   │   │   │   │   │   │       ├── proto.tab.keystream.len
+│   │   │   │   │   │   │       ├── proto.tab.len
+│   │   │   │   │   │   │       ├── proto.tab.values
+│   │   │   │   │   │   │       ├── proto.tab.values.at
+│   │   │   │   │   │   │       ├── proto.tab.values.s
+│   │   │   │   │   │   │       ├── proto.tab_i
+│   │   │   │   │   │   │       ├── proto.tab_i.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.values.at
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i.len
+│   │   │   │   │   │   │       ├── subtypes.tab
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── subtypes.tab.len
+│   │   │   │   │   │   │       ├── subtypes.tab.values.at
+│   │   │   │   │   │   │       ├── subtypes.tab_i
+│   │   │   │   │   │   │       ├── subtypes.tab_i.len
+│   │   │   │   │   │   │       ├── supertypes.tab
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── supertypes.tab.len
+│   │   │   │   │   │   │       ├── supertypes.tab.values.at
+│   │   │   │   │   │   │       ├── supertypes.tab_i
+│   │   │   │   │   │   │       └── supertypes.tab_i.len
+│   │   │   │   │   │   └── lookups
+│   │   │   │   │   │       ├── counters.tab
+│   │   │   │   │   │       ├── file-to-id.tab
+│   │   │   │   │   │       ├── file-to-id.tab.keystream
+│   │   │   │   │   │       ├── file-to-id.tab.keystream.len
+│   │   │   │   │   │       ├── file-to-id.tab.len
+│   │   │   │   │   │       ├── file-to-id.tab.values.at
+│   │   │   │   │   │       ├── file-to-id.tab_i
+│   │   │   │   │   │       ├── file-to-id.tab_i.len
+│   │   │   │   │   │       ├── id-to-file.tab
+│   │   │   │   │   │       ├── id-to-file.tab.keystream
+│   │   │   │   │   │       ├── id-to-file.tab.keystream.len
+│   │   │   │   │   │       ├── id-to-file.tab.len
+│   │   │   │   │   │       ├── id-to-file.tab.values.at
+│   │   │   │   │   │       ├── id-to-file.tab_i
+│   │   │   │   │   │       ├── id-to-file.tab_i.len
+│   │   │   │   │   │       ├── lookups.tab
+│   │   │   │   │   │       ├── lookups.tab.keystream
+│   │   │   │   │   │       ├── lookups.tab.keystream.len
+│   │   │   │   │   │       ├── lookups.tab.len
+│   │   │   │   │   │       ├── lookups.tab.values.at
+│   │   │   │   │   │       ├── lookups.tab_i
+│   │   │   │   │   │       └── lookups.tab_i.len
+│   │   │   │   │   └── last-build.bin
+│   │   │   │   ├── classpath-snapshot
+│   │   │   │   │   └── shrunk-classpath-snapshot.bin
+│   │   │   │   └── local-state
+│   │   │   ├── kaptGenerateStubsKotlin
+│   │   │   │   ├── cacheable
+│   │   │   │   │   ├── caches-jvm
+│   │   │   │   │   │   ├── compilerPluginFiles
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.len
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab.values.at
+│   │   │   │   │   │   │   ├── outputs-generated-for-plugins.tab_i.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.keystream.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.len
+│   │   │   │   │   │   │   ├── sources-referenced-by-plugins.tab.values.at
+│   │   │   │   │   │   │   └── sources-referenced-by-plugins.tab_i.len
+│   │   │   │   │   │   ├── inputs
+│   │   │   │   │   │   │   ├── source-to-output.tab
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream
+│   │   │   │   │   │   │   ├── source-to-output.tab.keystream.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.len
+│   │   │   │   │   │   │   ├── source-to-output.tab.values.at
+│   │   │   │   │   │   │   ├── source-to-output.tab_i
+│   │   │   │   │   │   │   └── source-to-output.tab_i.len
+│   │   │   │   │   │   ├── jvm
+│   │   │   │   │   │   │   └── kotlin
+│   │   │   │   │   │   │       ├── class-attributes.tab
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream
+│   │   │   │   │   │   │       ├── class-attributes.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.len
+│   │   │   │   │   │   │       ├── class-attributes.tab.values.at
+│   │   │   │   │   │   │       ├── class-attributes.tab_i
+│   │   │   │   │   │   │       ├── class-attributes.tab_i.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── class-fq-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── constants.tab
+│   │   │   │   │   │   │       ├── constants.tab.keystream
+│   │   │   │   │   │   │       ├── constants.tab.keystream.len
+│   │   │   │   │   │   │       ├── constants.tab.len
+│   │   │   │   │   │   │       ├── constants.tab.values.at
+│   │   │   │   │   │   │       ├── constants.tab_i
+│   │   │   │   │   │   │       ├── constants.tab_i.len
+│   │   │   │   │   │   │       ├── inline-functions.tab
+│   │   │   │   │   │   │       ├── inline-functions.tab.keystream
+│   │   │   │   │   │   │       ├── inline-functions.tab.keystream.len
+│   │   │   │   │   │   │       ├── inline-functions.tab.len
+│   │   │   │   │   │   │       ├── inline-functions.tab.values.at
+│   │   │   │   │   │   │       ├── inline-functions.tab_i
+│   │   │   │   │   │   │       ├── inline-functions.tab_i.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.keystream.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.len
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab.values.at
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i
+│   │   │   │   │   │   │       ├── internal-name-to-source.tab_i.len
+│   │   │   │   │   │   │       ├── package-parts.tab
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream
+│   │   │   │   │   │   │       ├── package-parts.tab.keystream.len
+│   │   │   │   │   │   │       ├── package-parts.tab.len
+│   │   │   │   │   │   │       ├── package-parts.tab.values.at
+│   │   │   │   │   │   │       ├── package-parts.tab_i
+│   │   │   │   │   │   │       ├── package-parts.tab_i.len
+│   │   │   │   │   │   │       ├── proto.tab
+│   │   │   │   │   │   │       ├── proto.tab.keystream
+│   │   │   │   │   │   │       ├── proto.tab.keystream.len
+│   │   │   │   │   │   │       ├── proto.tab.len
+│   │   │   │   │   │   │       ├── proto.tab.values
+│   │   │   │   │   │   │       ├── proto.tab.values.at
+│   │   │   │   │   │   │       ├── proto.tab.values.s
+│   │   │   │   │   │   │       ├── proto.tab_i
+│   │   │   │   │   │   │       ├── proto.tab_i.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream
+│   │   │   │   │   │   │       ├── source-to-classes.tab.keystream.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.len
+│   │   │   │   │   │   │       ├── source-to-classes.tab.values.at
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i
+│   │   │   │   │   │   │       ├── source-to-classes.tab_i.len
+│   │   │   │   │   │   │       ├── subtypes.tab
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream
+│   │   │   │   │   │   │       ├── subtypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── subtypes.tab.len
+│   │   │   │   │   │   │       ├── subtypes.tab.values.at
+│   │   │   │   │   │   │       ├── subtypes.tab_i
+│   │   │   │   │   │   │       ├── subtypes.tab_i.len
+│   │   │   │   │   │   │       ├── supertypes.tab
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream
+│   │   │   │   │   │   │       ├── supertypes.tab.keystream.len
+│   │   │   │   │   │   │       ├── supertypes.tab.len
+│   │   │   │   │   │   │       ├── supertypes.tab.values.at
+│   │   │   │   │   │   │       ├── supertypes.tab_i
+│   │   │   │   │   │   │       └── supertypes.tab_i.len
+│   │   │   │   │   │   └── lookups
+│   │   │   │   │   │       ├── counters.tab
+│   │   │   │   │   │       ├── file-to-id.tab
+│   │   │   │   │   │       ├── file-to-id.tab.keystream
+│   │   │   │   │   │       ├── file-to-id.tab.keystream.len
+│   │   │   │   │   │       ├── file-to-id.tab.len
+│   │   │   │   │   │       ├── file-to-id.tab.values.at
+│   │   │   │   │   │       ├── file-to-id.tab_i
+│   │   │   │   │   │       ├── file-to-id.tab_i.len
+│   │   │   │   │   │       ├── id-to-file.tab
+│   │   │   │   │   │       ├── id-to-file.tab.keystream
+│   │   │   │   │   │       ├── id-to-file.tab.keystream.len
+│   │   │   │   │   │       ├── id-to-file.tab.len
+│   │   │   │   │   │       ├── id-to-file.tab.values.at
+│   │   │   │   │   │       ├── id-to-file.tab_i
+│   │   │   │   │   │       ├── id-to-file.tab_i.len
+│   │   │   │   │   │       ├── lookups.tab
+│   │   │   │   │   │       ├── lookups.tab.keystream
+│   │   │   │   │   │       ├── lookups.tab.keystream.len
+│   │   │   │   │   │       ├── lookups.tab.len
+│   │   │   │   │   │       ├── lookups.tab.values.at
+│   │   │   │   │   │       ├── lookups.tab_i
+│   │   │   │   │   │       └── lookups.tab_i.len
+│   │   │   │   │   └── last-build.bin
+│   │   │   │   ├── classpath-snapshot
+│   │   │   │   │   └── shrunk-classpath-snapshot.bin
+│   │   │   │   └── local-state
+│   │   │   └── kaptGenerateStubsTestKotlin
+│   │   │       ├── cacheable
+│   │   │       └── classpath-snapshot
+│   │   ├── kover
+│   │   │   ├── jvm.artifact
+│   │   │   └── kover-jvm-agent-0.9.8.jar
+│   │   ├── libs
+│   │   │   ├── klimiter-service-0.0.1-SNAPSHOT-plain.jar
+│   │   │   └── klimiter-service-0.0.1-SNAPSHOT.jar
+│   │   ├── reports
+│   │   │   ├── detekt
+│   │   │   │   ├── detekt.html
+│   │   │   │   ├── detekt.md
+│   │   │   │   ├── detekt.sarif
+│   │   │   │   └── detekt.xml
+│   │   │   └── kover
+│   │   │       ├── report.xml
+│   │   │       └── verify.err
+│   │   ├── resolvedMainClassName
+│   │   ├── resources
+│   │   │   └── main
+│   │   │       ├── application.yaml
+│   │   │       ├── klimiter-domains.yaml
+│   │   │       └── klimiter.proto
+│   │   ├── scripts
+│   │   │   └── protoc-gen-grpc-kotlin-1.5.0-jdk8-generateProto-trampoline.sh
+│   │   └── tmp
+│   │       ├── bootJar
+│   │       │   └── MANIFEST.MF
+│   │       ├── compileJava
+│   │       │   └── previous-compilation-data.bin
+│   │       ├── jar
+│   │       │   └── MANIFEST.MF
+│   │       ├── kapt3
+│   │       │   ├── classes
+│   │       │   │   ├── main
+│   │       │   │   │   └── META-INF
+│   │       │   │   │       └── spring-configuration-metadata.json
+│   │       │   │   └── test
+│   │       │   ├── incApCache
+│   │       │   │   ├── main
+│   │       │   │   │   ├── ap-classpath-entries.bin
+│   │       │   │   │   ├── apt-cache.bin
+│   │       │   │   │   ├── classpath-entries.bin
+│   │       │   │   │   ├── classpath-structure.bin
+│   │       │   │   │   └── java-cache.bin
+│   │       │   │   └── test
+│   │       │   │       ├── ap-classpath-entries.bin
+│   │       │   │       ├── apt-cache.bin
+│   │       │   │       ├── classpath-entries.bin
+│   │       │   │       ├── classpath-structure.bin
+│   │       │   │       └── java-cache.bin
+│   │       │   ├── incrementalData
+│   │       │   │   ├── main
+│   │       │   │   │   ├── META-INF
+│   │       │   │   │   │   └── klimiter-service.kotlin_module
+│   │       │   │   │   └── io
+│   │       │   │   │       └── klimiter
+│   │       │   │   │           ├── generated
+│   │       │   │   │           │   └── service
+│   │       │   │   │           │       └── proto
+│   │       │   │   │           │           ├── HeaderValueKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── HeaderValueKt$Dsl.class
+│   │       │   │   │           │           ├── HeaderValueKt.class
+│   │       │   │   │           │           ├── HeaderValueKtKt.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$Dsl$EntriesProxy.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$EntryKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$EntryKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt$EntryKt.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKt.class
+│   │       │   │   │           │           ├── RateLimitDescriptorKtKt.class
+│   │       │   │   │           │           ├── RateLimitOverrideKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitOverrideKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitOverrideKt.class
+│   │       │   │   │           │           ├── RateLimitOverrideKtKt.class
+│   │       │   │   │           │           ├── RateLimitRequestKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitRequestKt$Dsl$DescriptorsProxy.class
+│   │       │   │   │           │           ├── RateLimitRequestKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitRequestKt.class
+│   │       │   │   │           │           ├── RateLimitRequestKtKt.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$DescriptorStatusKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$DescriptorStatusKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$DescriptorStatusKt.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$Dsl$RequestHeadersToAddProxy.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$Dsl$ResponseHeadersToAddProxy.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$Dsl$StatusesProxy.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$QuotaKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$QuotaKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$QuotaKt.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$RateLimitKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$RateLimitKt$Dsl.class
+│   │       │   │   │           │           ├── RateLimitResponseKt$RateLimitKt.class
+│   │       │   │   │           │           ├── RateLimitResponseKt.class
+│   │       │   │   │           │           ├── RateLimitResponseKtKt.class
+│   │       │   │   │           │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineImplBase.class
+│   │       │   │   │           │           ├── RateLimitServiceGrpcKt$RateLimitServiceCoroutineStub.class
+│   │       │   │   │           │           ├── RateLimitServiceGrpcKt.class
+│   │       │   │   │           │           ├── UInt64ValueKt$Dsl$Companion.class
+│   │       │   │   │           │           ├── UInt64ValueKt$Dsl.class
+│   │       │   │   │           │           ├── UInt64ValueKt.class
+│   │       │   │   │           │           └── UInt64ValueKtKt.class
+│   │       │   │   │           └── service
+│   │       │   │   │               ├── KLimiterServiceApplication.class
+│   │       │   │   │               ├── KLimiterServiceApplicationKt.class
+│   │       │   │   │               ├── adapter
+│   │       │   │   │               │   ├── input
+│   │       │   │   │               │   │   └── grpc
+│   │       │   │   │               │   │       ├── RateLimitGrpcAdapter$Companion.class
+│   │       │   │   │               │   │       ├── RateLimitGrpcAdapter.class
+│   │       │   │   │               │   │       └── RateLimitGrpcMappersKt.class
+│   │       │   │   │               │   └── output
+│   │       │   │   │               │       └── klimiter
+│   │       │   │   │               │           ├── KLimiterCoreAdapter$Companion.class
+│   │       │   │   │               │           └── KLimiterCoreAdapter.class
+│   │       │   │   │               ├── application
+│   │       │   │   │               │   └── CheckRateLimitService.class
+│   │       │   │   │               ├── config
+│   │       │   │   │               │   ├── KLimiterConfiguration$Companion.class
+│   │       │   │   │               │   ├── KLimiterConfiguration.class
+│   │       │   │   │               │   ├── KLimiterConfigurationKt.class
+│   │       │   │   │               │   ├── KLimiterProperties$BackendMode.class
+│   │       │   │   │               │   ├── KLimiterProperties$BackendProperties.class
+│   │       │   │   │               │   ├── KLimiterProperties$DescriptorProperties.class
+│   │       │   │   │               │   ├── KLimiterProperties$DomainProperties.class
+│   │       │   │   │               │   ├── KLimiterProperties$RedisProperties.class
+│   │       │   │   │               │   ├── KLimiterProperties$RuleProperties.class
+│   │       │   │   │               │   └── KLimiterProperties.class
+│   │       │   │   │               └── domain
+│   │       │   │   │                   └── port
+│   │       │   │   │                       ├── input
+│   │       │   │   │                       │   └── CheckRateLimitUseCase.class
+│   │       │   │   │                       └── output
+│   │       │   │   │                           └── RateLimitEnforcerPort.class
+│   │       │   │   └── test
+│   │       │   └── stubs
+│   │       │       ├── main
+│   │       │       │   ├── error
+│   │       │       │   │   └── NonExistentClass.java
+│   │       │       │   └── io
+│   │       │       │       └── klimiter
+│   │       │       │           ├── generated
+│   │       │       │           │   └── service
+│   │       │       │           │       └── proto
+│   │       │       │           │           ├── HeaderValueKt.java
+│   │       │       │           │           ├── HeaderValueKt.kapt_metadata
+│   │       │       │           │           ├── HeaderValueKtKt.java
+│   │       │       │           │           ├── HeaderValueKtKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitDescriptorKt.java
+│   │       │       │           │           ├── RateLimitDescriptorKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitDescriptorKtKt.java
+│   │       │       │           │           ├── RateLimitDescriptorKtKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitOverrideKt.java
+│   │       │       │           │           ├── RateLimitOverrideKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitOverrideKtKt.java
+│   │       │       │           │           ├── RateLimitOverrideKtKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitRequestKt.java
+│   │       │       │           │           ├── RateLimitRequestKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitRequestKtKt.java
+│   │       │       │           │           ├── RateLimitRequestKtKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitResponseKt.java
+│   │       │       │           │           ├── RateLimitResponseKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitResponseKtKt.java
+│   │       │       │           │           ├── RateLimitResponseKtKt.kapt_metadata
+│   │       │       │           │           ├── RateLimitServiceGrpcKt.java
+│   │       │       │           │           ├── RateLimitServiceGrpcKt.kapt_metadata
+│   │       │       │           │           ├── UInt64ValueKt.java
+│   │       │       │           │           ├── UInt64ValueKt.kapt_metadata
+│   │       │       │           │           ├── UInt64ValueKtKt.java
+│   │       │       │           │           └── UInt64ValueKtKt.kapt_metadata
+│   │       │       │           └── service
+│   │       │       │               ├── KLimiterServiceApplication.java
+│   │       │       │               ├── KLimiterServiceApplication.kapt_metadata
+│   │       │       │               ├── KLimiterServiceApplicationKt.java
+│   │       │       │               ├── KLimiterServiceApplicationKt.kapt_metadata
+│   │       │       │               ├── adapter
+│   │       │       │               │   ├── input
+│   │       │       │               │   │   └── grpc
+│   │       │       │               │   │       ├── RateLimitGrpcAdapter.java
+│   │       │       │               │   │       ├── RateLimitGrpcAdapter.kapt_metadata
+│   │       │       │               │   │       ├── RateLimitGrpcMappersKt.java
+│   │       │       │               │   │       └── RateLimitGrpcMappersKt.kapt_metadata
+│   │       │       │               │   └── output
+│   │       │       │               │       └── klimiter
+│   │       │       │               │           ├── KLimiterCoreAdapter.java
+│   │       │       │               │           └── KLimiterCoreAdapter.kapt_metadata
+│   │       │       │               ├── application
+│   │       │       │               │   ├── CheckRateLimitService.java
+│   │       │       │               │   └── CheckRateLimitService.kapt_metadata
+│   │       │       │               ├── config
+│   │       │       │               │   ├── KLimiterConfiguration.java
+│   │       │       │               │   ├── KLimiterConfiguration.kapt_metadata
+│   │       │       │               │   ├── KLimiterConfigurationKt.java
+│   │       │       │               │   ├── KLimiterConfigurationKt.kapt_metadata
+│   │       │       │               │   ├── KLimiterProperties.java
+│   │       │       │               │   └── KLimiterProperties.kapt_metadata
+│   │       │       │               └── domain
+│   │       │       │                   └── port
+│   │       │       │                       ├── input
+│   │       │       │                       │   ├── CheckRateLimitUseCase.java
+│   │       │       │                       │   └── CheckRateLimitUseCase.kapt_metadata
+│   │       │       │                       └── output
+│   │       │       │                           ├── RateLimitEnforcerPort.java
+│   │       │       │                           └── RateLimitEnforcerPort.kapt_metadata
+│   │       │       └── test
+│   │       ├── koverCachedVerify
+│   │       │   ├── agg-ic.ic
+│   │       │   └── agg-smap.smap
+│   │       ├── koverXmlReport
+│   │       └── test
+│   ├── build.gradle.kts
+│   └── src
+│       └── main
+│           ├── kotlin
+│           │   └── io
+│           │       └── klimiter
+│           │           └── service
+│           │               ├── KLimiterServiceApplication.kt
+│           │               ├── adapter
+│           │               │   ├── input
+│           │               │   │   └── grpc
+│           │               │   │       ├── RateLimitGrpcAdapter.kt
+│           │               │   │       └── RateLimitGrpcMappers.kt
+│           │               │   └── output
+│           │               │       └── klimiter
+│           │               │           └── KLimiterCoreAdapter.kt
+│           │               ├── application
+│           │               │   └── CheckRateLimitService.kt
+│           │               ├── config
+│           │               │   ├── KLimiterConfiguration.kt
+│           │               │   └── KLimiterProperties.kt
+│           │               └── domain
+│           │                   ├── model
+│           │                   └── port
+│           │                       ├── input
+│           │                       │   └── CheckRateLimitUseCase.kt
+│           │                       └── output
+│           │                           └── RateLimitEnforcerPort.kt
+│           ├── proto
+│           │   └── klimiter.proto
+│           └── resources
+│               ├── application.yaml
+│               └── klimiter-domains.yaml
+├── settings.gradle.kts
+└── tree.output
+
+563 directories, 1759 files

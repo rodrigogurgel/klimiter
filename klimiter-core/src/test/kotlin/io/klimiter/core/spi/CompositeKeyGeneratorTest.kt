@@ -1,8 +1,7 @@
-package io.klimiter.core.api.spi
+package io.klimiter.core.spi
 
 import io.klimiter.core.FixedTimeProvider
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
-import io.klimiter.core.spi.CompositeKeyGenerator
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
