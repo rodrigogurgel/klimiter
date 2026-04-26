@@ -15,7 +15,7 @@ def ensure_file(path: Path, label: str) -> None:
         print(f"Erro: {label} não encontrado em {path}", file=sys.stderr)
         sys.exit(1)
 
-def run_k6(script_path: Path, output_json: Path) -> None:
+def run_k6(script_path: Path, output_json: Path, responses_path: Path | None = None) -> None:
     ensure_k6()
     ensure_file(script_path, "arquivo k6")
 
@@ -24,7 +24,15 @@ def run_k6(script_path: Path, output_json: Path) -> None:
         "run",
         "--out",
         f"json={output_json}",
-        str(script_path),
     ]
+
+    if responses_path is not None:
+        cmd += [
+            "--log-output", f"file={responses_path}",
+            "--log-format", "json",
+            "-e", "SAVE_RESPONSES=true",
+        ]
+
+    cmd.append(str(script_path))
 
     subprocess.run(cmd, check=True, cwd=APP_DIR)

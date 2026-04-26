@@ -15,13 +15,17 @@ export const testConfig = {
     // Evita poluir demais o console em 4k req/s.
     debugErrors: true,
     maxDebugLogsPerVu: 5,
+
+    // Quando true, loga a resposta gRPC completa via console.log() para cada requisição.
+    // Ativar via variável de ambiente: SAVE_RESPONSES=true (repassada pelo runner com --save-responses).
+    saveResponses: __ENV.SAVE_RESPONSES === 'true',
 };
 
 export const options = {
     scenarios: {
         constant_test: {
             executor: 'constant-arrival-rate',
-            rate: 300,
+            rate: 4000,
             timeUnit: '1s',
             duration: '1m',
             preAllocatedVUs: 200,
@@ -52,17 +56,35 @@ function debugError(reason, details) {
         return;
     }
 
-    if (debugLogsPrinted >= testConfig.maxDebugLogsPerVu) {
+    if (!testConfig.saveResponses && debugLogsPrinted >= testConfig.maxDebugLogsPerVu) {
         return;
     }
 
     debugLogsPrinted += 1;
 
     console.error(JSON.stringify({
+        type: 'error',
         reason,
         vu: __VU,
         iter: __ITER,
         details,
+    }));
+}
+
+function saveResponse(response) {
+    if (!testConfig.saveResponses) {
+        return;
+    }
+
+    console.log(JSON.stringify({
+        type: 'response',
+        time: new Date().toISOString(),
+        vu: __VU,
+        iter: __ITER,
+        status: response.status,
+        message: response.message,
+        headers: response.headers,
+        trailers: response.trailers,
     }));
 }
 
@@ -127,6 +149,7 @@ export default function () {
             trailers: response.trailers,
         });
 
+        saveResponse(response);
         return;
     }
 
@@ -135,11 +158,13 @@ export default function () {
 
     if (overallCode === 0 || overallCode === 'OK') {
         allowedCounter.add(1);
+        saveResponse(response);
         return;
     }
 
     if (overallCode === 1 || overallCode === 'OVER_LIMIT') {
         overLimitCounter.add(1);
+        saveResponse(response);
         return;
     }
 
@@ -157,6 +182,8 @@ export default function () {
         message,
         responseStatus: response.status,
     });
+
+    saveResponse(response);
 }
 
 function grpcStatusName(status) {

@@ -17,6 +17,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_K6_SCRIPT),
         help="Arquivo .js do k6. A configuração principal fica nele.",
     )
+    run_parser.add_argument(
+        "--save-responses",
+        action="store_true",
+        default=False,
+        help="Salva respostas gRPC completas em responses.jsonl para debug.",
+    )
     run_parser.set_defaults(func=do_run)
 
     rebuild_parser = sub.add_parser(

@@ -16,7 +16,8 @@ def do_run(args) -> None:
     run_dir.mkdir(parents=True, exist_ok=False)
 
     results_path = run_dir / "results.json"
-    run_k6(script_path, results_path)
+    responses_path = (run_dir / "responses.jsonl") if getattr(args, "save_responses", False) else None
+    run_k6(script_path, results_path, responses_path)
 
     rows = aggregate_results(results_path)
     write_json(run_dir / "aggregated.json", rows)
@@ -41,6 +42,8 @@ def do_run(args) -> None:
     print(f"Teste executado com sucesso: {run_id}")
     print(f"Página do teste: {run_dir / 'report.html'}")
     print(f"Índice geral: {RUNS_DIR / 'index.html'}")
+    if responses_path is not None:
+        print(f"Respostas completas: {responses_path}")
 
 
 def do_rebuild_index(_) -> None:
