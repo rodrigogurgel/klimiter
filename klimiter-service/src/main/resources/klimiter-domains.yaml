@@ -4,5 +4,9 @@ klimiter:
       descriptors:
         - key: user_id
           rule:
-            unit: SECOND
+            unit: MINUTE
             requests-per-unit: 100
+        - key: product_id
+          rule:
+            unit: MINUTE
+            requests-per-unit: 2

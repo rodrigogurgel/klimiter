@@ -36,7 +36,7 @@ class RateLimitCoordinatorTest {
     }
 
     @Test
-    fun `middle failure rolls back only the prefix`() = runTest {
+    fun `all operations are executed and OK ones are rolled back on failure`() = runTest {
         val first = RecordingOperation(status = statusOf(RateLimitCode.OK))
         val second = RecordingOperation(status = statusOf(RateLimitCode.OK))
         val third = RecordingOperation(status = statusOf(RateLimitCode.OVER_LIMIT))
@@ -45,11 +45,12 @@ class RateLimitCoordinatorTest {
         val response = RateLimitCoordinator.execute(listOf(first, second, third, fourth))
 
         assertEquals(RateLimitCode.OVER_LIMIT, response.overallCode)
-        assertEquals(3, response.statuses.size, "only executed ops contribute statuses")
+        assertEquals(4, response.statuses.size, "all ops contribute statuses")
         assertTrue(first.rolledBack)
         assertTrue(second.rolledBack)
         assertFalse(third.rolledBack, "failing op is not rolled back — it never reserved")
-        assertFalse(fourth.executed, "ops after failure are not executed")
+        assertTrue(fourth.executed, "ops after failure are still executed")
+        assertTrue(fourth.rolledBack, "OK ops after failure are rolled back")
     }
 
     @Test

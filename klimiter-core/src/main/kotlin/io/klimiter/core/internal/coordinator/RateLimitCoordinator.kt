@@ -29,26 +29,24 @@ internal object RateLimitCoordinator {
 
     private suspend fun executeMultiple(operations: List<RateLimitOperation>): RateLimitResponse {
         val results = ArrayList<RateLimitStatus>(operations.size)
-        for ((index, op) in operations.withIndex()) {
-            val status = op.execute()
-            results += status
-            if (status.code != RateLimitCode.OK) {
-                rollbackPrefix(operations, exclusiveEnd = index)
-                return RateLimitResponse(
-                    overallCode = RateLimitOverallCodeResolver.resolve(results),
-                    statuses = results,
-                )
-            }
+        for (op in operations) {
+            results += op.execute()
         }
-        return RateLimitResponse(overallCode = RateLimitCode.OK, statuses = results)
+        val overallCode = RateLimitOverallCodeResolver.resolve(results)
+        if (overallCode != RateLimitCode.OK) {
+            rollbackSuccessful(operations, results)
+        }
+        return RateLimitResponse(overallCode = overallCode, statuses = results)
     }
 
-    private suspend fun rollbackPrefix(operations: List<RateLimitOperation>, exclusiveEnd: Int) {
-        for (j in 0 until exclusiveEnd) {
-            // Swallow per-operation failures so one bad rollback cannot leak reservations from
-            // siblings — but log them; a silent failure here means a bucket just overcounted.
-            runCatching { operations[j].rollback() }
-                .onFailure { logger.warn("Rollback failed for operation index={}", j, it) }
+    private suspend fun rollbackSuccessful(operations: List<RateLimitOperation>, results: List<RateLimitStatus>) {
+        for (j in results.indices) {
+            if (results[j].code == RateLimitCode.OK) {
+                // Swallow per-operation failures so one bad rollback cannot leak reservations from
+                // siblings — but log them; a silent failure here means a bucket just overcounted.
+                runCatching { operations[j].rollback() }
+                    .onFailure { logger.warn("Rollback failed for operation index={}", j, it) }
+            }
         }
     }
 }

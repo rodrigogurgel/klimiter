@@ -128,7 +128,7 @@ When `operationFactory` is set, `maxCacheSize` and `gracePeriod` on the builder 
 
 **Grace period is load-bearing.** `InMemoryRateLimitStore` sets `expireAfterCreate = windowSeconds + gracePeriod` (default 30 s). Without it, GC or scheduler jitter can recreate the same time-bucketed key within the same window, doubling the effective limit (the "concurrent-window leak"). Do not remove this without understanding the implication.
 
-**All-or-nothing coordinator.** `RateLimitCoordinator` executes operations sequentially and rolls back all previously successful reservations on the first non-OK result. Rollback exceptions are swallowed.
+**All-or-nothing coordinator.** `RateLimitCoordinator` executes all operations sequentially regardless of intermediate failures, then rolls back every operation that returned OK if any non-OK result was produced. Rollback exceptions are swallowed.
 
 ## Building and testing
 

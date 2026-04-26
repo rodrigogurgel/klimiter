@@ -14,7 +14,7 @@ class ProjectStructureArchitectureTest {
             .toSet()
 
         assertTrue(packages.any { it.startsWith("io.klimiter.core.api") })
-        assertTrue(packages.any { it.startsWith("io.klimiter.core.api.spi") })
+        assertTrue(packages.any { it.startsWith("io.klimiter.core.spi") })
         assertTrue(packages.any { it.startsWith("io.klimiter.core.internal") })
     }
 
