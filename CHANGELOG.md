@@ -33,3 +33,4 @@
 ### ⚙️ Miscellaneous Tasks
 
 - *(project)* Update gitignore and rename taskfile
+- Add git-cliff changelog automation
