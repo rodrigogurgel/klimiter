@@ -38,6 +38,7 @@ internal class RedisRateLimitOperation(
     private val executor: RedisCommandExecutor,
     private val timeProvider: TimeProvider,
     private val leasePercentage: Int,
+    private val gracePeriod: Duration,
 ) : RateLimitOperation {
 
     private var reserved: Long = 0L
@@ -127,7 +128,7 @@ internal class RedisRateLimitOperation(
                 args = arrayOf(
                     max.toString(),
                     leaseSize.toString(),
-                    (windowSeconds + DEFAULT_GRACE_PERIOD.inWholeSeconds).toString(),
+                    (windowSeconds + gracePeriod.inWholeSeconds).toString(),
                 ),
             )
         } catch (e: RedisException) {
@@ -185,6 +186,5 @@ internal class RedisRateLimitOperation(
         private const val LEASE_PERCENT_BASE = 100
         private val logger = LoggerFactory.getLogger(RedisRateLimitOperation::class.java)
         private val LEASE_ACQUIRE_SCRIPT = LuaScript(LeaseScripts.LEASE_ACQUIRE)
-        private val DEFAULT_GRACE_PERIOD: Duration = 10.seconds
     }
 }

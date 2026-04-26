@@ -13,6 +13,7 @@ import io.klimiter.core.spi.TimeProvider
 import io.klimiter.redis.internal.command.RedisCommandExecutor
 import io.klimiter.redis.internal.lease.LeasedBucketStore
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration
 
 internal class RedisRateLimitOperationFactory(
     private val domainRepository: RateLimitDomainRepository,
@@ -22,6 +23,7 @@ internal class RedisRateLimitOperationFactory(
     private val bucketStore: LeasedBucketStore,
     private val keyPrefix: String,
     private val leasePercentage: Int,
+    private val gracePeriod: Duration,
 ) : RateLimitOperationFactory {
 
     override fun create(request: RateLimitRequest): List<RateLimitOperation> {
@@ -77,6 +79,7 @@ internal class RedisRateLimitOperationFactory(
             executor = executor,
             timeProvider = timeProvider,
             leasePercentage = leasePercentage,
+            gracePeriod = gracePeriod,
         )
     }
 
