@@ -1,0 +1,25 @@
+name: Changelog Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  changelog-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Generate changelog
+        run: git-cliff -c cliff.toml --output /tmp/CHANGELOG.md
+
+      - name: Check CHANGELOG.md is up to date
+        run: diff -u CHANGELOG.md /tmp/CHANGELOG.md

@@ -185,3 +185,19 @@ tasks:
     desc: Alias for down-volumes
     cmds:
       - task: down-volumes
+
+  changelog:
+    desc: Generate CHANGELOG.md using git-cliff
+    cmds:
+      - git-cliff -c cliff.toml -o CHANGELOG.md
+
+  changelog:check:
+    desc: Check if CHANGELOG.md is up to date
+    cmds:
+      - git-cliff -c cliff.toml --output /tmp/CHANGELOG.md
+      - diff -u CHANGELOG.md /tmp/CHANGELOG.md
+
+  changelog:dry-run:
+    desc: Print generated changelog without writing file
+    cmds:
+      - git-cliff -c cliff.toml

@@ -34,15 +34,15 @@ bin/
 *.iml
 *.ipr
 
+# VS Code
+.vscode/
+
 # NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-
-# VS Code
-.vscode/
 
 # Python
 __pycache__/

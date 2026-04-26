@@ -3,7 +3,6 @@ package io.klimiter.service.adapter.input.grpc
 import io.klimiter.core.api.config.RateLimitTimeUnit
 import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitCode
-import io.klimiter.core.api.rls.RateLimitResponse as CoreRateLimitResponse
 import io.klimiter.core.api.rls.RateLimitStatus
 import io.klimiter.generated.service.proto.RateLimitDescriptor
 import io.klimiter.generated.service.proto.RateLimitOverride
@@ -15,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
+import io.klimiter.core.api.rls.RateLimitResponse as CoreRateLimitResponse
 
 class RateLimitGrpcMappersTest {
 
@@ -198,7 +198,6 @@ class RateLimitGrpcMappersTest {
 
     // ──────────────── helpers ────────────────
 
-    private fun descriptor(key: String, value: String): RateLimitDescriptor.Builder =
-        RateLimitDescriptor.newBuilder()
-            .addEntries(RateLimitDescriptor.Entry.newBuilder().setKey(key).setValue(value))
+    private fun descriptor(key: String, value: String): RateLimitDescriptor.Builder = RateLimitDescriptor.newBuilder()
+        .addEntries(RateLimitDescriptor.Entry.newBuilder().setKey(key).setValue(value))
 }

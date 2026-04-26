@@ -22,7 +22,7 @@ GRPC_METHOD ?= io.klimiter.RateLimitService.ShouldRateLimit
         logs logs-app logs-standalone logs-cluster logs-nginx logs-redis-cluster-init \
         health grpcurl \
         redis-standalone-ping redis-cluster-info redis-cluster-nodes \
-        clean
+        clean changelog changelog-check release-dry-run
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -123,3 +123,13 @@ redis-cluster-nodes: ## Show Redis Cluster nodes
 	$(COMPOSE) exec redis-cluster-1 redis-cli -p 7001 cluster nodes
 
 clean: down-volumes ## Alias for down-volumes
+
+changelog:
+	git-cliff -c cliff.toml -o CHANGELOG.md
+
+changelog-check:
+	git-cliff -c cliff.toml --output /tmp/CHANGELOG.md
+	diff -u CHANGELOG.md /tmp/CHANGELOG.md
+
+release-dry-run:
+	git-cliff -c cliff.toml

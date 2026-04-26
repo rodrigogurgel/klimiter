@@ -28,9 +28,10 @@ class KLimiterCoreAdapterTest {
 
     @Test
     fun `enforce returns UNKNOWN response when limiter throws`() = runTest {
+        data class UnknownRuntimeException(override val message: String) : RuntimeException(message)
         val limiter = object : KLimiter {
             override suspend fun shouldRateLimit(request: RateLimitRequest): RateLimitResponse =
-                throw RuntimeException("simulated failure")
+                throw UnknownRuntimeException("simulated failure")
         }
         val response = KLimiterCoreAdapter(limiter).enforce(request)
         assertEquals(RateLimitCode.UNKNOWN, response.overallCode)
