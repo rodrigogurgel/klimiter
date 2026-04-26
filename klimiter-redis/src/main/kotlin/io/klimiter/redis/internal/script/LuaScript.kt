@@ -3,6 +3,7 @@ package io.klimiter.redis.internal.script
 import io.klimiter.redis.internal.command.RedisCommandExecutor
 import io.lettuce.core.RedisNoScriptException
 import io.lettuce.core.ScriptOutputType
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -31,6 +32,7 @@ internal class LuaScript(private val source: String) {
         return try {
             executor.evalsha(sha, outputType, keys, args)
         } catch (_: RedisNoScriptException) {
+            logger.warn("Script evicted from Redis cache (NOSCRIPT), reloading sha={}", sha)
             cachedSha.set(null)
             val freshSha = loadAndCache(executor)
             executor.evalsha(freshSha, outputType, keys, args)
@@ -41,5 +43,9 @@ internal class LuaScript(private val source: String) {
         val sha = executor.scriptLoad(source)
         cachedSha.compareAndSet(null, sha)
         return sha
+    }
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(LuaScript::class.java)
     }
 }

@@ -1,6 +1,6 @@
 package io.klimiter.core.api.rls
 
-import java.time.Duration
+import kotlin.time.Duration
 
 data class RateLimitStatus(
     val code: RateLimitCode,

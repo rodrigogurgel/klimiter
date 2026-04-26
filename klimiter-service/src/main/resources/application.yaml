@@ -1,6 +1,11 @@
 spring:
   application:
-    name: klimiter-service
+    name: ${SPRING_APPLICATION_NAME:klimiter-service}
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:./config/klimiter-domains.yaml
+      - optional:classpath:klimiter-domains.yaml
   grpc:
     server:
       port: ${GRPC_PORT:9090}
@@ -12,43 +17,37 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,configprops
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics,env,configprops}
   endpoint:
     health:
       probes:
-        enabled: true
+        enabled: ${MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED:true}
   tracing:
     sampling:
-      probability: 0
+      probability: ${TRACING_SAMPLING_PROBABILITY:0}
   otlp:
     metrics:
       export:
-        enabled: false
+        enabled: ${OTLP_METRICS_EXPORT_ENABLED:false}
   opentelemetry:
     tracing:
       export:
         otlp:
-          endpoint: http://localhost:4318/v1/traces
+          endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
     logging:
       export:
         otlp:
-          endpoint: http://localhost:4318/v1/logs
+          endpoint: ${OTLP_LOGGING_ENDPOINT:http://localhost:4318/v1/logs}
+
 logging:
   level:
-    root: INFO
+    root: ${LOGGING_LEVEL_ROOT:INFO}
 
 klimiter:
   backend:
-    mode: ${KLIMITER_MODE:REDIS_CLUSTER} #IN_MEMORY, REDIS_STANDALONE, REDIS_CLUSTER
+    mode: ${KLIMITER_BACKEND_MODE:IN_MEMORY} # IN_MEMORY, REDIS_STANDALONE, REDIS_CLUSTER
     redis:
-      uri: ${KLIMITER_REDIS_URI:redis://localhost:6379}
-      uris: ${KLIMITER_REDIS_URIS:redis://localhost:7001,redis://localhost:7002,redis://localhost:7003}
-      lease-percentage: 10
-      key-prefix: klimiter
-  domains:
-    - id: default
-      descriptors:
-        - key: user_id
-          rule:
-            unit: SECOND
-            requests-per-unit: 100
+      uri: ${KLIMITER_BACKEND_REDIS_URI:redis://localhost:6379}
+      uris: ${KLIMITER_BACKEND_REDIS_URIS:redis://localhost:7001,redis://localhost:7002,redis://localhost:7003}
+      lease-percentage: ${KLIMITER_BACKEND_REDIS_LEASE_PERCENTAGE:10}
+      key-prefix: ${KLIMITER_BACKEND_REDIS_KEY_PREFIX:klimiter}

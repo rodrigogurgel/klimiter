@@ -85,7 +85,7 @@ class InMemoryRateLimitOperationTest {
     @Test
     fun `durationUntilReset is positive and within one window`() = runTest {
         val status = makeOp(limit = 5).execute()
-        val resetMs = status.durationUntilReset!!.toMillis()
+        val resetMs = status.durationUntilReset!!.inWholeMilliseconds
         assertTrue(resetMs > 0, "durationUntilReset must be positive, was $resetMs ms")
         assertTrue(resetMs <= 1_000, "durationUntilReset must not exceed the window, was $resetMs ms")
     }

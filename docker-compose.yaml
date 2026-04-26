@@ -9,31 +9,27 @@ x-redis-cluster-base: &redis-cluster-base
     retries: 10
   networks:
     - klimiter-network
+  profiles:
+    - redis_cluster
+    - app_cluster
+
+x-app-common-environment: &app-common-environment
+  JAVA_TOOL_OPTIONS: >-
+    -Xms128m
+    -Xmx384m
+    -Dspring.jmx.enabled=false
+    -Dfile.encoding=UTF-8
 
 x-app-base: &app-base
   build: .
+  env_file:
+    - .env
   mem_limit: 512m
-  environment:
-    JAVA_TOOL_OPTIONS: >-
-      -Xms128m
-      -Xmx384m
-      -Dspring.jmx.enabled=false
-      -Dfile.encoding=UTF-8
-    GRPC_PORT: 9090
-    SERVER_PORT: 8080
-
-    KLIMITER_MODE: REDIS_CLUSTER #
-    KLIMITER_REDIS_URI: redis://redis-standalone:6379
-    KLIMITER_REDIS_URIS: redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
-
   expose:
     - "9090"
     - "8080"
-  depends_on:
-    redis-cluster-init:
-      condition: service_completed_successfully
   healthcheck:
-    test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+    test: ["CMD-SHELL", "wget -qO- http://localhost:$${SERVER_PORT:-8080}/actuator/health | grep -q '\"status\":\"UP\"'"]
     interval: 5s
     timeout: 3s
     retries: 20
@@ -55,6 +51,9 @@ services:
       retries: 10
     networks:
       - klimiter-network
+    profiles:
+      - redis_standalone
+      - app_standalone
 
   redis-cluster-1:
     <<: *redis-cluster-base
@@ -128,6 +127,9 @@ services:
         condition: service_healthy
     networks:
       - klimiter-network
+    profiles:
+      - redis_cluster
+      - app_cluster
 
   redis-insight:
     image: redis/redisinsight:latest
@@ -142,37 +144,74 @@ services:
       RI_REDIS_HOST1: redis-cluster-1
       RI_REDIS_PORT1: "7001"
       RI_REDIS_ALIAS1: cluster-node-1
+    networks:
+      - klimiter-network
+    profiles:
+      - redis_standalone
+      - redis_cluster
+      - app_standalone
+      - app_cluster
+
+  app-standalone:
+    <<: *app-base
+    container_name: klimiter-app-standalone
+    environment:
+      <<: *app-common-environment
+      KLIMITER_BACKEND_MODE: REDIS_STANDALONE
+      KLIMITER_BACKEND_REDIS_URI: redis://redis-standalone:6379
+    ports:
+      - "${GRPC_PORT:-9090}:9090"
+      - "${SERVER_PORT:-8080}:8080"
     depends_on:
       redis-standalone:
         condition: service_healthy
-      redis-cluster-init:
-        condition: service_completed_successfully
-    networks:
-      - klimiter-network
+    profiles:
+      - app_standalone
 
   app-1:
     <<: *app-base
     container_name: klimiter-app-1
+    environment:
+      <<: *app-common-environment
+      KLIMITER_BACKEND_MODE: REDIS_CLUSTER
+      KLIMITER_BACKEND_REDIS_URIS: redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
+    depends_on:
+      redis-cluster-init:
+        condition: service_completed_successfully
     profiles:
-      - distributed
+      - app_cluster
 
   app-2:
     <<: *app-base
     container_name: klimiter-app-2
+    environment:
+      <<: *app-common-environment
+      KLIMITER_BACKEND_MODE: REDIS_CLUSTER
+      KLIMITER_BACKEND_REDIS_URIS: redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
+    depends_on:
+      redis-cluster-init:
+        condition: service_completed_successfully
     profiles:
-      - distributed
+      - app_cluster
 
   app-3:
     <<: *app-base
     container_name: klimiter-app-3
+    environment:
+      <<: *app-common-environment
+      KLIMITER_BACKEND_MODE: REDIS_CLUSTER
+      KLIMITER_BACKEND_REDIS_URIS: redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
+    depends_on:
+      redis-cluster-init:
+        condition: service_completed_successfully
     profiles:
-      - distributed
+      - app_cluster
 
   nginx:
     image: nginx:alpine
     container_name: klimiter-nginx
     ports:
-      - "9090:9090"
+      - "${GRPC_PORT:-9090}:9090"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -185,7 +224,11 @@ services:
     networks:
       - klimiter-network
     profiles:
-      - distributed
+      - app_cluster
+    ulimits:
+      nofile:
+        soft: 200000
+        hard: 200000
 
 networks:
   klimiter-network:

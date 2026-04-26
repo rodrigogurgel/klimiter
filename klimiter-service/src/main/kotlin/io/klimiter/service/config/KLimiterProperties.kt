@@ -17,8 +17,8 @@ data class KLimiterProperties(
     )
 
     data class RedisProperties(
-        val uri: String = "redis://localhost:6379",
-        val uris: List<String> = emptyList(),
+        val uri: String = "SET REDIS CONNECTION URI",
+        val uris: List<String> = listOf("SET REDIS CONNECTION URIS"),
         val leasePercentage: Int = RedisKLimiterConfig.DEFAULT_LEASE_PERCENTAGE,
         val keyPrefix: String = RedisKLimiterConfig.DEFAULT_KEY_PREFIX,
     )

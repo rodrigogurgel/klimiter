@@ -8,11 +8,11 @@ import io.klimiter.core.api.config.RateLimitTimeUnit
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitRequestDescriptor
-import io.klimiter.core.api.spi.KeyGenerator
-import io.klimiter.core.api.spi.RateLimitOperation
-import io.klimiter.core.api.spi.RateLimitOperationFactory
-import io.klimiter.core.api.spi.StaticRateLimitDomainRepository
-import io.klimiter.core.api.spi.TimeProvider
+import io.klimiter.core.spi.KeyGenerator
+import io.klimiter.core.spi.RateLimitOperation
+import io.klimiter.core.spi.RateLimitOperationFactory
+import io.klimiter.core.spi.StaticRateLimitDomainRepository
+import io.klimiter.core.spi.TimeProvider
 import kotlinx.coroutines.test.runTest
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.Test

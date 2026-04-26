@@ -10,9 +10,9 @@ import io.klimiter.core.api.rls.RateLimitDescriptorEntry
 import io.klimiter.core.api.rls.RateLimitOverride
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitRequestDescriptor
-import io.klimiter.core.api.spi.CompositeKeyGenerator
-import io.klimiter.core.api.spi.StaticRateLimitDomainRepository
 import io.klimiter.core.internal.store.InMemoryRateLimitStore
+import io.klimiter.core.spi.CompositeKeyGenerator
+import io.klimiter.core.spi.StaticRateLimitDomainRepository
 import kotlinx.coroutines.test.runTest
 import java.time.Instant
 import kotlin.test.Test

@@ -9,7 +9,7 @@ import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitRequestDescriptor
-import io.klimiter.core.api.spi.StaticRateLimitDomainRepository
+import io.klimiter.core.spi.StaticRateLimitDomainRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

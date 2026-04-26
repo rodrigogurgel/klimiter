@@ -1,9 +1,9 @@
 package io.klimiter.redis.api
 
-import io.klimiter.core.api.spi.CompositeKeyGenerator
-import io.klimiter.core.api.spi.KeyGenerator
-import io.klimiter.core.api.spi.SystemTimeProvider
-import io.klimiter.core.api.spi.TimeProvider
+import io.klimiter.core.spi.CompositeKeyGenerator
+import io.klimiter.core.spi.KeyGenerator
+import io.klimiter.core.spi.SystemTimeProvider
+import io.klimiter.core.spi.TimeProvider
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

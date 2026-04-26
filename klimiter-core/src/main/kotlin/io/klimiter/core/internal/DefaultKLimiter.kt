@@ -3,8 +3,8 @@ package io.klimiter.core.internal
 import io.klimiter.core.api.KLimiter
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitResponse
-import io.klimiter.core.api.spi.RateLimitOperationFactory
 import io.klimiter.core.internal.coordinator.RateLimitCoordinator
+import io.klimiter.core.spi.RateLimitOperationFactory
 
 internal class DefaultKLimiter(private val operationFactory: RateLimitOperationFactory) : KLimiter {
 

@@ -1,5 +1,6 @@
 package io.klimiter.service.adapter.input.grpc
 
+import com.google.protobuf.Duration
 import io.klimiter.core.api.config.RateLimitTimeUnit
 import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitDescriptorEntry
@@ -14,10 +15,14 @@ import io.klimiter.core.api.rls.RateLimitRequest as CoreRateLimitRequest
 import io.klimiter.core.api.rls.RateLimitResponse as CoreRateLimitResponse
 import io.klimiter.generated.service.proto.RateLimitOverride as ProtoRateLimitOverride
 
+private const val NO_TOKEN = 0
+private const val ONE_TOKEN = 1
+private const val NANOS_PER_SECOND = 1_000_000_000L
+
 fun RateLimitRequest.toCoreRequest(): CoreRateLimitRequest = CoreRateLimitRequest(
     domain = domain,
     descriptors = descriptorsList.map { it.toCoreDescriptor() },
-    hitsAddend = if (hitsAddend > 0) hitsAddend else 1,
+    hitsAddend = if (hitsAddend > NO_TOKEN) hitsAddend else ONE_TOKEN,
 )
 
 fun RateLimitDescriptor.toCoreDescriptor(): RateLimitRequestDescriptor = RateLimitRequestDescriptor(
@@ -64,9 +69,9 @@ fun RateLimitStatus.toProtoDescriptorStatus(): RateLimitResponse.DescriptorStatu
 
     durationUntilReset?.let { dur ->
         builder.setDurationUntilReset(
-            com.google.protobuf.Duration.newBuilder()
-                .setSeconds(dur.toSeconds())
-                .setNanos(dur.nano)
+            Duration.newBuilder()
+                .setSeconds(dur.inWholeSeconds)
+                .setNanos((dur.inWholeNanoseconds % NANOS_PER_SECOND).toInt())
                 .build(),
         )
     }

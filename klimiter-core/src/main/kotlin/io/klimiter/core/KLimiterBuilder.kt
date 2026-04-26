@@ -1,14 +1,14 @@
 package io.klimiter.core
 
 import io.klimiter.core.api.KLimiter
-import io.klimiter.core.api.spi.CompositeKeyGenerator
-import io.klimiter.core.api.spi.KeyGenerator
-import io.klimiter.core.api.spi.RateLimitDomainRepository
-import io.klimiter.core.api.spi.RateLimitOperationFactory
-import io.klimiter.core.api.spi.SystemTimeProvider
 import io.klimiter.core.internal.DefaultKLimiter
 import io.klimiter.core.internal.operation.DefaultRateLimitOperationFactory
 import io.klimiter.core.internal.store.InMemoryRateLimitStore
+import io.klimiter.core.spi.CompositeKeyGenerator
+import io.klimiter.core.spi.KeyGenerator
+import io.klimiter.core.spi.RateLimitDomainRepository
+import io.klimiter.core.spi.RateLimitOperationFactory
+import io.klimiter.core.spi.SystemTimeProvider
 import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 
@@ -24,7 +24,7 @@ class KLimiterBuilder {
      * [KLimiter.shouldRateLimit] invocation — the repository is responsible for any caching
      * needed to keep the hot path fast.
      *
-     * Use [io.klimiter.core.api.spi.StaticRateLimitDomainRepository] for fixed configurations
+     * Use [io.klimiter.core.spi.StaticRateLimitDomainRepository] for fixed configurations
      * known at startup; implement [RateLimitDomainRepository] directly for file-based,
      * database-backed, or hot-reloadable configurations.
      *
@@ -67,7 +67,7 @@ class KLimiterBuilder {
      * Overrides the key generator used to derive bucket cache keys. Only applies to the
      * default in-memory backend; must not be used with [operationFactory].
      *
-     * Default: [io.klimiter.core.api.spi.CompositeKeyGenerator].
+     * Default: [CompositeKeyGenerator].
      */
     fun keyGenerator(generator: KeyGenerator): KLimiterBuilder = apply {
         keyGenerator = generator

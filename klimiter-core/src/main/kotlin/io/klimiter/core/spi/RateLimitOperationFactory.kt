@@ -1,4 +1,4 @@
-package io.klimiter.core.api.spi
+package io.klimiter.core.spi
 
 import io.klimiter.core.api.rls.RateLimitRequest
 

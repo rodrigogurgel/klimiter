@@ -3,12 +3,12 @@ package io.klimiter.core.internal.operation
 import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitStatus
-import io.klimiter.core.api.spi.RateLimitOperation
-import io.klimiter.core.api.spi.TimeProvider
+import io.klimiter.core.spi.RateLimitOperation
+import io.klimiter.core.spi.TimeProvider
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 internal class InMemoryRateLimitOperation(
     private val key: String,
@@ -27,12 +27,12 @@ internal class InMemoryRateLimitOperation(
             val current = counter.get()
             val projected = current + hitsAddend
             if (projected > max) {
-                if (logger.isTraceEnabled) logger.trace("Deny key={} current={} max={}", key, current, max)
+                logger.trace("Deny key={} current={} max={}", key, current, max)
                 return buildStatus(RateLimitCode.OVER_LIMIT, current, max)
             }
             if (counter.compareAndSet(current, projected)) {
                 reserved = hitsAddend
-                if (logger.isTraceEnabled) logger.trace("Allow key={} count={} max={}", key, projected, max)
+                logger.trace("Allow key={} count={} max={}", key, projected, max)
                 return buildStatus(RateLimitCode.OK, projected, max)
             }
         }
@@ -41,7 +41,7 @@ internal class InMemoryRateLimitOperation(
     override suspend fun rollback() {
         if (reserved == 0L) return
         counter.addAndGet(-reserved)
-        if (logger.isTraceEnabled) logger.trace("Rollback key={} amount={}", key, reserved)
+        logger.trace("Rollback key={} amount={}", key, reserved)
         reserved = 0L
     }
 
@@ -56,10 +56,9 @@ internal class InMemoryRateLimitOperation(
     }
 
     private fun durationUntilReset(): Duration {
-        val now = timeProvider.now()
-        val windowStart = (now.epochSecond / windowSeconds) * windowSeconds
-        val nextWindowStart = Instant.ofEpochSecond(windowStart + windowSeconds)
-        return Duration.between(now, nextWindowStart)
+        val nowEpochSecond = timeProvider.now().epochSecond
+        val windowStart = (nowEpochSecond / windowSeconds) * windowSeconds
+        return (windowStart + windowSeconds - nowEpochSecond).seconds
     }
 
     private companion object {

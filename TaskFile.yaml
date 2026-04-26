@@ -1,0 +1,187 @@
+version: '3'
+
+vars:
+  COMPOSE: '{{.COMPOSE | default "docker compose"}}'
+  PROFILES: '--profile redis_standalone --profile redis_cluster --profile app_standalone --profile app_cluster'
+  ENV_FILE: '{{.ENV_FILE | default ".env"}}'
+  ENV_EXAMPLE: '{{.ENV_EXAMPLE | default ".env.example"}}'
+  GRPC_HOST: '{{.GRPC_HOST | default "localhost"}}'
+  GRPC_PORT: '{{.GRPC_PORT | default "9090"}}'
+  HTTP_HOST: '{{.HTTP_HOST | default "localhost"}}'
+  HTTP_PORT: '{{.HTTP_PORT | default "8080"}}'
+  GRPC_METHOD: '{{.GRPC_METHOD | default "io.klimiter.RateLimitService.ShouldRateLimit"}}'
+  GRPC_REQUEST: '{{.GRPC_REQUEST | default "{\"descriptors\":[{\"entries\":[{\"key\":\"user_id\",\"value\":\"user_1\"}]}],\"domain\":\"default\"}"}}'
+
+silent: false
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  env:
+    desc: Create .env from .env.example if .env does not exist
+    status:
+      - test -f {{.ENV_FILE}}
+    cmds:
+      - cp {{.ENV_EXAMPLE}} {{.ENV_FILE}}
+      - echo "Created {{.ENV_FILE}} from {{.ENV_EXAMPLE}}"
+
+  env-check:
+    desc: Check if .env exists
+    internal: true
+    cmds:
+      - test -f {{.ENV_FILE}} || (echo "Missing {{.ENV_FILE}}. Run: task env" && exit 1)
+
+  ps:
+    desc: List compose services
+    cmds:
+      - '{{.COMPOSE}} ps'
+
+  config:
+    desc: Render Docker Compose config
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} config'
+
+  redis-standalone:
+    desc: Start Redis standalone and Redis Insight
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile redis_standalone up -d'
+
+  redis-cluster:
+    desc: Start Redis Cluster and Redis Insight
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile redis_cluster up -d'
+
+  app-standalone:
+    desc: Build and start app with Redis standalone
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_standalone up -d --build'
+
+  app-cluster:
+    desc: Build and start app cluster with Redis Cluster and Nginx
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_cluster up -d --build'
+
+  build:
+    desc: Build compose images
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} build'
+
+  build-no-cache:
+    desc: Build compose images without cache
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} build --no-cache'
+
+  rebuild-standalone:
+    desc: Rebuild and restart standalone app profile
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_standalone up -d --build --force-recreate'
+
+  rebuild-cluster:
+    desc: Rebuild and restart app cluster profile
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_cluster up -d --build --force-recreate'
+
+  restart-standalone:
+    desc: Restart standalone app profile
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_standalone restart'
+
+  restart-cluster:
+    desc: Restart app cluster profile
+    deps: [env-check]
+    cmds:
+      - '{{.COMPOSE}} --profile app_cluster restart'
+
+  down:
+    desc: Stop and remove containers from all profiles
+    cmds:
+      - '{{.COMPOSE}} {{.PROFILES}} down --remove-orphans'
+
+  down-volumes:
+    desc: Stop and remove containers, networks and volumes from all profiles
+    cmds:
+      - '{{.COMPOSE}} {{.PROFILES}} down -v --remove-orphans'
+
+  logs:
+    desc: Follow logs. Optionally pass SERVICE=name
+    cmds:
+      - |
+        if [ -n "{{.SERVICE}}" ]; then
+          {{.COMPOSE}} logs -f "{{.SERVICE}}"
+        else
+          {{.COMPOSE}} logs -f
+        fi
+
+  logs-app:
+    desc: Follow logs from all app instances
+    cmds:
+      - '{{.COMPOSE}} logs -f app-standalone app-1 app-2 app-3'
+
+  logs-standalone:
+    desc: Follow logs from standalone app
+    cmds:
+      - '{{.COMPOSE}} logs -f app-standalone'
+
+  logs-cluster:
+    desc: Follow logs from app cluster instances
+    cmds:
+      - '{{.COMPOSE}} logs -f app-1 app-2 app-3'
+
+  logs-nginx:
+    desc: Follow Nginx logs
+    cmds:
+      - '{{.COMPOSE}} logs -f nginx'
+
+  logs-redis-cluster-init:
+    desc: Follow Redis Cluster init logs
+    cmds:
+      - '{{.COMPOSE}} logs -f redis-cluster-init'
+
+  health:
+    desc: Check application health endpoint
+    cmds:
+      - 'curl -fsS "http://{{.HTTP_HOST}}:{{.HTTP_PORT}}/actuator/health" | cat'
+
+  grpcurl:
+    desc: Call the gRPC rate limit endpoint
+    cmds:
+      - |
+        grpcurl \
+          -plaintext \
+          -emit-defaults \
+          -d '{{.GRPC_REQUEST}}' \
+          "{{.GRPC_HOST}}:{{.GRPC_PORT}}" \
+          {{.GRPC_METHOD}}
+
+  redis-standalone-ping:
+    desc: Ping Redis standalone
+    cmds:
+      - '{{.COMPOSE}} exec redis-standalone redis-cli ping'
+
+  redis-cluster-info:
+    desc: Show Redis Cluster info
+    cmds:
+      - '{{.COMPOSE}} exec redis-cluster-1 redis-cli -p 7001 cluster info'
+
+  redis-cluster-nodes:
+    desc: Show Redis Cluster nodes
+    cmds:
+      - '{{.COMPOSE}} exec redis-cluster-1 redis-cli -p 7001 cluster nodes'
+
+  clean:
+    desc: Alias for down-volumes
+    cmds:
+      - task: down-volumes

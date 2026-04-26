@@ -1,4 +1,4 @@
-package io.klimiter.core.api.spi
+package io.klimiter.core.spi
 
 import java.time.Instant
 

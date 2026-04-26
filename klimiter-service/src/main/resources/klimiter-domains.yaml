@@ -1,0 +1,8 @@
+klimiter:
+  domains:
+    - id: default
+      descriptors:
+        - key: user_id
+          rule:
+            unit: SECOND
+            requests-per-unit: 100

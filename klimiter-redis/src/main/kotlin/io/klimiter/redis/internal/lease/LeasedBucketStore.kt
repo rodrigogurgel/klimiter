@@ -4,7 +4,6 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Expiry
 import org.slf4j.LoggerFactory
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -20,7 +19,7 @@ internal class LeasedBucketStore(maxCacheSize: Long? = null, gracePeriod: Durati
         .expireAfter(EntryExpiry(gracePeriod.inWholeNanoseconds))
         .apply { if (maxCacheSize != null) maximumSize(maxCacheSize) }
         .removalListener<String, Entry> { key, _, cause ->
-            if (logger.isDebugEnabled) logger.debug("Leased bucket evicted key={} cause={}", key, cause)
+            logger.debug("Leased bucket evicted key={} cause={}", key, cause)
         }
         .build()
 
@@ -33,7 +32,7 @@ internal class LeasedBucketStore(maxCacheSize: Long? = null, gracePeriod: Durati
 
     private class EntryExpiry(private val gracePeriodNanos: Long) : Expiry<String, Entry> {
         override fun expireAfterCreate(key: String, value: Entry, currentTime: Long): Long =
-            TimeUnit.SECONDS.toNanos(value.ttlSeconds) + gracePeriodNanos
+            value.ttlSeconds.seconds.inWholeNanoseconds + gracePeriodNanos
 
         override fun expireAfterUpdate(key: String, value: Entry, currentTime: Long, currentDuration: Long): Long =
             currentDuration

@@ -5,12 +5,13 @@ import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.api.rls.RateLimit
 import io.klimiter.core.api.rls.RateLimitRequest
 import io.klimiter.core.api.rls.RateLimitRequestDescriptor
-import io.klimiter.core.api.spi.KeyGenerator
-import io.klimiter.core.api.spi.RateLimitDomainRepository
-import io.klimiter.core.api.spi.RateLimitOperation
-import io.klimiter.core.api.spi.RateLimitOperationFactory
-import io.klimiter.core.api.spi.TimeProvider
 import io.klimiter.core.internal.store.InMemoryRateLimitStore
+import io.klimiter.core.spi.KeyGenerator
+import io.klimiter.core.spi.RateLimitDomainRepository
+import io.klimiter.core.spi.RateLimitOperation
+import io.klimiter.core.spi.RateLimitOperationFactory
+import io.klimiter.core.spi.TimeProvider
+import org.slf4j.LoggerFactory
 
 internal class DefaultRateLimitOperationFactory(
     private val domainRepository: RateLimitDomainRepository,
@@ -20,7 +21,14 @@ internal class DefaultRateLimitOperationFactory(
 ) : RateLimitOperationFactory {
 
     override fun create(request: RateLimitRequest): List<RateLimitOperation> {
-        val domain = domainRepository.findById(request.domain) ?: return emptyList()
+        val domain = domainRepository.findById(request.domain)
+        if (domain == null) {
+            logger.debug(
+                "Domain not found, all descriptors will pass through domain={}",
+                request.domain,
+            )
+            return emptyList()
+        }
         return request.descriptors.mapNotNull { descriptor ->
             buildOperation(request, descriptor, domain)
         }
@@ -72,5 +80,9 @@ internal class DefaultRateLimitOperationFactory(
     private fun effectiveHitsAddend(request: RateLimitRequest, descriptor: RateLimitRequestDescriptor): Long {
         val base = descriptor.hitsAddend ?: request.hitsAddend.toLong()
         return if (descriptor.isNegativeHits) -base else base
+    }
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(DefaultRateLimitOperationFactory::class.java)
     }
 }

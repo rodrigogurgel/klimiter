@@ -2,7 +2,7 @@ package io.klimiter.core.internal.coordinator
 
 import io.klimiter.core.api.rls.RateLimitCode
 import io.klimiter.core.api.rls.RateLimitStatus
-import io.klimiter.core.api.spi.RateLimitOperation
+import io.klimiter.core.spi.RateLimitOperation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

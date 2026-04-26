@@ -1,7 +1,7 @@
 package io.klimiter.redis
 
 import io.klimiter.core.KLimiterBuilder
-import io.klimiter.core.api.spi.RateLimitDomainRepository
+import io.klimiter.core.spi.RateLimitDomainRepository
 import io.klimiter.redis.api.CloseableKLimiter
 import io.klimiter.redis.api.RedisKLimiterConfig
 import io.klimiter.redis.internal.DefaultCloseableKLimiter
