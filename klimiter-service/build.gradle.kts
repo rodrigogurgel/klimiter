@@ -19,8 +19,9 @@ dependencies {
     implementation(project(":klimiter-core"))
     implementation(project(":klimiter-redis"))
 
-    implementation(libs.spring.boot.actuator)
-    implementation(libs.spring.boot.opentelemetry)
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.webflux)
+    implementation(libs.spring.boot.starter.opentelemetry)
     implementation(libs.reactor.kotlin.extensions)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.coroutines.reactor)
@@ -29,14 +30,11 @@ dependencies {
     implementation(libs.protobuf.kotlin)
     implementation(libs.jackson.module.kotlin)
 
-    developmentOnly(libs.spring.boot.devtools)
-    developmentOnly(libs.spring.boot.docker.compose)
-
     kapt(libs.spring.boot.configuration.processor)
 
-    testImplementation(libs.spring.boot.actuator.test)
-    testImplementation(libs.spring.boot.opentelemetry.test)
-    testImplementation(libs.spring.boot.webflux.test)
+    testImplementation(libs.spring.boot.starter.actuator.test)
+    testImplementation(libs.spring.boot.starter.opentelemetry.test)
+    testImplementation(libs.spring.boot.starter.webflux.test)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.spring.grpc.test)

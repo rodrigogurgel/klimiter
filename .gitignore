@@ -39,4 +39,4 @@ out/
 ### Kotlin ###
 .kotlin
 
-**/k6/runs
+**/runs

@@ -3,7 +3,7 @@ name: klimiter-local
 x-redis-cluster-base: &redis-cluster-base
   image: redis:7.4-alpine
   healthcheck:
-    test: [ "CMD-SHELL", "redis-cli -p $$REDIS_PORT ping | grep PONG" ]
+    test: ["CMD-SHELL", "redis-cli -p $$REDIS_PORT ping | grep PONG"]
     interval: 5s
     timeout: 3s
     retries: 10
@@ -12,10 +12,7 @@ x-redis-cluster-base: &redis-cluster-base
 
 x-app-base: &app-base
   build: .
-  deploy:
-    resources:
-      limits:
-        memory: 512M
+  mem_limit: 512m
   environment:
     JAVA_TOOL_OPTIONS: >-
       -Xms128m
@@ -23,19 +20,24 @@ x-app-base: &app-base
       -Dspring.jmx.enabled=false
       -Dfile.encoding=UTF-8
     GRPC_PORT: 9090
+    SERVER_PORT: 8080
 
-    # Atenção:
-    # Esta configuração NÃO é ideal para app dentro do Docker
-    # quando o cluster anuncia 127.0.0.1.
-    KLIMITER_MODE: cluster
-    KLIMITER_REDIS_URIS: redis://localhost:7001,redis://localhost:7002,redis://localhost:7003
+    KLIMITER_MODE: REDIS_CLUSTER #
+    KLIMITER_REDIS_URI: redis://redis-standalone:6379
+    KLIMITER_REDIS_URIS: redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
 
-    # Standalone, se quiser testar:
-    # KLIMITER_MODE: standalone
-    # KLIMITER_REDIS_URIS: redis://redis-standalone:6379
+  expose:
+    - "9090"
+    - "8080"
   depends_on:
     redis-cluster-init:
       condition: service_completed_successfully
+  healthcheck:
+    test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+    interval: 5s
+    timeout: 3s
+    retries: 20
+    start_period: 30s
   networks:
     - klimiter-network
 
@@ -43,10 +45,11 @@ services:
   redis-standalone:
     image: redis:7.4-alpine
     container_name: redis-standalone
+    command: redis-server --appendonly no
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -115,7 +118,7 @@ services:
     container_name: redis-cluster-init
     volumes:
       - ./docker/redis-cluster/cluster-init.sh:/cluster-init.sh:ro
-    entrypoint: [ "sh", "/cluster-init.sh" ]
+    entrypoint: ["sh", "/cluster-init.sh"]
     depends_on:
       redis-cluster-1:
         condition: service_healthy
@@ -173,9 +176,12 @@ services:
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - app-1
-      - app-2
-      - app-3
+      app-1:
+        condition: service_healthy
+      app-2:
+        condition: service_healthy
+      app-3:
+        condition: service_healthy
     networks:
       - klimiter-network
     profiles:

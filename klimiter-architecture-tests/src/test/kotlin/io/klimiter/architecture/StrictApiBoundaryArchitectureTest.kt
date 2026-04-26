@@ -1,12 +1,10 @@
 package io.klimiter.architecture
 
 import com.lemonappdev.konsist.api.verify.assertFalse
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class StrictApiBoundaryArchitectureTest {
 
-//    @Disabled("Enable after removing imports from api packages to internal implementation packages.")
     @Test
     fun `core api should not import core internal implementation`() {
         ArchitectureTestSupport
@@ -22,7 +20,6 @@ class StrictApiBoundaryArchitectureTest {
             }
     }
 
-//    @Disabled("Enable after Redis public API no longer imports redis internal implementation details.")
     @Test
     fun `redis api should not import redis internal implementation`() {
         ArchitectureTestSupport

@@ -38,9 +38,9 @@ class ProjectStructureArchitectureTest {
             .mapNotNull { it.packagee?.name }
             .toSet()
 
-        assertTrue(packages.any { it.startsWith("io.klimiter.klimiterservice.adapter") })
-        assertTrue(packages.any { it.startsWith("io.klimiter.klimiterservice.application") })
-        assertTrue(packages.any { it.startsWith("io.klimiter.klimiterservice.domain") })
-        assertTrue(packages.any { it.startsWith("io.klimiter.klimiterservice.config") })
+        assertTrue(packages.any { it.startsWith("io.klimiter.service.adapter") })
+        assertTrue(packages.any { it.startsWith("io.klimiter.service.application") })
+        assertTrue(packages.any { it.startsWith("io.klimiter.service.config") })
+        assertTrue(packages.any { it.startsWith("io.klimiter.service.domain") })
     }
 }

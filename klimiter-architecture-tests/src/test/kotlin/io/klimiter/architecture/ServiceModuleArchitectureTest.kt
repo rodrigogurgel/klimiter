@@ -12,7 +12,7 @@ class ServiceModuleArchitectureTest {
             .serviceScope()
             .files
             .filter { file ->
-                file.packagee?.name?.startsWith("io.klimiter.klimiterservice.domain") == true
+                file.packagee?.name?.startsWith("io.klimiter.service.domain") == true
             }
             .assertFalse { file ->
                 file.imports.any { import ->
@@ -27,11 +27,11 @@ class ServiceModuleArchitectureTest {
             .serviceScope()
             .files
             .filter { file ->
-                file.packagee?.name?.startsWith("io.klimiter.klimiterservice.domain") == true
+                file.packagee?.name?.startsWith("io.klimiter.service.domain") == true
             }
             .assertFalse { file ->
                 file.imports.any { import ->
-                    import.name.startsWith("io.klimiter.klimiterservice.proto")
+                    import.name.startsWith("io.klimiter.service.proto")
                 }
             }
     }
@@ -42,13 +42,13 @@ class ServiceModuleArchitectureTest {
             .serviceScope()
             .files
             .filter { file ->
-                file.packagee?.name?.startsWith("io.klimiter.klimiterservice.application") == true
+                file.packagee?.name?.startsWith("io.klimiter.service.application") == true
             }
             .assertFalse { file ->
                 file.imports.any { import ->
-                    import.name.startsWith("io.klimiter.klimiterservice.adapter") ||
-                        import.name.startsWith("io.klimiter.klimiterservice.config") ||
-                        import.name.startsWith("io.klimiter.klimiterservice.proto")
+                    import.name.startsWith("io.klimiter.service.adapter") ||
+                        import.name.startsWith("io.klimiter.service.config") ||
+                        import.name.startsWith("io.klimiter.service.proto")
                 }
             }
     }
@@ -62,7 +62,7 @@ class ServiceModuleArchitectureTest {
                 clazz.name.endsWith("GrpcAdapter")
             }
             .assertTrue { clazz ->
-                clazz.packagee?.name == "io.klimiter.klimiterservice.adapter.input.grpc"
+                clazz.packagee?.name == "io.klimiter.service.adapter.input.grpc"
             }
     }
 
@@ -75,7 +75,7 @@ class ServiceModuleArchitectureTest {
                 clazz.name.endsWith("Configuration") || clazz.name.endsWith("Properties")
             }
             .assertTrue { clazz ->
-                clazz.packagee?.name == "io.klimiter.klimiterservice.config"
+                clazz.packagee?.name == "io.klimiter.service.config"
             }
     }
 
@@ -86,7 +86,7 @@ class ServiceModuleArchitectureTest {
             .interfaces()
             .filter { it.name.endsWith("UseCase") }
             .assertTrue { iface ->
-                iface.packagee?.name == "io.klimiter.klimiterservice.domain.port.input"
+                iface.packagee?.name == "io.klimiter.service.domain.port.input"
             }
     }
 
@@ -97,7 +97,7 @@ class ServiceModuleArchitectureTest {
             .interfaces()
             .filter { it.name.endsWith("Port") }
             .assertTrue { iface ->
-                iface.packagee?.name == "io.klimiter.klimiterservice.domain.port.output"
+                iface.packagee?.name == "io.klimiter.service.domain.port.output"
             }
     }
 }

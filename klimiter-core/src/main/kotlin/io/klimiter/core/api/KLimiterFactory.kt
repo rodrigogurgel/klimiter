@@ -1,5 +1,6 @@
 package io.klimiter.core.api
 
+import io.klimiter.core.KLimiterBuilder
 import io.klimiter.core.api.spi.KeyGenerator
 import io.klimiter.core.api.spi.RateLimitDomainRepository
 import kotlin.time.Duration

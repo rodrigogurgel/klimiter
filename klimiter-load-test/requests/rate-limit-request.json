@@ -1,0 +1,14 @@
+{
+  "domain": "default",
+  "descriptors": [
+    {
+      "entries": [
+        {
+          "key": "user_id",
+          "value": "dolor eu"
+        }
+      ]
+    }
+  ],
+  "hitsAddend": 1
+}

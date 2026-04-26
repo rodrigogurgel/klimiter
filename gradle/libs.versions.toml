@@ -29,14 +29,13 @@ lettuce-core = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-spring-boot-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
-spring-boot-actuator-test = { module = "org.springframework.boot:spring-boot-starter-actuator-test" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-actuator-test = { module = "org.springframework.boot:spring-boot-starter-actuator-test" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
-spring-boot-devtools = { module = "org.springframework.boot:spring-boot-devtools" }
-spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose" }
-spring-boot-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
-spring-boot-opentelemetry-test = { module = "org.springframework.boot:spring-boot-starter-opentelemetry-test" }
-spring-boot-webflux-test = { module = "org.springframework.boot:spring-boot-starter-webflux-test" }
+spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
+spring-boot-starter-opentelemetry-test = { module = "org.springframework.boot:spring-boot-starter-opentelemetry-test" }
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-starter-webflux-test = { module = "org.springframework.boot:spring-boot-starter-webflux-test" }
 spring-grpc-server-starter = { module = "org.springframework.grpc:spring-grpc-server-spring-boot-starter" }
 spring-grpc-test = { module = "org.springframework.grpc:spring-grpc-test" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }

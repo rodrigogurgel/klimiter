@@ -1,6 +1,6 @@
 package io.klimiter.core.internal
 
-import io.klimiter.core.api.KLimiterBuilder
+import io.klimiter.core.KLimiterBuilder
 import io.klimiter.core.api.config.RateLimitDescriptor
 import io.klimiter.core.api.config.RateLimitDomain
 import io.klimiter.core.api.config.RateLimitRule

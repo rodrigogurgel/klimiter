@@ -25,7 +25,7 @@ class CoreModuleArchitectureTest {
             .files
             .assertFalse { file ->
                 file.imports.any { import ->
-                    import.name.startsWith("io.klimiter.klimiterservice")
+                    import.name.startsWith("io.klimiter.service")
                 }
             }
     }

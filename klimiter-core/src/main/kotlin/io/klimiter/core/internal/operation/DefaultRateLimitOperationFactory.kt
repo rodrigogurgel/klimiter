@@ -10,7 +10,7 @@ import io.klimiter.core.api.spi.RateLimitDomainRepository
 import io.klimiter.core.api.spi.RateLimitOperation
 import io.klimiter.core.api.spi.RateLimitOperationFactory
 import io.klimiter.core.api.spi.TimeProvider
-import io.klimiter.core.internal.infra.store.InMemoryRateLimitStore
+import io.klimiter.core.internal.store.InMemoryRateLimitStore
 
 internal class DefaultRateLimitOperationFactory(
     private val domainRepository: RateLimitDomainRepository,

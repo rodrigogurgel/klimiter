@@ -97,14 +97,14 @@ Purpose: runnable Spring Boot application exposing KLimiter through gRPC.
 Main packages:
 
 ```text
-io.klimiter.klimiterservice
-io.klimiter.klimiterservice.config
-io.klimiter.klimiterservice.domain.model
-io.klimiter.klimiterservice.domain.port.input
-io.klimiter.klimiterservice.domain.port.output
-io.klimiter.klimiterservice.application
-io.klimiter.klimiterservice.adapter.input.grpc
-io.klimiter.klimiterservice.adapter.output.klimiter
+io.klimiter.service
+io.klimiter.service.config
+io.klimiter.service.domain.model
+io.klimiter.service.domain.port.input
+io.klimiter.service.domain.port.output
+io.klimiter.service.application
+io.klimiter.service.adapter.input.grpc
+io.klimiter.service.adapter.output.klimiter
 ```
 
 Responsibilities:

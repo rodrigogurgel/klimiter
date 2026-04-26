@@ -12,7 +12,7 @@ Multi-module Gradle Kotlin DSL build. Kotlin 2.3.0, JDK toolchain 21, Spring Boo
 - Run a single test: `./gradlew :klimiter-core:test --tests "io.klimiter.core.internal.coordinator.RateLimitCoordinatorTest"` (tests use `kotlin.test` + JUnit 5 platform)
 - Run the demo: `./gradlew :klimiter-core:runDemo` → `io.klimiter.core.demo.MainKt`
 - Run the gRPC service: `./gradlew :klimiter-service:bootRun` → listens on **gRPC port 9090** (`spring.grpc.server.port`). Spring Boot DevTools + docker-compose support are `developmentOnly`.
-- Regenerate proto stubs: `./gradlew :klimiter-service:generateProto` (Java + Kotlin gRPC stubs from `klimiter-service/src/main/proto/klimiter.proto`, package `io.klimiter.klimiterservice.proto`).
+- Regenerate proto stubs: `./gradlew :klimiter-service:generateProto` (Java + Kotlin gRPC stubs from `klimiter-service/src/main/proto/klimiter.proto`, package `io.klimiter.service.proto`).
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Implements `RateLimitOperationFactory` (and `RateLimitOperation`) from the core 
 
 ### klimiter-service — gRPC adapter
 
-Hexagonal layout under `io.klimiter.klimiterservice`:
+Hexagonal layout under `io.klimiter.service`:
 
 - `adapter/input/grpc/RateLimitGrpcAdapter` — `ShouldRateLimit` RPC implementation. Maps proto ↔ domain via `RateLimitGrpcMappers`.
 - `application/CheckRateLimitService` — implements `CheckRateLimitUseCase`. Folds `RateLimitKeyStatus` list into one overall decision (`OVER_LIMIT` > `ERROR` > `OK`).

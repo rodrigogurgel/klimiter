@@ -4,8 +4,8 @@ import io.klimiter.core.api.spi.CompositeKeyGenerator
 import io.klimiter.core.api.spi.KeyGenerator
 import io.klimiter.core.api.spi.SystemTimeProvider
 import io.klimiter.core.api.spi.TimeProvider
-import io.klimiter.redis.internal.lease.LeasedBucketStore
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Configuration for the Redis-backed, lease-based KLimiter operation factory.
@@ -30,7 +30,7 @@ data class RedisKLimiterConfig(
     val keyGenerator: KeyGenerator = CompositeKeyGenerator,
     val timeProvider: TimeProvider = SystemTimeProvider,
     val leasePercentage: Int = DEFAULT_LEASE_PERCENTAGE,
-    val gracePeriod: Duration = LeasedBucketStore.DEFAULT_GRACE_PERIOD,
+    val gracePeriod: Duration = DEFAULT_GRACE_PERIOD,
     val maxTrackedBuckets: Long? = null,
 ) {
     init {
@@ -44,6 +44,7 @@ data class RedisKLimiterConfig(
     }
 
     companion object {
+        val DEFAULT_GRACE_PERIOD: Duration = 30.seconds
         const val DEFAULT_KEY_PREFIX: String = "klimiter"
         const val DEFAULT_LEASE_PERCENTAGE: Int = 10
         const val MIN_LEASE_PERCENTAGE: Int = 1
