@@ -47,7 +47,7 @@ Current examples:
 
 - `io.klimiter.core.api.KLimiterBuilder` imports `io.klimiter.core.internal.DefaultKLimiterBuilder`.
 - `io.klimiter.redis.api.RedisKLimiterFactory` imports `io.klimiter.redis.internal.DefaultCloseableKLimiter`.
-- `io.klimiter.redis.api.RedisRateLimitOperationFactory` imports internal Redis implementation classes.
+- `io.klimiter.redis.api.RedisRateLimitOperationFactories` imports internal Redis implementation classes.
 - `io.klimiter.redis.api.RedisKLimiterConfig` imports `io.klimiter.redis.internal.lease.LeasedBucketStore` for the default grace period.
 
 This is not automatically wrong in Kotlin, especially because `internal` is module-private and factories often instantiate internal classes. However, it weakens the conceptual boundary between public API and implementation.
@@ -153,14 +153,14 @@ Recommended service test categories:
 
 ## Recommended next steps
 
-1. Add the generated architecture tests.
-2. Run:
+1. Run the architecture tests:
 
 ```bash
 ./gradlew :klimiter-architecture-tests:test
 ```
 
-3. Keep `StrictApiBoundaryArchitectureTest` disabled until you decide whether public factory facades may instantiate internal implementations.
-4. Fix `RedisKLimiterConfig` importing `LeasedBucketStore.DEFAULT_GRACE_PERIOD` from internal code.
-5. Decide whether `RateLimitCoordinator` should short-circuit or execute all participants before rollback.
-6. Add Redis integration tests before considering the distributed backend production-ready.
+2. Keep `StrictApiBoundaryArchitectureTest` disabled until you decide whether public factory facades may instantiate internal implementations.
+3. Fix `RedisKLimiterConfig` importing `LeasedBucketStore.DEFAULT_GRACE_PERIOD` from internal code — move defaults to a public `RedisKLimiterDefaults` object.
+4. Decide whether `RateLimitCoordinator` should short-circuit (current) or execute all participants before rollback (strict TCC).
+5. Add Redis integration tests before considering the distributed backend production-ready.
+6. Add service tests (property binding, backend mode selection, gRPC mapper, use-case layer) before any production deployment.

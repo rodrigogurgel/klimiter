@@ -8,10 +8,11 @@ Current modules:
 
 ```text
 klimiter
-├── klimiter-core
-├── klimiter-redis
-├── klimiter-service
-└── klimiter-architecture-tests
+├── klimiter-core                  Gradle module — rate-limit library
+├── klimiter-redis                 Gradle module — Redis SPI implementation
+├── klimiter-service               Gradle module — Spring Boot gRPC service
+├── klimiter-architecture-tests    Gradle module — Konsist boundary tests
+└── klimiter-load-test             Standalone — k6 + Python load test harness (not a Gradle module)
 ```
 
 ## Module responsibilities

@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & run
 
-Multi-module Gradle Kotlin DSL build. Kotlin 2.3.0, JDK toolchain 21, Spring Boot 4.0.5. Modules registered in `settings.gradle.kts`: `klimiter-core`, `klimiter-redis`, `klimiter-service`.
+Multi-module Gradle Kotlin DSL build. Kotlin 2.3.0, JDK toolchain 21, Spring Boot 4.0.5. Modules registered in `settings.gradle.kts`: `klimiter-core`, `klimiter-redis`, `klimiter-service`, `klimiter-architecture-tests`.
 
 - Build everything: `./gradlew build`
 - Build a module: `./gradlew :klimiter-core:build -x test`
 - Run all tests for a module: `./gradlew :klimiter-core:test`
 - Run a single test: `./gradlew :klimiter-core:test --tests "io.klimiter.core.internal.coordinator.RateLimitCoordinatorTest"` (tests use `kotlin.test` + JUnit 5 platform)
 - Run the demo: `./gradlew :klimiter-core:runDemo` → `io.klimiter.core.demo.MainKt`
-- Run the gRPC service: `./gradlew :klimiter-service:bootRun` → listens on **gRPC port 9090** (`spring.grpc.server.port`). Spring Boot DevTools + docker-compose support are `developmentOnly`.
+- Run the gRPC service: `./gradlew :klimiter-service:bootRun` → listens on **gRPC port 9090** (`spring.grpc.server.port`) and HTTP port 8080 (Actuator). Spring Boot DevTools + docker-compose support are `developmentOnly`.
 - Regenerate proto stubs: `./gradlew :klimiter-service:generateProto` (Java + Kotlin gRPC stubs from `klimiter-service/src/main/proto/klimiter.proto`, package `io.klimiter.service.proto`).
 
 ## Architecture
@@ -75,7 +75,7 @@ Hexagonal layout under `io.klimiter.service`:
 
 Service config (`klimiter.*` in `application.yaml`, bound via `KLimiterProperties`): `domainId` (default `"default"`), `default.limit` (default **600**), `default.unit` (default **SECOND**).
 
-Proto contract (`klimiter.proto`): `ShouldRateLimit(repeated KeyRequest{key, value, cost})` → `ShouldRateLimitResponse{overall_decision, repeated KeyStatus}`. `Decision` enum: `OK=0 / OVER_LIMIT=1 / ERROR=2`. `cost` maps to `hitsAddend` only when `> 0`.
+Proto contract (`klimiter.proto`): `ShouldRateLimit(RateLimitRequest)` → `RateLimitResponse`. `RateLimitRequest` carries `domain` (string), `descriptors` (repeated `RateLimitDescriptor` each with `entries` of key/value pairs and an optional `hits_addend`), and a top-level `hits_addend`. `RateLimitResponse` carries `overall_code` and `statuses` (repeated `DescriptorStatus`). `RateLimitResponse.Code` enum: `UNKNOWN=0 / OK=1 / OVER_LIMIT=2`. The gRPC service identifier (used in grpcurl) is `io.klimiter.RateLimitService`; the generated Kotlin/Java code lives under `io.klimiter.service.proto`.
 
 ## Conventions
 

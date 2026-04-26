@@ -1,10 +1,10 @@
-# Docker - KLimiter
+# Docker — KLimiter
 
-Este documento descreve como executar o projeto localmente com Docker Compose, usando Redis standalone, Redis Cluster, múltiplas instâncias da aplicação e Nginx como balanceador gRPC.
+This document describes how to run the project locally with Docker Compose, using Redis standalone, Redis Cluster, multiple application instances, and Nginx as a gRPC load balancer.
 
-## Arquivos envolvidos
+## Files involved
 
-Estrutura esperada:
+Expected structure:
 
 ```text
 .
@@ -22,15 +22,15 @@ Estrutura esperada:
 
 ## `.env`
 
-O arquivo `.env` contém as variáveis reais usadas localmente pelo Docker Compose e pela aplicação.
+The `.env` file contains the real values used locally by Docker Compose and the application.
 
-Crie o `.env` a partir do `.env.example`:
+Create `.env` from `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-Exemplo:
+Example:
 
 ```env
 # Application
@@ -76,32 +76,32 @@ KLIMITER_BACKEND_REDIS_LEASE_PERCENTAGE=10
 KLIMITER_BACKEND_REDIS_KEY_PREFIX=klimiter
 ```
 
-## Diferença entre `.env` e `.env.example`
+## Difference between `.env` and `.env.example`
 
-O `.env.example` deve ser versionado no Git como modelo de configuração.
+`.env.example` must be committed to Git as a configuration template.
 
-O `.env` deve conter os valores reais do ambiente local e não deve ser versionado.
+`.env` must contain the real local environment values and must not be committed.
 
-Adicione ao `.gitignore`:
+Add to `.gitignore`:
 
 ```gitignore
 .env
 ```
 
-## Uso do `env_file`
+## Using `env_file`
 
-O `docker-compose.yaml` usa:
+`docker-compose.yaml` uses:
 
 ```yaml
 env_file:
   - .env
 ```
 
-Isso injeta as variáveis do `.env` dentro dos containers da aplicação.
+This injects the `.env` variables inside the application containers.
 
-Algumas variáveis são sobrescritas diretamente no `environment` de cada service, porque dentro do Docker não devemos usar `localhost` para acessar outro container.
+Some variables are overridden directly in each service's `environment` block, because `localhost` inside a Docker container refers to the container itself — not the host.
 
-Exemplo:
+Example:
 
 ```yaml
 environment:
@@ -109,7 +109,7 @@ environment:
   KLIMITER_BACKEND_REDIS_URI: redis://redis-standalone:6379
 ```
 
-Dentro de um container, `localhost` aponta para o próprio container. Por isso, a aplicação deve acessar Redis usando o nome do service Docker, como:
+Inside a container, the application must reach Redis using the Docker service name:
 
 ```text
 redis-standalone
@@ -118,44 +118,44 @@ redis-cluster-2
 redis-cluster-3
 ```
 
-## Profiles disponíveis
+## Available profiles
 
-O Docker Compose está organizado com os seguintes profiles:
+Docker Compose is organised with the following profiles:
 
-| Profile | Descrição |
+| Profile | Description |
 |---|---|
-| `redis_standalone` | Sobe Redis standalone e Redis Insight |
-| `redis_cluster` | Sobe Redis Cluster e Redis Insight |
-| `app_standalone` | Sobe Redis standalone, Redis Insight e uma instância da aplicação |
-| `app_cluster` | Sobe Redis Cluster, Redis Insight, três instâncias da aplicação e Nginx |
+| `redis_standalone` | Starts Redis standalone and Redis Insight |
+| `redis_cluster` | Starts Redis Cluster and Redis Insight |
+| `app_standalone` | Starts Redis standalone, Redis Insight, and one application instance |
+| `app_cluster` | Starts Redis Cluster, Redis Insight, three application instances, and Nginx |
 
-## Subir Redis standalone
+## Start Redis standalone
 
 ```bash
 docker compose --profile redis_standalone up -d
 ```
 
-Esse profile sobe:
+This profile starts:
 
 ```text
 redis-standalone
 redis-insight
 ```
 
-Acesso:
+Access:
 
 ```text
 Redis: localhost:6379
 Redis Insight: http://localhost:5540
 ```
 
-## Subir Redis Cluster
+## Start Redis Cluster
 
 ```bash
 docker compose --profile redis_cluster up -d
 ```
 
-Esse profile sobe:
+This profile starts:
 
 ```text
 redis-cluster-1
@@ -165,7 +165,7 @@ redis-cluster-init
 redis-insight
 ```
 
-Acesso externo aos nós:
+External access to nodes:
 
 ```text
 redis-cluster-1: localhost:7001
@@ -173,7 +173,7 @@ redis-cluster-2: localhost:7002
 redis-cluster-3: localhost:7003
 ```
 
-Dentro da rede Docker, a aplicação usa:
+Inside the Docker network, the application uses:
 
 ```text
 redis://redis-cluster-1:7001
@@ -181,13 +181,13 @@ redis://redis-cluster-2:7002
 redis://redis-cluster-3:7003
 ```
 
-## Subir aplicação com Redis standalone
+## Start application with Redis standalone
 
 ```bash
 docker compose --profile app_standalone up -d --build
 ```
 
-Esse profile sobe:
+This profile starts:
 
 ```text
 redis-standalone
@@ -195,28 +195,28 @@ redis-insight
 app-standalone
 ```
 
-Portas expostas:
+Exposed ports:
 
 ```text
-HTTP: localhost:8080
-gRPC: localhost:9090
+HTTP:         localhost:8080
+gRPC:         localhost:9090
 Redis Insight: http://localhost:5540
 ```
 
-Nesse modo, a aplicação usa:
+In this mode, the application uses:
 
 ```env
 KLIMITER_BACKEND_MODE=REDIS_STANDALONE
 KLIMITER_BACKEND_REDIS_URI=redis://redis-standalone:6379
 ```
 
-## Subir aplicação em cluster com Nginx
+## Start application in cluster mode with Nginx
 
 ```bash
 docker compose --profile app_cluster up -d --build
 ```
 
-Esse profile sobe:
+This profile starts:
 
 ```text
 redis-cluster-1
@@ -230,21 +230,21 @@ app-3
 nginx
 ```
 
-Portas expostas:
+Exposed ports:
 
 ```text
 gRPC via Nginx: localhost:9090
-Redis Insight: http://localhost:5540
+Redis Insight:  http://localhost:5540
 ```
 
-Nesse modo, a aplicação usa:
+In this mode, the application uses:
 
 ```env
 KLIMITER_BACKEND_MODE=REDIS_CLUSTER
 KLIMITER_BACKEND_REDIS_URIS=redis://redis-cluster-1:7001,redis://redis-cluster-2:7002,redis://redis-cluster-3:7003
 ```
 
-O Nginx fica responsável por distribuir chamadas gRPC entre:
+Nginx distributes gRPC calls across:
 
 ```text
 app-1:9090
@@ -252,15 +252,15 @@ app-2:9090
 app-3:9090
 ```
 
-## Testar health check
+## Test health check
 
-Para a aplicação standalone:
+For the standalone application:
 
 ```bash
 curl http://localhost:8080/actuator/health
 ```
 
-Resposta esperada:
+Expected response:
 
 ```json
 {
@@ -268,11 +268,11 @@ Resposta esperada:
 }
 ```
 
-No modo `app_cluster`, a porta HTTP das aplicações não é exposta diretamente. As instâncias ficam acessíveis apenas dentro da rede Docker.
+In `app_cluster` mode, the HTTP port of each application instance is not exposed directly. Instances are reachable only inside the Docker network.
 
-## Testar gRPC com `grpcurl`
+## Test gRPC with `grpcurl`
 
-Exemplo para testar a porta gRPC:
+Example to test the gRPC port:
 
 ```bash
 grpcurl \
@@ -283,67 +283,67 @@ grpcurl \
   io.klimiter.RateLimitService.ShouldRateLimit
 ```
 
-No profile `app_standalone`, a chamada vai direto para a aplicação.
+In the `app_standalone` profile, the call goes directly to the application.
 
-No profile `app_cluster`, a chamada vai para o Nginx, que balanceia entre as instâncias.
+In the `app_cluster` profile, the call goes to Nginx, which load-balances across instances.
 
-## Rebuild das aplicações
+## Rebuild applications
 
-Quando alterar código da aplicação ou Dockerfile:
+When you change application code or the Dockerfile:
 
 ```bash
 docker compose --profile app_standalone up -d --build
 ```
 
-ou:
+or:
 
 ```bash
 docker compose --profile app_cluster up -d --build
 ```
 
-Para forçar rebuild sem cache:
+To force a rebuild with no cache:
 
 ```bash
 docker compose build --no-cache
 ```
 
-Depois suba novamente:
+Then start again:
 
 ```bash
 docker compose --profile app_cluster up -d
 ```
 
-## Parar containers
+## Stop containers
 
-Parar os containers do projeto:
+Stop project containers:
 
 ```bash
 docker compose down
 ```
 
-Parar e remover volumes:
+Stop and remove volumes:
 
 ```bash
 docker compose down -v
 ```
 
-Use `-v` quando quiser limpar completamente dados locais do Redis.
+Use `-v` when you want to fully wipe local Redis data.
 
-## Ver logs
+## View logs
 
-Todos os services:
+All services:
 
 ```bash
 docker compose logs -f
 ```
 
-Aplicação standalone:
+Standalone application:
 
 ```bash
 docker compose logs -f app-standalone
 ```
 
-Aplicações em cluster:
+Cluster applications:
 
 ```bash
 docker compose logs -f app-1 app-2 app-3
@@ -361,39 +361,39 @@ Redis Cluster init:
 docker compose logs -f redis-cluster-init
 ```
 
-## Ver containers ativos
+## View active containers
 
 ```bash
 docker compose ps
 ```
 
-## Executar comandos no Redis standalone
+## Run commands in Redis standalone
 
 ```bash
 docker compose exec redis-standalone redis-cli ping
 ```
 
-Resultado esperado:
+Expected result:
 
 ```text
 PONG
 ```
 
-## Executar comandos no Redis Cluster
+## Run commands in Redis Cluster
 
-Entrar em um nó:
+Enter a node:
 
 ```bash
 docker compose exec redis-cluster-1 redis-cli -p 7001
 ```
 
-Ver informações do cluster:
+View cluster info:
 
 ```bash
 docker compose exec redis-cluster-1 redis-cli -p 7001 cluster info
 ```
 
-Ver nós do cluster:
+View cluster nodes:
 
 ```bash
 docker compose exec redis-cluster-1 redis-cli -p 7001 cluster nodes
@@ -401,7 +401,7 @@ docker compose exec redis-cluster-1 redis-cli -p 7001 cluster nodes
 
 ## Redis Insight
 
-Redis Insight sobe nos profiles:
+Redis Insight starts in the following profiles:
 
 ```text
 redis_standalone
@@ -410,33 +410,33 @@ app_standalone
 app_cluster
 ```
 
-Acesse:
+Access:
 
 ```text
 http://localhost:5540
 ```
 
-Conexões sugeridas:
+Suggested connections:
 
 ### Standalone
 
 ```text
-Host: redis-standalone
-Port: 6379
+Host:  redis-standalone
+Port:  6379
 Alias: standalone
 ```
 
 ### Cluster
 
 ```text
-Host: redis-cluster-1
-Port: 7001
+Host:  redis-cluster-1
+Port:  7001
 Alias: cluster-node-1
 ```
 
-## Observabilidade OTLP
+## OTLP observability
 
-Por padrão, no `.env` local:
+By default in the local `.env`:
 
 ```env
 OTLP_METRICS_EXPORT_ENABLED=false
@@ -444,50 +444,44 @@ OTLP_TRACING_ENDPOINT=http://localhost:4318/v1/traces
 OTLP_LOGGING_ENDPOINT=http://localhost:4318/v1/logs
 ```
 
-Se um collector ou Grafana LGTM estiver rodando dentro do Docker Compose, não use `localhost` dentro da aplicação. Use o nome do service Docker.
-
-Exemplo:
+If a collector or Grafana LGTM stack is running inside Docker Compose, do not use `localhost` inside the application. Use the Docker service name:
 
 ```env
 OTLP_TRACING_ENDPOINT=http://otel-lgtm:4318/v1/traces
 OTLP_LOGGING_ENDPOINT=http://otel-lgtm:4318/v1/logs
 ```
 
-## Atenção sobre `localhost`
+## Note on `localhost`
 
-Fora do Docker:
+Outside Docker:
 
 ```env
 KLIMITER_BACKEND_REDIS_URI=redis://localhost:6379
 ```
 
-Dentro do Docker:
+Inside Docker:
 
 ```env
 KLIMITER_BACKEND_REDIS_URI=redis://redis-standalone:6379
 ```
 
-Fora do Docker, `localhost` aponta para sua máquina.
+Outside Docker, `localhost` refers to your machine. Inside a container, `localhost` refers to the container itself. That is why `docker-compose.yaml` overrides Redis URIs in the application service definitions.
 
-Dentro de um container, `localhost` aponta para o próprio container.
+## Recommended strategy
 
-Por isso o `docker-compose.yaml` sobrescreve as URIs de Redis nos services da aplicação.
-
-## Estratégia recomendada
-
-Use `.env` para configurações operacionais:
+Use `.env` for operational configuration:
 
 ```text
-portas
+ports
 logs
-observabilidade
-modo do backend
+observability
+backend mode
 Redis URI
-prefixo das chaves
+key prefix
 lease percentage
 ```
 
-Mantenha regras complexas de domínio em YAML, por exemplo:
+Keep complex domain rules in YAML:
 
 ```yaml
 klimiter:
@@ -500,9 +494,9 @@ klimiter:
             requests-per-unit: 100
 ```
 
-Listas e objetos aninhados ficam difíceis de manter em variável de ambiente. Para regras de rate limit, YAML é mais legível e menos frágil.
+Nested objects and lists are hard to maintain as environment variables. For rate-limit rules, YAML is more readable and less error-prone.
 
-## Comandos principais
+## Quick reference
 
 Redis standalone:
 
@@ -522,27 +516,20 @@ App standalone:
 docker compose --profile app_standalone up -d --build
 ```
 
-App cluster com Nginx:
+App cluster with Nginx:
 
 ```bash
 docker compose --profile app_cluster up -d --build
 ```
 
-Parar tudo:
+Stop everything:
 
 ```bash
 docker compose down
 ```
 
-Limpar tudo, incluindo volumes:
+Stop and wipe volumes:
 
 ```bash
 docker compose down -v
-```
-
-## Sugestão de commit
-
-```bash
-git add DOCKER.md docker-compose.yaml .env.example
-git commit -m "docs: add Docker usage guide"
 ```
