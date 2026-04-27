@@ -38,7 +38,7 @@ internal class RedisRateLimitOperation(
     private val executor: RedisCommandExecutor,
     private val timeProvider: TimeProvider,
     private val leasePercentage: Int,
-    private val gracePeriod: Duration,
+    private val redisKeyGracePeriod: Duration,
 ) : RateLimitOperation {
 
     private var reserved: Long = 0L
@@ -128,7 +128,7 @@ internal class RedisRateLimitOperation(
                 args = arrayOf(
                     max.toString(),
                     leaseSize.toString(),
-                    (windowSeconds + gracePeriod.inWholeSeconds).toString(),
+                    (windowSeconds + redisKeyGracePeriod.inWholeSeconds).toString(),
                 ),
             )
         } catch (e: RedisException) {

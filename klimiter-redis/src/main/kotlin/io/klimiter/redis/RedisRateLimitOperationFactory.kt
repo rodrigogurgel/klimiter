@@ -65,6 +65,6 @@ object RedisRateLimitOperationFactory {
         ),
         keyPrefix = config.keyPrefix,
         leasePercentage = config.leasePercentage,
-        gracePeriod = config.gracePeriod,
+        redisKeyGracePeriod = config.redisKeyGracePeriod,
     )
 }

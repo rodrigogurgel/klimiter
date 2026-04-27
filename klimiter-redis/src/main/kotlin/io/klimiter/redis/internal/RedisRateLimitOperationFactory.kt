@@ -23,7 +23,7 @@ internal class RedisRateLimitOperationFactory(
     private val bucketStore: LeasedBucketStore,
     private val keyPrefix: String,
     private val leasePercentage: Int,
-    private val gracePeriod: Duration,
+    private val redisKeyGracePeriod: Duration,
 ) : RateLimitOperationFactory {
 
     override fun create(request: RateLimitRequest): List<RateLimitOperation> {
@@ -79,7 +79,7 @@ internal class RedisRateLimitOperationFactory(
             executor = executor,
             timeProvider = timeProvider,
             leasePercentage = leasePercentage,
-            gracePeriod = gracePeriod,
+            redisKeyGracePeriod = redisKeyGracePeriod,
         )
     }
 

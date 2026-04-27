@@ -122,7 +122,7 @@ C4Component
         Component(lua, "LuaScript", "internal", "Wraps Lua source with lazy SCRIPT LOAD and EVALSHA. Transparent NOSCRIPT reload on Redis restart or failover.")
         Component(scripts, "LeaseScripts.LEASE_ACQUIRE", "internal object", "Atomic Lua: reads leased-so-far, grants min(requested, remaining), INCRBY, EXPIRE if no TTL. Returns [granted, remaining].")
         Component(exec, "RedisCommandExecutor", "internal interface", "Abstracts Lettuce standalone vs. cluster surfaces. StandaloneRedisCommandExecutor and ClusterRedisCommandExecutor implement it.")
-        Component(cfg, "RedisKLimiterConfig", "api (public)", "leasePercentage (default 10), keyPrefix (default 'klimiter'), gracePeriod, maxTrackedBuckets.")
+        Component(cfg, "RedisKLimiterConfig", "api (public)", "leasePercentage (default 10), keyPrefix (default 'klimiter'), gracePeriod (Caffeine TTL buffer, default 30 s), redisKeyGracePeriod (Redis key TTL buffer, default 10 s), maxTrackedBuckets.")
     }
 
     Container_Ext(core, "klimiter-core SPI")

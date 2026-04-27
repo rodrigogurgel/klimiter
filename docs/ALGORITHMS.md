@@ -27,7 +27,7 @@ flowchart TD
 
     J -- No --> K[Resolve requestsPerUnit and unit\nfrom descriptor.limit override\nor rule]
 
-    K --> L[CompositeKeyGenerator.generate\nklimiter|domain|k=v|…|windowStart\nwhere windowStart = now/window*window]
+    K --> L["CompositeKeyGenerator.generate\nklimiter|domain|k=v|…|windowStart\nwhere windowStart = now/window*window"]
 
     L --> M{Backend?}
 
@@ -168,7 +168,7 @@ flowchart TD
 
     K -- still exhausted --> L["acquireLease(max)\nleaseSize = max(hitsAddend,\nceil(max × leasePercentage / 100))"]
 
-    L --> M[LuaScript.execute EVALSHA\nkeys=[key] args=[max, leaseSize, ttl]]
+    L --> M["LuaScript.execute EVALSHA\nkeys=[key] args=[max, leaseSize, ttl]"]
     M --> N{granted > 0?}
 
     N -- Yes --> O["localRemaining.addAndGet(granted)\ndistributedRemaining.set(remaining)"]

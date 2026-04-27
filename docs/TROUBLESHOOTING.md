@@ -170,16 +170,12 @@ The in-memory store uses `expireAfterCreate = windowSeconds + gracePeriod`. Old 
 
 ### Redis key TTL shorter than expected
 
-The Redis key TTL is `windowSeconds + gracePeriod`, using `RedisKLimiterConfig.gracePeriod` (default 30 s) — the same value applied to the local Caffeine cache. If keys expire before the window ends, your `gracePeriod` is set too low. Increase it:
+The Redis key TTL is `windowSeconds + redisKeyGracePeriod`. This is controlled by `RedisKLimiterConfig.redisKeyGracePeriod` (default 10 s), which is intentionally separate from `gracePeriod` (the Caffeine local-cache grace, default 30 s). The Redis TTL only needs a small buffer to absorb in-flight lease renewals at the window boundary; it does not need to guard against the concurrent-window leak that drives the larger Caffeine value.
 
-```bash
-KLIMITER_BACKEND_REDIS_GRACE_PERIOD=60s
-```
-
-Or via code:
+If keys expire before the window ends, increase `redisKeyGracePeriod`:
 
 ```kotlin
-RedisKLimiterConfig(gracePeriod = 60.seconds)
+RedisKLimiterConfig(redisKeyGracePeriod = 5.seconds)
 ```
 
 ## Build issues
