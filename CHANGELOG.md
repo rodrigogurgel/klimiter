@@ -12,6 +12,7 @@
 
 - *(core)* Fix rate limit coordinator behavior
 - *(redis)* Make gracePeriod configurable for Redis key TTL
+- *(redis)* Separate Redis key TTL grace period from Caffeine cache grace period
 
 ### 💼 Other
 
@@ -29,6 +30,7 @@
 - Update changelog
 - Add comprehensive documentation and adjust example domain config
 - Document --save-responses flag and configurable Redis gracePeriod
+- Add navigation links and complete troubleshooting index
 
 ### 🧪 Testing
 
@@ -39,3 +41,4 @@
 
 - *(project)* Update gitignore and rename taskfile
 - Add git-cliff changelog automation
+- *(changelog)* Update
