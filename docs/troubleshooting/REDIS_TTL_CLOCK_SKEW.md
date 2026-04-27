@@ -1,5 +1,7 @@
 # Redis TTL inconsistency caused by clock skew in Windows + WSL + Docker
 
+← [Troubleshooting](../TROUBLESHOOTING.md)
+
 ## Overview
 
 In local environments that use **Windows + WSL + Docker Desktop**, Redis keys with TTL may appear to expire too early, live longer than expected, or behave inconsistently between test runs.
@@ -277,3 +279,5 @@ You can consider the issue resolved if:
 - repeated runs produce consistent results
 
 ---
+
+**See also:** [Redis Backend](../REDIS.md) — key TTL model (`windowSeconds + redisKeyGracePeriod`) and monitoring metrics.

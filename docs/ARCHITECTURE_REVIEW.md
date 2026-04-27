@@ -164,3 +164,7 @@ Recommended service test categories:
 4. Decide whether `RateLimitCoordinator` should short-circuit (current) or execute all participants before rollback (strict TCC).
 5. Add Redis integration tests before considering the distributed backend production-ready.
 6. Add service tests (property binding, backend mode selection, gRPC mapper, use-case layer) before any production deployment.
+
+---
+
+**See also:** [Architecture](ARCHITECTURE.md) — C4 diagrams and component descriptions.

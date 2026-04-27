@@ -172,3 +172,7 @@ val limiter = RedisKLimiterFactory.standalone(
     config = config
 )
 ```
+
+---
+
+**See also:** [Redis Backend](REDIS.md) — `leasePercentage`, `gracePeriod`, `redisKeyGracePeriod` tuning · [Docker Deployment](DOCKER.md) — environment variables in container context

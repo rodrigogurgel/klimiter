@@ -1,5 +1,7 @@
 # Redis Cluster connection from local application
 
+← [Troubleshooting](../TROUBLESHOOTING.md)
+
 This document explains how to troubleshoot connection issues when a local application tries to connect to a Redis Cluster running inside Docker Compose.
 
 ## Problem
@@ -630,3 +632,7 @@ For a local application connecting to a Redis Cluster running in Docker Compose:
 - The local machine must also resolve those names to `127.0.0.1`.
 - `localhost:7001` is not enough because Redis Cluster clients follow the topology returned by the cluster.
 - If the cluster gets stuck with `cluster_known_nodes:1` or only `5461` slots assigned, reset the nodes and recreate the cluster.
+
+---
+
+**See also:** [Docker Deployment](../DOCKER.md) — compose profiles, cluster setup commands, and Redis Insight.

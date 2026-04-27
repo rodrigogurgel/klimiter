@@ -1,5 +1,7 @@
 # Algorithms
 
+**See also:** [Architecture](ARCHITECTURE.md) — component overview · [Flows](FLOWS.md) — sequence diagrams that trace these algorithms end-to-end
+
 ---
 
 ## 1. Rate limit decision — full flowchart

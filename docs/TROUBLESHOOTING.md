@@ -224,7 +224,13 @@ docker compose logs redis-cluster-init
 
 ## Load testing and high-volume traffic
 
-- [Local high-volume traffic with gRPC, Nginx, Docker, and WSL](./troubleshooting/HIGH_VOLUME_LOAD_TESTING.md)
+Detailed guides in [`docs/troubleshooting/`](./troubleshooting/):
+
+| Guide | When to use |
+|---|---|
+| [High-volume load testing](./troubleshooting/HIGH_VOLUME_LOAD_TESTING.md) | k6 + gRPC + Nginx + Docker: tuning and symptom interpretation |
+| [Redis Cluster local connection](./troubleshooting/REDIS_CLUSTER_LOCAL_APP_CONNECTION.md) | App can't reach Redis Cluster nodes from outside Docker |
+| [Redis TTL clock skew](./troubleshooting/REDIS_TTL_CLOCK_SKEW.md) | Keys expire too early or too late in Windows + WSL + Docker |
 
 ### Capturing full gRPC responses for debugging
 

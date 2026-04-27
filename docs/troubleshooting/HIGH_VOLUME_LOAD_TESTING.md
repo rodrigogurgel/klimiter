@@ -1,5 +1,7 @@
 # KLimiter — Troubleshooting high-volume load testing locally with gRPC
 
+← [Troubleshooting](../TROUBLESHOOTING.md)
+
 ## Goal
 
 This document describes how to diagnose and prepare a local environment for **high-volume** load testing of KLimiter using **k6 + gRPC + Nginx + Docker**.

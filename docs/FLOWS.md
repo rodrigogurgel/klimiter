@@ -2,6 +2,8 @@
 
 All rate-limit checks are coroutine-suspended (`suspend`). The diagrams below use the actual class names from the source tree.
 
+**See also:** [Architecture](ARCHITECTURE.md) — component overview · [Algorithms](ALGORITHMS.md) — decision flowcharts and state machines
+
 ---
 
 ## 1. Happy path — single descriptor, in-memory backend

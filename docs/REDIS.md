@@ -152,5 +152,9 @@ docker compose exec redis-cluster-1 redis-cli -p 7001 cluster info
 |---|---|
 | Redis `GET`/`INCRBY` call rate | Proxy for lease renewal frequency; should be `requestRate * leasePercentage / 100` per node |
 | Cache hit rate on leased buckets | Low hit rate means very short leases; consider raising `leasePercentage` |
-| Key TTL | Verify keys are expiring at `windowSeconds + gracePeriod` |
+| Key TTL | Verify keys are expiring at `windowSeconds + redisKeyGracePeriod` |
 | `NOSCRIPT` error count | Should be zero under steady state; indicates Redis restart/failover |
+
+---
+
+**See also:** [Configuration](CONFIGURATION.md) — full environment variable reference · [Docker Deployment](DOCKER.md) — running Redis locally · [Troubleshooting](TROUBLESHOOTING.md) — Redis connection issues and TTL problems
