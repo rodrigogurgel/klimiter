@@ -151,7 +151,7 @@ klimiter-service ──▶ klimiter-redis ──▶ klimiter-core
        └─────────────────────────────────────┘
 ```
 
-Rules enforced by `klimiter-architecture-tests` (Konsist):
+Rules enforced by [`klimiter-architecture-tests`](../klimiter-architecture-tests/README.md) (Konsist):
 
 - `klimiter-core` must not depend on Redis, Spring, or gRPC.
 - `klimiter-redis` must not depend on `klimiter-service`.

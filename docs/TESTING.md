@@ -38,7 +38,7 @@ Tests use `kotlin.test` with the JUnit 5 platform. No Spring context is loaded f
 
 ## Architecture tests
 
-The `klimiter-architecture-tests` module uses [Konsist](https://docs.konsist.lemonappdev.com/) to validate module boundaries and package structure.
+The [`klimiter-architecture-tests`](../klimiter-architecture-tests/README.md) module uses [Konsist](https://docs.konsist.lemonappdev.com/) to validate module boundaries and package structure.
 
 ```bash
 ./gradlew :klimiter-architecture-tests:test

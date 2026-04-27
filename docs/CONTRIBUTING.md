@@ -16,11 +16,11 @@ KLimiter is a Kotlin coroutine-native rate-limiting library with an optional Red
 
 | Module | Description |
 | --- | --- |
-| [`klimiter-core`](klimiter-core/README.md) | Public API, SPI contracts, in-memory backend, coordination logic |
-| [`klimiter-redis`](klimiter-redis/README.md) | Redis-backed distributed implementation using the lease pattern |
-| [`klimiter-service`](klimiter-service/README.md) | Spring Boot gRPC service wrapping the library |
-| [`klimiter-architecture-tests`](klimiter-architecture-tests/README.md) | Konsist architecture validation tests |
-| [`klimiter-load-test`](klimiter-load-test/README.md) | k6 gRPC load tests with HTML report generation |
+| [`klimiter-core`](../klimiter-core/README.md) | Public API, SPI contracts, in-memory backend, coordination logic |
+| [`klimiter-redis`](../klimiter-redis/README.md) | Redis-backed distributed implementation using the lease pattern |
+| [`klimiter-service`](../klimiter-service/README.md) | Spring Boot gRPC service wrapping the library |
+| [`klimiter-architecture-tests`](../klimiter-architecture-tests/README.md) | Konsist architecture validation tests |
+| [`klimiter-load-test`](../klimiter-load-test/README.md) | k6 gRPC load tests with HTML report generation |
 
 ## Quick start
 
@@ -137,6 +137,7 @@ task logs              # follow logs (all services)
 | [Testing](docs/TESTING.md) | Unit, architecture, and load tests |
 | [Release](docs/RELEASE.md) | Versioning, changelog automation, and release steps |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and debug tips |
+| [Contributing](CONTRIBUTING.md) | Commit conventions, branch model, and PR checklist |
 
 ## Tech stack
 

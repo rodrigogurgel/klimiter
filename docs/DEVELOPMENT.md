@@ -3,15 +3,16 @@
 ## Prerequisites
 
 | Tool | Version | Notes |
-|---|---|---|
+| --- | --- | --- |
 | JDK | 21+ | Gradle downloads the toolchain automatically |
 | Docker + Compose | any recent | required for Redis profiles and load tests |
 | git-cliff | 2.x | required only for changelog generation |
 | grpcurl | any | optional, for manual gRPC calls |
 | k6 | any | optional, for load tests |
-| Task (go-task) | 3.x | optional wrapper around `gradlew` and `docker compose` |
+| Task (go-task) | 3.x | optional; alternative to `make` |
 
-Install git-cliff: https://git-cliff.org/docs/installation
+Install git-cliff: <https://git-cliff.org/docs/installation>
+Install go-task: <https://taskfile.dev/installation>
 
 ## Clone and first build
 
@@ -27,7 +28,7 @@ The Gradle wrapper downloads the correct Gradle version. JDK toolchain provision
 
 ## Module layout
 
-```text
+```
 klimiter
 ├── klimiter-core                 Rate-limiter library (public API + in-memory backend)
 ├── klimiter-redis                Redis SPI implementation (lease pattern)
@@ -75,16 +76,108 @@ cp .env.example .env
 docker compose --profile app_cluster up -d --build
 ```
 
-### Task shortcuts
+## Development Tooling (Make / Task)
+
+The repository ships with a `Makefile` and a `Taskfile.yml` at the root. Both expose the same commands — pick whichever fits your workflow.
+
+### Listing available commands
 
 ```bash
-task env                  # copy .env.example → .env
-task app-standalone       # start app + Redis standalone
-task app-cluster          # start app + Redis Cluster + Nginx
-task logs                 # follow all logs
-task health               # curl /actuator/health
-task grpcurl              # send a sample rate-limit request
-task down                 # stop all containers
+make help    # Makefile targets with descriptions
+task         # Taskfile tasks with descriptions (requires go-task 3.x)
+```
+
+### Environment setup
+
+```bash
+make env          # copy .env.example → .env (skips if .env already exists)
+task env          # same via Taskfile
+```
+
+### Starting the application
+
+```bash
+# Standalone (app + Redis standalone)
+make app-standalone
+task app-standalone
+
+# Cluster (app × 3 + Redis Cluster + Nginx)
+make app-cluster
+task app-cluster
+```
+
+### Building images
+
+```bash
+make build              # build compose images
+make build-no-cache     # build without layer cache
+make rebuild-standalone # rebuild + force-recreate standalone profile
+make rebuild-cluster    # rebuild + force-recreate cluster profile
+
+# Taskfile equivalents
+task build
+task build-no-cache
+task rebuild-standalone
+task rebuild-cluster
+```
+
+### Logs
+
+```bash
+make logs                    # follow all logs
+make logs-app                # app-standalone + app-1/2/3
+make logs-standalone         # standalone app only
+make logs-cluster            # cluster app instances
+make logs-nginx              # Nginx
+make logs-redis-cluster-init # Redis Cluster init container
+
+# Taskfile equivalents (same names)
+task logs
+task logs-app
+# ...
+```
+
+### Stopping
+
+```bash
+make down           # stop and remove containers (keeps volumes)
+make down-volumes   # stop and remove containers + volumes
+make clean          # alias for down-volumes
+
+task down
+task down-volumes
+task clean
+```
+
+### Diagnostics
+
+```bash
+make health    # curl /actuator/health
+make grpcurl   # send a sample ShouldRateLimit gRPC request
+make ps        # list compose services
+
+make redis-standalone-ping   # ping Redis standalone
+make redis-cluster-info      # show cluster info
+make redis-cluster-nodes     # show cluster nodes
+
+# Taskfile equivalents (same names)
+task health
+task grpcurl
+task redis-standalone-ping
+# ...
+```
+
+### Changelog / Release
+
+```bash
+make changelog          # generate CHANGELOG.md via git-cliff
+make changelog-check    # verify CHANGELOG.md is up to date
+make release-dry-run    # print changelog without writing
+
+# Taskfile equivalents
+task changelog
+task changelog:check
+task changelog:dry-run
 ```
 
 ## In-memory demo
@@ -166,7 +259,7 @@ Generated package: `io.klimiter.service.proto`
 All service configuration is driven by environment variables (or `application.yaml`). Copy `.env.example` to `.env` and adjust as needed. Key variables:
 
 | Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `KLIMITER_BACKEND_MODE` | `IN_MEMORY` | `IN_MEMORY`, `REDIS_STANDALONE`, or `REDIS_CLUSTER` |
 | `KLIMITER_BACKEND_REDIS_URI` | `redis://localhost:6379` | Used when mode is `REDIS_STANDALONE` |
 | `KLIMITER_BACKEND_REDIS_URIS` | `redis://localhost:7001,...` | Comma-separated, used when mode is `REDIS_CLUSTER` |
@@ -174,13 +267,4 @@ All service configuration is driven by environment variables (or `application.ya
 | `GRPC_PORT` | `9090` | gRPC server port |
 | `SERVER_PORT` | `8080` | HTTP (Actuator) port |
 
-See [docs/CONFIGURATION.md](CONFIGURATION.md) for the full reference.
-
-## Useful Make / Task targets
-
-```bash
-task --list      # list all Task targets with descriptions
-make help        # list all Makefile targets with descriptions
-```
-
-Both `Taskfile.yml` and `Makefile` expose the same surface; use whichever you prefer.
+See [CONFIGURATION.md](CONFIGURATION.md) for the full reference.
