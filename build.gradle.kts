@@ -66,8 +66,9 @@ kotlin {
 // ---------------------------------------------------------------------------
 // Protobuf / gRPC (geração de código)
 // ---------------------------------------------------------------------------
-// Gera os stubs a partir dos .proto: builtin `kotlin` (mensagens) + plugin `grpckt`
-// (serviços gRPC Kotlin). A versão do protoc-gen-grpc-kotlin vem do catálogo (grpcKotlin).
+// O Spring Boot auto-configura `protoc` + builtin `java` + plugin `grpc` ao detectar o plugin
+// protobuf (versões alinhadas ao BOM). Aqui só ADICIONAMOS o que falta: o builtin `kotlin`
+// (DSL das mensagens) e o `grpckt` (stub coroutine gRPC Kotlin, versão do catálogo grpcKotlin).
 protobuf {
     plugins {
         id("grpckt") {
