@@ -1,0 +1,61 @@
+# Configuração do Detekt para o klimiter.
+# Roda em cima do default (build-upon-default-config = true no build.gradle.kts),
+# então aqui ficam apenas os ajustes e overrides do projeto.
+
+build:
+  maxIssues: 0 # falha o build em qualquer violação não baselined
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+# Regras de formatação (ktlint via detekt-formatting)
+formatting:
+  active: true
+  autoCorrect: true
+  MaximumLineLength:
+    active: true
+    maxLineLength: 120
+
+complexity:
+  LongParameterList:
+    functionThreshold: 7
+    constructorThreshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2', '100', '1000']
+    ignoreEnums: true
+    ignorePropertyDeclaration: true
+  ForbiddenComment:
+    active: true
+    comments:
+      - reason: 'Use um issue rastreável em vez de TODO solto.'
+        value: 'TODO:'
+      - reason: 'Resolva o FIXME antes do merge.'
+        value: 'FIXME:'
+
+naming:
+  active: true
+  FunctionNaming:
+    # Funções de teste podem usar backticks com espaços.
+    excludes: ['**/test/**']
+
+performance:
+  SpreadOperator:
+    # `runApplication<App>(*args)` é o idioma padrão de bootstrap do Spring Boot;
+    # o spread aqui é inevitável e não representa um problema de performance.
+    active: false
+
+# O código gerado (protobuf/gRPC) nunca deve ser analisado.
+exceptions:
+  active: true
