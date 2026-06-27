@@ -64,7 +64,7 @@ serialização:
 
 **Request**
 
-- `dimensão` — o eixo do limite (ex.: `user_id`).
+- `dimensão` (campo `key` no proto) — o eixo do limite (ex.: `user_id`).
 - `valor` — o valor concreto dentro do eixo (ex.: `user-42`).
 - `N` (hits) — unidades que esta requisição quer consumir (tipicamente 1).
 - `prioridade` — `ALTA` ou `BAIXA`.

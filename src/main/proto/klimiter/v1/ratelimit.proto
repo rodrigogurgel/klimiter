@@ -30,7 +30,7 @@ enum Status {
 
 // Um item do lote (§2.1).
 message RateLimitDescriptor {
-  string dimension = 1;  // eixo do limite (ex.: "user_id")
+  string key = 1;        // eixo do limite (ex.: "user_id")
   string value = 2;      // valor dentro do eixo (ex.: "user-42")
   uint32 hits = 3;       // N — unidades a consumir (tipicamente 1; 0 = nada a cobrar)
   Priority priority = 4;
