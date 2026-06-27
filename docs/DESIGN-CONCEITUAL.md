@@ -64,7 +64,7 @@ serialização:
 
 **Request**
 
-- `dimensão` — o eixo do limite (ex.: `user_id`).
+- `dimensão` (campo `key` no proto) — o eixo do limite (ex.: `user_id`).
 - `valor` — o valor concreto dentro do eixo (ex.: `user-42`).
 - `N` (hits) — unidades que esta requisição quer consumir (tipicamente 1).
 - `prioridade` — `ALTA` ou `BAIXA`.
@@ -73,12 +73,12 @@ Um pedido do cliente é um **lote** de um ou mais requests, avaliado all-or-noth
 
 **Decisão (por request)**
 
-- `verdict` — `PERMITIDO` | `NEGADO` | `DESCONHECIDO` (enum compartilhado por alta e baixa).
+- `status` — `PERMITIDO` | `NEGADO` | `DESCONHECIDO` (enum compartilhado por alta e baixa).
 - `remaining` — estimativa de capacidade restante na janela (0 quando negado).
 - `reset_after` — quanto falta para a janela virar.
 - `capacity` — a capacidade da política (`requests_per_unit`).
 
-O **resultado do lote** carrega o `verdict` coletivo (§7) mais a decisão de cada item.
+O **resultado do lote** carrega o `status` coletivo (§7) mais a decisão de cada item.
 
 ### 2.2 Roteamento de uma requisição
 
@@ -334,7 +334,7 @@ memória fraco, isso exige barreiras/atômicos sequencialmente consistentes. **I
 mais simples e igualmente correta:** fazer todos os testes (não só a renovação) **sob a
 trava do bucket** — aí a ordenação é automática e esta nota não se aplica.
 
-**Resultados possíveis (enum de verdict, compartilhado por alta e baixa):**
+**Resultados possíveis (enum de status, compartilhado por alta e baixa):**
 
 - **Permitido** — admitido.
 - **Negado** — para a alta, significa janela esgotada ou `N > capacidade`; o motivo "acima da
