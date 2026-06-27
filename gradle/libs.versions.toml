@@ -1,0 +1,31 @@
+[versions]
+kotlin = "2.3.21"
+springBoot = "4.1.0"
+dependencyManagement = "1.1.7"
+protobufPlugin = "0.9.6"
+grpcKotlin = "1.5.0"
+konsist = "0.17.3"
+detekt = "2.0.0-alpha.3"
+dokka = "2.2.0"
+sonar = "7.2.2.6593"
+mockk = "1.14.11"
+benManesVersions = "0.54.0"
+
+# Apenas deps com versão própria. Deps gerenciadas por BOM/plugin (sem versão) são
+# declaradas como coordenada direta no build.gradle.kts — ver CONTRIBUTING.md.
+[libraries]
+grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKotlin" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+detekt-rules-ktlint-wrapper = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+dependency-management = { id = "io.spring.dependency-management", version.ref = "dependencyManagement" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonar" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "benManesVersions" }

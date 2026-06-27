@@ -66,12 +66,32 @@ Sempre use o wrapper (`./gradlew`), nunca um Gradle global.
 5. **Commits no padrão Conventional Commits**, no imperativo, escopo quando fizer sentido.
 6. **Não baixe a régua de qualidade** silenciosamente (não adicione `@Suppress`, não desative
    regras do detekt, nem abaixe a meta de cobertura sem justificativa explícita no PR).
+7. **Antes de adicionar/atualizar uma dependência ou plugin:**
+   - **Cheque a versão estável mais recente** na fonte oficial (Maven Central / Gradle Plugin
+     Portal) — não chute nem copie versões de memória.
+   - **Confirme a compatibilidade** com o stack atual: Kotlin 2.3.21, JDK 21, Gradle
+     (wrapper), Spring Boot 4.1. Este projeto usa versões de ponta e conflitos de
+     compatibilidade são comuns — ex.: detekt × versão do Kotlin embutido, Dokka × Jackson
+     forçado pelo BOM do Spring. Rode `./gradlew help` e `./gradlew check` após a mudança.
+   - **Onde declarar:** plugins e dependências **com versão própria** vão no
+     `gradle/libs.versions.toml` (versão em `[versions]`, lib em `[libraries]` → `libs.*`,
+     plugin em `[plugins]` → `libs.plugins.*`). A regra firme é: **nunca fixe um número de
+     versão inline** no `build.gradle.kts`.
+   - **Deps gerenciadas por um BOM** (ex.: os `spring-boot-starter-*`, cuja versão vem do BOM
+     do Spring Boot) **não têm versão própria** — declare como coordenada direta **sem versão**
+     no `build.gradle.kts` (ou como entrada sem `version` no catálogo, se quiser o acessor
+     tipado `libs.*`). A versão é responsabilidade do BOM; não a duplique nem a fixe.
+   - **Step de pré-commit (obrigatório ao mexer em dependências/plugins):** rode
+     `./gradlew dependencyUpdates` e confirme que as entradas novas/alteradas estão na **última
+     versão dentro de um major compatível**. Se houver um major mais novo, **não** salte cego —
+     avalie a compatibilidade (regra acima) e, se não for adotar, registre o porquê no PR.
 
 ## Estrutura do repositório
 
 ```
 build.gradle.kts          # build + plugins de qualidade (jacoco, detekt, sonar, dokka)
 settings.gradle.kts
+gradle/libs.versions.toml # version catalog: plugins + deps com versão própria (BOM fica sem versão)
 cliff.toml                # config do git-cliff (geração do CHANGELOG)
 config/detekt/detekt.yml  # regras do detekt (sobre o default)
 docs/DESIGN-CONCEITUAL.md # especificação da lógica (LER PRIMEIRO)

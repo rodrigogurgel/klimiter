@@ -1,18 +1,20 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.google.protobuf.gradle.id
 
 plugins {
-	kotlin("jvm") version "2.3.21"
-	kotlin("plugin.spring") version "2.3.21"
-	id("org.springframework.boot") version "4.1.0"
-	id("io.spring.dependency-management") version "1.1.7"
-	id("com.google.protobuf") version "0.9.6"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.dependency.management)
+    alias(libs.plugins.protobuf)
+
 
 	// Qualidade & documentação
 	jacoco
-	id("io.gitlab.arturbosch.detekt") version "1.23.7"
-	id("org.sonarqube") version "6.0.1.5171"
-	id("org.jetbrains.dokka") version "2.0.0"
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.sonarqube)
+    alias(libs.plugins.versions)
 }
 
 group = "io.github.rodrigogurgel"
@@ -29,21 +31,59 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-grpc-server")
-	implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	testImplementation("org.springframework.boot:spring-boot-starter-grpc-server-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-opentelemetry-test")
-	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-grpc-server")
+    implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
 
-	detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
+    implementation(libs.grpc.kotlin.stub)
+    // Versões gerenciadas pelo BOM do Spring Boot / plugin Kotlin (sem versão própria).
+    implementation("com.google.protobuf:protobuf-kotlin")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("tools.jackson.module:jackson-module-kotlin")
+    detektPlugins(libs.detekt.rules.ktlint.wrapper)
+
+    testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-grpc-server-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-opentelemetry-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation(libs.mockk)
+    testImplementation(libs.konsist)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
 }
 
 kotlin {
 	compilerOptions {
 		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf / gRPC (geração de código)
+// ---------------------------------------------------------------------------
+// Gera os stubs a partir dos .proto: builtin `kotlin` (mensagens) + plugin `grpckt`
+// (serviços gRPC Kotlin). A versão do protoc-gen-grpc-kotlin vem do catálogo (grpcKotlin).
+protobuf {
+    plugins {
+        id("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpcKotlin.get()}:jdk8@jar"
+        }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                id("grpckt")
+            }
+            it.builtins {
+                id("kotlin")
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -91,37 +131,11 @@ tasks.jacocoTestCoverageVerification {
 // Detekt (lint estático Kotlin)
 // ---------------------------------------------------------------------------
 detekt {
-	buildUponDefaultConfig = true
-	allRules = false
-	autoCorrect = false
-	config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-	baseline = file("$rootDir/config/detekt/baseline.xml")
+    autoCorrect = true
+    buildUponDefaultConfig = true
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
 }
 
-tasks.withType<Detekt>().configureEach {
-	jvmTarget = "21"
-	reports {
-		xml.required.set(true) // consumido pelo Sonar
-		html.required.set(true)
-		sarif.required.set(true)
-		md.required.set(false)
-	}
-}
-
-tasks.withType<DetektCreateBaselineTask>().configureEach {
-	jvmTarget = "21"
-}
-
-// O detekt 1.23.x embute o compilador do Kotlin 2.0.x. Como o projeto usa Kotlin 2.3.21,
-// fixamos o Kotlin do classpath do detekt na versão compatível para evitar o erro
-// "detekt was compiled with Kotlin 2.0.x but is currently running with 2.3.21".
-configurations.matching { it.name.startsWith("detekt") }.configureEach {
-	resolutionStrategy.eachDependency {
-		if (requested.group == "org.jetbrains.kotlin") {
-			useVersion("2.0.10")
-		}
-	}
-}
 
 // ---------------------------------------------------------------------------
 // SonarQube / SonarCloud
@@ -149,16 +163,33 @@ sonar {
 // ---------------------------------------------------------------------------
 // Dokka (documentação de API)
 // ---------------------------------------------------------------------------
-// O plugin Dokka v2 registra a task `dokkaGenerate` (HTML em build/dokka/).
-// moduleName usa o nome do projeto ("klimiter") por padrão.
-//
-// O BOM do Spring Boot 4 (via io.spring.dependency-management) força o Jackson do
-// classpath do worker do Dokka para uma versão incompatível com o analisador do Dokka
-// (NoSuchMethodError em TypeFactory). Fixamos o Jackson só nas configs do Dokka.
-configurations.matching { it.name.startsWith("dokka") }.configureEach {
-	resolutionStrategy.eachDependency {
-		if (requested.group == "com.fasterxml.jackson.core") {
-			useVersion("2.15.3")
-		}
-	}
+dokka {
+    dokkaSourceSets.configureEach {
+        reportUndocumented.set(false)
+        // O código gerado pelo protobuf/grpc não tem KDoc nossa para validar.
+        suppressGeneratedFiles.set(true)
+    }
+    dokkaPublications.configureEach {
+        failOnWarning.set(true)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Versões de dependências (com.github.ben-manes.versions)
+// ---------------------------------------------------------------------------
+// `./gradlew dependencyUpdates` reporta libs/plugins desatualizados.
+// Step de pré-commit ao mexer em dependências — ver CONTRIBUTING.md / AGENTS.md.
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+    val stableRegex = "^[0-9,.v-]+(-r)?$".toRegex()
+    return !stableKeyword && !stableRegex.matches(version)
+}
+
+tasks.withType<DependencyUpdatesTask>().configureEach {
+    gradleReleaseChannel = "current"
+    // Só sugere candidatos pré-lançamento (alpha/beta/rc) quando a versão atual já é
+    // pré-lançamento (ex.: detekt 2.0.0-alpha.3); senão, só releases estáveis.
+    rejectVersionIf {
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
+    }
 }

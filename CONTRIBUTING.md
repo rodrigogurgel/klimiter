@@ -149,6 +149,44 @@ Ajuste `sonar.projectKey`, `sonar.organization` e `sonar.host.url` para o seu se
 ### Dokka
 Gera a documentação de API a partir dos KDocs. Documente o código público com KDoc.
 
+### Dependências e versões
+A regra firme: **nunca fixe um número de versão inline no `build.gradle.kts`** — versão só no
+**version catalog** [`gradle/libs.versions.toml`](gradle/libs.versions.toml) ou herdada de um
+BOM. Antes de adicionar ou atualizar uma dependência:
+
+- **Cheque a versão estável mais recente** na fonte oficial (Maven Central / Gradle Plugin
+  Portal); não copie versões de memória.
+- **Confirme a compatibilidade** com o stack atual (Kotlin 2.3.21, JDK 21, Gradle do wrapper,
+  Spring Boot 4.1). O projeto usa versões de ponta e conflitos são comuns — ex.: detekt × a
+  versão do Kotlin que ele embute, Dokka × Jackson forçado pelo BOM do Spring. Rode
+  `./gradlew help` e `./gradlew check` após a mudança.
+
+**Onde declarar cada dependência:**
+
+| Caso | Onde | Como |
+|------|------|------|
+| Plugin | catálogo `[plugins]` | `id`, usado via `libs.plugins.*` |
+| Dep com **versão própria** | catálogo `[versions]` + `[libraries]` | `module` + `version.ref`, usado via `libs.*` |
+| Dep **gerenciada por BOM** (ex.: `spring-boot-starter-*`) | direto no `build.gradle.kts`, **sem versão** | `implementation("grupo:artefato")` — o BOM define a versão |
+
+- Trocar as tabelas do catálogo é o erro clássico: um plugin em `[libraries]` **não** resolve
+  via `libs.plugins.*`.
+- Para deps de BOM, declarar a coordenada **sem versão** é o esperado — não duplique a versão
+  no catálogo nem a fixe inline. (Opcionalmente cabe uma entrada sem `version` no catálogo só
+  para ganhar o acessor tipado `libs.*`.)
+
+**Step de pré-commit — verificar atualizações.** Sempre que adicionar ou alterar uma
+dependência/plugin, rode antes de commitar:
+
+```bash
+./gradlew dependencyUpdates    # relatório de versões mais novas (libs + plugins)
+```
+
+Confirme que as entradas novas/alteradas estão na **última versão dentro de um major
+compatível**. A task só sugere releases estáveis (exceto quando a versão atual já é
+pré-lançamento, como o detekt `2.0.0-alpha.x`). Se existir um major mais novo, **não salte
+cego**: avalie a compatibilidade com o stack e, se optar por não subir, registre o motivo no PR.
+
 ---
 
 ## 5. Changelog
@@ -170,6 +208,8 @@ faça o commit `chore(release): vX.Y.Z`, mescle em `main`, e crie a tag `vX.Y.Z`
 - [ ] Branch criada a partir de `develop` (ou `main`, se hotfix).
 - [ ] Commits no padrão Conventional Commits.
 - [ ] `./gradlew check` passa (testes + detekt).
+- [ ] Se mexeu em dependências/plugins: `./gradlew dependencyUpdates` rodado e versões novas
+      conferidas (última dentro de um major compatível).
 - [ ] Cobertura não regrediu de forma relevante.
 - [ ] Comportamento condizente com o [Design Conceitual](docs/DESIGN-CONCEITUAL.md);
       se o design mudou, o documento foi atualizado no mesmo PR.
