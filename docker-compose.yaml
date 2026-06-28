@@ -84,11 +84,12 @@ services:
     restart: unless-stopped
 
   # SonarQube local para análise OFFLINE (perfil 'sonar', OPT-IN — não sobe na stack padrão).
-  #   docker compose --profile sonar up -d sonarqube      # http://localhost:9000 (admin/admin no 1º login)
-  #   SONAR_HOST_URL=http://localhost:9000 ./gradlew sonar -Dsonar.token=<token-do-projeto>
+  #   make sonar-local                                    # sobe + semeia a senha + token + análise (atalho)
+  #   docker compose --profile sonar up -d sonarqube      # http://localhost:9000 (modo manual)
   # Banco H2 embutido (só avaliação/dev — o Sonar avisa que não é p/ produção; ver docs/VARIAVEIS-DE-AMBIENTE §6.2).
   sonarqube:
-    image: sonarqube:lts-community
+    # Pinado p/ reprodutibilidade; num upgrade de major o H2 do volume pode ficar incompatível — `make sonar-reset`.
+    image: sonarqube:26.6.0.123539-community
     profiles: ["sonar"]
     ports:
       - "9000:9000"
