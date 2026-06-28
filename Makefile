@@ -32,6 +32,9 @@ SATURATION_SCRIPT := scripts/load-test/performance/saturation-ghz.sh
 # `sat-server`: serviço PINADO em 2 cores, OTel off (harness confiável — ver docs/SATURACAO.md;
 # NÃO use o `cpus`/cpuset do Docker, que distorce o joelho). Precisa do Redis no ar.
 SAT_CPUS     ?= 0,1
+# Pinning real só no Linux (taskset). No macOS não há afinidade de CPU em userland: cai para a JVM
+# limitada por -XX:ActiveProcessorCount=2 (sem isolamento de core; o joelho fica menos confiável).
+SAT_PIN      := $(shell command -v taskset >/dev/null 2>&1 && echo "taskset -c $(SAT_CPUS)")
 SAT_JVM      ?= -XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m
 SAT_REDIS    ?= redis://localhost:6379
 SAT_POLICIES ?= scripts/load-test/policies.sample.yaml
@@ -70,9 +73,13 @@ logs-cluster:
 ## sat-server: serviço pinado em 2 cores, OTel off, políticas de carga (foreground; precisa do Redis no ar)
 sat-server:
 	./gradlew -q bootJar -x test
+ifeq ($(SAT_PIN),)
+	@echo ">> AVISO: 'taskset' indisponível (macOS?) — SEM pinning real de core; JVM limitada a ActiveProcessorCount=2. O joelho é menos confiável (ver docs/SATURACAO.md §4)."
+else
 	@echo ">> klimiter pinado em CPUs $(SAT_CPUS), OTel off. Ctrl-C p/ parar; rode 'make saturation' noutro terminal."
+endif
 	KLIMITER_REDIS_URI=$(SAT_REDIS) KLIMITER_POLICIES_PATH=$(SAT_POLICIES) \
-		taskset -c $(SAT_CPUS) java $(SAT_JVM) $(SAT_OTEL_OFF) -jar build/libs/klimiter-*.jar
+		$(SAT_PIN) java $(SAT_JVM) $(SAT_OTEL_OFF) -jar build/libs/klimiter-*.jar
 
 ## saturation: PERFORMANCE com ghz (rode `make sat-server` noutro terminal antes) — degraus até o joelho
 saturation:
