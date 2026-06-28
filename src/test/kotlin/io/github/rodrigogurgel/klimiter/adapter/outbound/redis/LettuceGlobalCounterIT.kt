@@ -1,6 +1,5 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
-import io.lettuce.core.RedisClient
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -21,21 +20,17 @@ import kotlin.time.Duration.Companion.seconds
  */
 @Testcontainers(disabledWithoutDocker = true)
 class LettuceGlobalCounterIT {
-    private lateinit var client: RedisClient
     private lateinit var counter: LettuceGlobalCounter
 
     @BeforeEach
     fun setUp() {
         val uri = "redis://${redis.host}:${redis.firstMappedPort}"
-        val (createdClient, createdCounter) = LettuceGlobalCounter.connect(uri, poolSize = 2)
-        client = createdClient
-        counter = createdCounter
+        counter = LettuceGlobalCounter.standalone(uri, poolSize = 2)
     }
 
     @AfterEach
     fun tearDown() {
         counter.close()
-        client.shutdown()
     }
 
     @Test
