@@ -4,7 +4,11 @@ Bem-vindo! O **klimiter** é um *rate limiter* distribuído por janela fixa, exp
 **gRPC** e escrito em **Kotlin**. Antes de mexer no código, leia o
 [Design Conceitual](docs/DESIGN-CONCEITUAL.md) — ele descreve a lógica (lease, pacing,
 batch all-or-nothing, hot reload) de forma independente de implementação e é a fonte da
-verdade sobre *o que* o serviço deve fazer.
+verdade sobre *o que* o serviço deve fazer. Para *como* o código é estruturado (camadas
+hexagonais, layout de pacotes e regras de fronteira), veja a
+[Arquitetura](docs/ARQUITETURA.md). O que o serviço expõe para observação (métricas,
+traces e logs) está em [Observabilidade](docs/OBSERVABILIDADE.md). Toda a configuração via
+ambiente está centralizada em [Variáveis de ambiente](docs/VARIAVEIS-DE-AMBIENTE.md).
 
 Este guia explica **como interagir com o projeto**: ambiente, fluxo de branches, padrão de
 commits, ferramentas de qualidade e o checklist antes de abrir um PR.
@@ -213,5 +217,7 @@ faça o commit `chore(release): vX.Y.Z`, mescle em `main`, e crie a tag `vX.Y.Z`
 - [ ] Cobertura não regrediu de forma relevante.
 - [ ] Comportamento condizente com o [Design Conceitual](docs/DESIGN-CONCEITUAL.md);
       se o design mudou, o documento foi atualizado no mesmo PR.
+- [ ] Estrutura condizente com a [Arquitetura](docs/ARQUITETURA.md) (regras de fronteira
+      hexagonais); se a estrutura mudou, o documento foi atualizado no mesmo PR.
 - [ ] KDoc adicionado/atualizado para API pública.
 - [ ] PR aberto contra `develop` (ou `main`, se hotfix).

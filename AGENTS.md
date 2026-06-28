@@ -85,6 +85,24 @@ Sempre use o wrapper (`./gradlew`), nunca um Gradle global.
      `./gradlew dependencyUpdates` e confirme que as entradas novas/alteradas estão na **última
      versão dentro de um major compatível**. Se houver um major mais novo, **não** salte cego —
      avalie a compatibilidade (regra acima) e, se não for adotar, registre o porquê no PR.
+8. **Mantenha o catálogo de variáveis de ambiente fiel — referência-primeiro.** Atualize
+   [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md), no mesmo PR, sempre que:
+   - **criar/alterar uma variável ou propriedade** de configuração (app, JVM ou build) — registre
+     a entrada com caminho, propriedade equivalente, default e se está definida no projeto;
+   - **adicionar uma dependência/plugin** — adicione uma seção curta com a **referência oficial
+     da versão** das variáveis que ela reconhece; **não liste as variáveis upstream uma a uma**
+     (nem seus defaults). Se a dependência não tiver variáveis próprias, registre-a na §7;
+   - **remover uma dependência/plugin** — remova a seção e a referência correspondentes.
+   **Liste individualmente apenas o que o projeto define/sobrescreve** (com o valor do projeto);
+   todo o resto fica na referência. Confirme nomes e versões na doc oficial, não de memória.
+9. **Mantenha o catálogo de observabilidade fiel — referência-primeiro.** Atualize
+   [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md), no mesmo PR, sempre que:
+   - **adicionar/alterar/remover instrumentação própria** (métrica, span ou evento de log do
+     klimiter) — registre nome, tipo/escopo, tags/atributos e significado na subseção "do klimiter";
+   - **adicionar/remover uma dependência** — ajuste os **destaques** dos sinais automáticos e a
+     **referência oficial** da subseção "providas por dependências" (não copie a lista de
+     métricas/spans/logs que já está na doc oficial; confirme na doc da versão, não de memória).
+   Mantenha separado o que é **provido por dependências** (referenciado) do que é **do klimiter**.
 
 ## Estrutura do repositório
 
@@ -95,6 +113,9 @@ gradle/libs.versions.toml # version catalog: plugins + deps com versão própria
 cliff.toml                # config do git-cliff (geração do CHANGELOG)
 config/detekt/detekt.yml  # regras do detekt (sobre o default)
 docs/DESIGN-CONCEITUAL.md # especificação da lógica (LER PRIMEIRO)
+docs/ARQUITETURA.md       # estrutura do código + regras de fronteira (hexagonal)
+docs/OBSERVABILIDADE.md   # contrato de telemetria: métricas, traces/spans, logs
+docs/VARIAVEIS-DE-AMBIENTE.md # variáveis de ambiente: aplicação, deps, JVM, build
 src/main/kotlin/...        # código de produção
 src/test/kotlin/...        # testes
 CONTRIBUTING.md           # fluxo de contribuição completo
@@ -104,4 +125,7 @@ AGENTS.md                 # este arquivo
 ## Documentos relacionados
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo completo, git flow, checklist de PR.
-- [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md) — a lógica do rate limiter.
+- [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md) — a lógica do rate limiter (*o quê*).
+- [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — estrutura do código e regras de fronteira (*o como*).
+- [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) — métricas, traces/spans e logs expostos.
+- [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md) — variáveis de ambiente (app, deps, JVM, build).
