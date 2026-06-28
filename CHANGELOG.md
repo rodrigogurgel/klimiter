@@ -9,6 +9,12 @@ Este arquivo é **gerado automaticamente** pelo [git-cliff](https://git-cliff.or
 a partir do histórico de commits — não edite à mão. Veja `cliff.toml` e o
 [CONTRIBUTING.md](CONTRIBUTING.md#changelog).
 
+## [0.1.2] - 2026-06-28
+
+### Corrigido
+
+- **compose:** Usa MANAGEMENT_OTLP_METRICS_EXPORT_STEP para export a 10s
+
 ## [0.1.1] - 2026-06-28
 
 ### Manutenção
