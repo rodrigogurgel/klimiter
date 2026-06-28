@@ -11,7 +11,6 @@ import io.github.rodrigogurgel.klimiter.core.port.outbound.Clock
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.github.rodrigogurgel.klimiter.core.port.outbound.PolicyRepository
 import io.github.rodrigogurgel.klimiter.core.port.outbound.RateLimitMetrics
-import io.lettuce.core.RedisClient
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.context.annotation.Bean
@@ -24,14 +23,16 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration(proxyBeanMethods = false)
 class KlimiterConfiguration {
-    @Bean(destroyMethod = "shutdown")
-    fun redisClient(redis: RedisProperties): RedisClient = RedisClient.create(redis.uri)
-
-    /** Contador global metrificado (`klimiter.central.roundtrip`) sobre o pool Lettuce (§4). Tipo
+    /** Contador global metrificado (`klimiter.central.roundtrip`) sobre o pool Lettuce (§4), standalone
+     *  ou cluster conforme `klimiter.redis.cluster`. O `close` encerra conexões e client (§4). Tipo
      *  concreto p/ o `destroyMethod = "close"` ser resolvível; injetável como [GlobalCounter]. */
     @Bean(destroyMethod = "close")
-    fun globalCounter(client: RedisClient, redis: RedisProperties, registry: MeterRegistry): MeteredGlobalCounter {
-        val lettuce = LettuceGlobalCounter(List(redis.poolSize) { client.connect() })
+    fun globalCounter(redis: RedisProperties, registry: MeterRegistry): MeteredGlobalCounter {
+        val lettuce = if (redis.cluster) {
+            LettuceGlobalCounter.cluster(redis.uri, redis.poolSize)
+        } else {
+            LettuceGlobalCounter.standalone(redis.uri, redis.poolSize)
+        }
         return MeteredGlobalCounter(lettuce, registry)
     }
 

@@ -13,6 +13,9 @@ klimiter:
     uri: redis://localhost:6379
     pool-size: 8
     key-prefix: klimiter
+    # Client de cluster (Redis Cluster / ElastiCache cluster mode enabled): roteamento por slot e
+    # descoberta de topologia. Scripts são single-key, então sem CROSSSLOT. false = standalone.
+    cluster: false
   eviction:
     # Varredura do índice local de buckets (§4.2).
     interval: 60s
