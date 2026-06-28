@@ -39,6 +39,12 @@ class BatchEvaluatorTest {
     private fun evaluatorWith(budget: LocalBudget, metrics: RateLimitMetrics = RateLimitMetrics.NOOP): BatchEvaluator =
         BatchEvaluator(budget, FixedPolicies(snapshot), Clock { now }, metrics)
 
+    private fun evaluatorWith(
+        snapshot: PolicySnapshot,
+        budget: LocalBudget,
+        metrics: RateLimitMetrics,
+    ): BatchEvaluator = BatchEvaluator(budget, FixedPolicies(snapshot), Clock { now }, metrics)
+
     private fun budget(counter: GlobalCounter) = LocalBudget(counter, "klimiter")
 
     private fun req(value: String, hits: Long = 1, priority: Priority = Priority.HIGH) =
@@ -104,5 +110,53 @@ class BatchEvaluatorTest {
         assertFailsWith<CancellationException> {
             evaluatorWith(budget).evaluate(Batch(listOf(req("uA"))))
         }
+    }
+
+    @Test
+    fun `policy reserve metric carries dimension with null override for the default`() = runTest {
+        val metrics = RecordingRateLimitMetrics()
+        evaluatorWith(budget(InMemoryGlobalCounter()), metrics).evaluate(Batch(listOf(req("uA"))))
+        val recorded = metrics.policyReserves.single()
+        assertEquals(Dimension("user_id"), recorded.dimension)
+        assertEquals(null, recorded.override)
+        assertEquals(Priority.HIGH, recorded.priority)
+        assertEquals(Status.ALLOWED, recorded.status)
+    }
+
+    @Test
+    fun `policy reserve metric carries the override value when an override matches`() = runTest {
+        val withOverride = PolicySnapshot(
+            mapOf(
+                Dimension("user_id") to DimensionPolicy(
+                    default = policy,
+                    overrides = mapOf(DimensionValue("vip") to Policy(Capacity(100), RateLimitUnit.MINUTE)),
+                ),
+            ),
+        )
+        val metrics = RecordingRateLimitMetrics()
+        evaluatorWith(withOverride, budget(InMemoryGlobalCounter()), metrics).evaluate(Batch(listOf(req("vip"))))
+        assertEquals(DimensionValue("vip"), metrics.policyReserves.single().override)
+    }
+
+    @Test
+    fun `policy reserve metric is not emitted when detailedMetric is off`() = runTest {
+        val quiet = PolicySnapshot(
+            mapOf(
+                Dimension("user_id") to DimensionPolicy(
+                    default = Policy(Capacity(100), RateLimitUnit.MINUTE, detailedMetric = false),
+                ),
+            ),
+        )
+        val metrics = RecordingRateLimitMetrics()
+        evaluatorWith(quiet, budget(InMemoryGlobalCounter()), metrics).evaluate(Batch(listOf(req("uA"))))
+        assertTrue(metrics.policyReserves.isEmpty())
+    }
+
+    @Test
+    fun `pass-through does not emit a policy reserve metric`() = runTest {
+        val metrics = RecordingRateLimitMetrics()
+        val batch = Batch(listOf(Request(Dimension("ip"), DimensionValue("1.2.3.4"), Hits(1), Priority.HIGH)))
+        evaluatorWith(budget(InMemoryGlobalCounter()), metrics).evaluate(batch)
+        assertTrue(metrics.policyReserves.isEmpty())
     }
 }

@@ -4,6 +4,7 @@ import io.github.rodrigogurgel.klimiter.core.domain.Batch
 import io.github.rodrigogurgel.klimiter.core.domain.BatchResult
 import io.github.rodrigogurgel.klimiter.core.domain.Bucket
 import io.github.rodrigogurgel.klimiter.core.domain.Decision
+import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.domain.Remaining
 import io.github.rodrigogurgel.klimiter.core.domain.ReportedCapacity
@@ -47,8 +48,11 @@ class BatchEvaluator(
      */
     private class Inspected(val request: Request, val matched: Matched?, val inspection: Decision)
 
-    /** Política + bucket de um item com política casada (§8.1) — sempre os dois juntos. */
-    private class Matched(val policy: Policy, val bucket: Bucket)
+    /**
+     * Política + bucket de um item com política casada (§8.1) — sempre os dois juntos. [override]
+     * carrega o valor que casou um override exato (ou `null` na default), para o meter por policy.
+     */
+    private class Matched(val policy: Policy, val bucket: Bucket, val override: DimensionValue?)
 
     override suspend fun evaluate(batch: Batch): BatchResult = coroutineScope {
         if (batch.requests.isEmpty()) return@coroutineScope BatchResult(Status.ALLOWED, emptyList())
@@ -82,7 +86,7 @@ class BatchEvaluator(
                 val bucket = budget.bucketFor(request.dimension, request.value, resolution.policy, epochSecond)
                 Inspected(
                     request = request,
-                    matched = Matched(resolution.policy, bucket),
+                    matched = Matched(resolution.policy, bucket, resolution.override),
                     inspection = budget.inspect(bucket, request.hits.value, request.priority, nowMillis),
                 )
             }
@@ -142,7 +146,7 @@ class BatchEvaluator(
     private suspend fun reserveOne(item: Inspected, nowMillis: Long): Reservation {
         val matched = item.matched ?: return Reservation.Final(Decision.PASS_THROUGH)
         val request = item.request
-        return try {
+        val reservation = try {
             budget.reserve(matched.bucket, matched.policy, request.hits.value, request.priority, nowMillis)
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure // §7.4: cancelamento propaga
@@ -153,6 +157,11 @@ class BatchEvaluator(
                 .log()
             Reservation.Final(unknown(matched.policy))
         }
+        // Métrica por policy (OBSERVABILIDADE.md): cobre PERMITIDO/NEGADO/DESCONHECIDO; opt-out por regra.
+        if (matched.policy.detailedMetric) {
+            metrics.policyReserve(request.dimension, matched.override, request.priority, reservation.decision.status)
+        }
+        return reservation
     }
 
     /** Decisão degradada por falha de backend (§7.4): capacidade ecoada, sem estimativas. */
