@@ -119,7 +119,8 @@ docs/OBSERVABILIDADE.md   # contrato de telemetria: métricas, traces/spans, log
 docs/VARIAVEIS-DE-AMBIENTE.md # variáveis de ambiente: aplicação, deps, JVM, build
 config/policies/          # policies.yaml (catálogo de limites) + policies.schema.json
 src/main/kotlin/...        # código de produção
-src/test/kotlin/...        # testes
+src/test/kotlin/...        # testes unitários/integração (./gradlew test)
+scripts/load-test/         # testes de carga (ghz/k6) — fora do gradle; ver scripts/load-test/README.md
 CONTRIBUTING.md           # fluxo de contribuição completo
 AGENTS.md                 # este arquivo
 ```

@@ -5,7 +5,7 @@ Portados do baseline e ajustados para o contrato do klimiter (`klimiter.v1.RateL
 porta gRPC `9090`). Separados por objetivo:
 
 ```
-test/load/
+scripts/load-test/
 ├─ performance/
 │  └─ saturation-ghz.sh           # PERFORMANCE: teto de throughput / joelho da p99 (ghz)
 ├─ behavior/
@@ -20,7 +20,7 @@ test/load/
    `rate_limit_flow`. Sem elas, tudo é pass-through (§8) e nada é limitado. Use
    [`policies.sample.yaml`](policies.sample.yaml): copie as dimensões para
    `config/policies/policies.yaml` (o **hot reload** aplica ao vivo, §8) ou suba o serviço com
-   `KLIMITER_POLICIES_PATH=test/load/policies.sample.yaml`.
+   `KLIMITER_POLICIES_PATH=scripts/load-test/policies.sample.yaml`.
 3. **Ferramenta** do teste: [`ghz`](https://ghz.sh) (performance) ou
    [`k6`](https://k6.io) com suporte a gRPC (comportamento).
 
@@ -35,8 +35,8 @@ Cada requisição é o lote all-or-nothing de 3 dimensões (§7).
 
 ```bash
 # a partir da raiz do repositório
-bash test/load/performance/saturation-ghz.sh
-PRIORITY=PRIORITY_LOW STEPS="6000 8000 10000" bash test/load/performance/saturation-ghz.sh
+bash scripts/load-test/performance/saturation-ghz.sh
+PRIORITY=PRIORITY_LOW STEPS="6000 8000 10000" bash scripts/load-test/performance/saturation-ghz.sh
 ```
 
 Principais variáveis: `TARGET` (default `localhost:9090`), `PRIORITY`, `DURATION`, `KNEE_MS`,
@@ -53,13 +53,13 @@ a ALTA sobe, a BAIXA é estrangulada pela linha de pacing; quando a ALTA cede, a
 `thresholds` do k6 são os **critérios de aceite**.
 
 ```bash
-k6 run test/load/behavior/evaluate-online-variavel.js
+k6 run scripts/load-test/behavior/evaluate-online-variavel.js
 k6 run -e DURATION=1m -e ONLINE_MAX_RPS=70 -e BAIXA_PRIORIDADE_RPS=1000 \
-  test/load/behavior/evaluate-online-variavel.js
+  scripts/load-test/behavior/evaluate-online-variavel.js
 
 # exportando as métricas do k6 para o LGTM do compose (Grafana em http://localhost:3000):
 K6_OTEL_GRPC_EXPORTER_ENDPOINT=localhost:4317 K6_OTEL_GRPC_EXPORTER_INSECURE=true \
-  k6 run -e DISTINCT_KEYS=1 --out opentelemetry test/load/behavior/evaluate-online-variavel.js
+  k6 run -e DISTINCT_KEYS=1 --out opentelemetry scripts/load-test/behavior/evaluate-online-variavel.js
 ```
 
 Para **ver a prioridade agir**, crie contenção: `DISTINCT_KEYS=1` (chave única quente) e mantenha o

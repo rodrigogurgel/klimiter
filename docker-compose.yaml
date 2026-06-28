@@ -42,7 +42,7 @@ services:
         -XX:+ExitOnOutOfMemoryError
     volumes:
       #- ./config/policies:/etc/klimiter/policies:ro
-      - ./test/load:/etc/klimiter/policies:ro
+      - ./scripts/load-test:/etc/klimiter/policies:ro
     restart: unless-stopped
     mem_limit: 4g
     mem_reservation: 512m
