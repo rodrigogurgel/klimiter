@@ -23,8 +23,10 @@ x-klimiter-env: &klimiter-env
   OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
   OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
   OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
-  # Intervalo de export de métricas (default do SDK = 60s). 10s p/ feedback rápido em testes locais.
-  OTEL_METRIC_EXPORT_INTERVAL: 10s
+  # Passo de export do registry de métricas Micrometer (OtlpMeterRegistry; default 1m). 10s p/ feedback
+  # rápido em testes locais. É a env de management.otlp.metrics.export.step — a OTEL_METRIC_EXPORT_INTERVAL
+  # do SDK NÃO afeta este registry (confirmado no log "OtlpMeterRegistry every <X>").
+  MANAGEMENT_OTLP_METRICS_EXPORT_STEP: 10s
   # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
   JAVA_TOOL_OPTIONS: >-
     -XX:+UseZGC -XX:+ZGenerational
