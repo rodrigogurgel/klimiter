@@ -88,4 +88,4 @@ load-test:
 	echo "k6 em background (PID $$!)"; \
 	echo "  test_run_id : $$RUNID"; \
 	echo "  log         : $$LOG   (tail -f para acompanhar)"; \
-	echo "  Grafana     : http://localhost:3000  (filtre por test_run_id=$$RUNID; métricas k6_klimiter_*, grpc_req_duration)"
+	echo "  Grafana     : http://localhost:3000/explore  (sem dashboard provisionado; consulte k6_klimiter_* / grpc_req_duration no Explore, filtrando test_run_id=$$RUNID)"
