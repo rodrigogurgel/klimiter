@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-# Atalhos para a stack local e os testes de carga (ver test/load/README.md).
+# Atalhos para a stack local e os testes de carga (ver scripts/load-test/README.md).
 # Build, testes e codegen do serviço são via Gradle (`./gradlew ...`), não aqui.
 
 # --- Teste de comportamento (k6 -> OpenTelemetry -> Grafana/LGTM) ----------
@@ -26,15 +26,15 @@ SAT_ACCOUNT_KEYS  ?= 50000
 SAT_SOURCE_KEYS   ?= 100
 SAT_FLOW_KEYS     ?= 1
 
-BEHAVIOR_SCRIPT   := test/load/behavior/evaluate-online-variavel.js
-SATURATION_SCRIPT := test/load/performance/saturation-ghz.sh
+BEHAVIOR_SCRIPT   := scripts/load-test/behavior/evaluate-online-variavel.js
+SATURATION_SCRIPT := scripts/load-test/performance/saturation-ghz.sh
 
 # `sat-server`: serviço PINADO em 2 cores, OTel off (harness confiável — ver docs/SATURACAO.md;
 # NÃO use o `cpus`/cpuset do Docker, que distorce o joelho). Precisa do Redis no ar.
 SAT_CPUS     ?= 0,1
 SAT_JVM      ?= -XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m
 SAT_REDIS    ?= redis://localhost:6379
-SAT_POLICIES ?= test/load/policies.sample.yaml
+SAT_POLICIES ?= scripts/load-test/policies.sample.yaml
 SAT_OTEL_OFF ?= -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true
 
 .PHONY: help up down logs sat-server saturation load-test

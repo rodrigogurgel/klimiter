@@ -6,12 +6,12 @@
 #
 # Pré-requisitos:
 #   - serviço de pé (ex.: `docker compose up`), escutando gRPC em ${TARGET}
-#   - as 3 dimensões existindo no policies.yaml (ver test/load/policies.sample.yaml e o README)
+#   - as 3 dimensões existindo no policies.yaml (ver scripts/load-test/policies.sample.yaml e o README)
 #   - `ghz` e `python3` instalados
 #
 # Uso (a partir da raiz do repositório):
-#   bash test/load/performance/saturation-ghz.sh
-#   PRIORITY=PRIORITY_LOW STEPS="6000 8000 10000" bash test/load/performance/saturation-ghz.sh
+#   bash scripts/load-test/performance/saturation-ghz.sh
+#   PRIORITY=PRIORITY_LOW STEPS="6000 8000 10000" bash scripts/load-test/performance/saturation-ghz.sh
 #
 # Variáveis (env):
 #   TARGET         endereço gRPC (default localhost:9090)

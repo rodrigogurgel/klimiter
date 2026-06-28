@@ -4,7 +4,7 @@ Como medir o **teto de throughput** do klimiter: subir o RPS em degraus e achar 
 maior RPS sustentável com **p99 < 15 ms**. Usa `ghz` (overhead de cliente desprezível) contra o
 servidor gRPC; cada requisição é o lote all-or-nothing de 3 dimensões (§7).
 
-> Scripts em [`test/load/`](../test/load/README.md). Esta página é a **metodologia + como rodar**.
+> Scripts em [`scripts/load-test/`](../scripts/load-test/README.md). Esta página é a **metodologia + como rodar**.
 
 ---
 
@@ -15,7 +15,7 @@ servidor gRPC; cada requisição é o lote all-or-nothing de 3 dimensões (§7).
 - **OTel/observação OFF** (ceiling limpo): exclui o interceptor de observação por-RPC, tracing e o
   SDK OTel — senão a telemetria por requisição infla a latência.
 - **JVM**: `-XX:+UseZGC -XX:+ZGenerational -Xms512m -Xmx768m`.
-- **Políticas de carga** ([`test/load/policies.sample.yaml`](../test/load/policies.sample.yaml)):
+- **Políticas de carga** ([`scripts/load-test/policies.sample.yaml`](../scripts/load-test/policies.sample.yaml)):
   `flow` é a **hot key** (`flow-0`, cap 6000/s, `FLOW_DISTINCT_KEYS=1`); `account`/`source` têm
   cardinalidade alta/média. Sem essas dimensões tudo vira pass-through (§8) e o teste não mede nada.
 - **`ghz` nos cores restantes** (host tem 16; serviço em 2) — sem contenção com o servidor.
@@ -45,14 +45,14 @@ make saturation PRIORITY=PRIORITY_HIGH SAT_STEPS="2000 8000 12000 16000 20000 24
 
 ```bash
 JAR=$(ls build/libs/klimiter-*.jar | grep -v plain)
-KLIMITER_REDIS_URI=redis://localhost:6379 KLIMITER_POLICIES_PATH=test/load/policies.sample.yaml \
+KLIMITER_REDIS_URI=redis://localhost:6379 KLIMITER_POLICIES_PATH=scripts/load-test/policies.sample.yaml \
 taskset -c 0,1 java \
   -XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m \
   -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration \
   -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true \
   -jar "$JAR" &
 STEPS="2000 8000 12000 14000 16000 18000" DURATION=15s PRIORITY=PRIORITY_LOW \
-  bash test/load/performance/saturation-ghz.sh
+  bash scripts/load-test/performance/saturation-ghz.sh
 ```
 
 ---

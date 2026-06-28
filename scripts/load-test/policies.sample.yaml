@@ -1,4 +1,4 @@
-# Políticas de exemplo para os testes de carga (test/load).
+# Políticas de exemplo para os testes de carga (scripts/load-test).
 #
 # Os testes usam as dimensões rate_limit_account_id / rate_limit_source / rate_limit_flow.
 # Sem elas no policies.yaml ativo, toda requisição é pass-through (§8) e os testes não
@@ -6,9 +6,9 @@
 #
 #   1) Copie estas dimensões para config/policies/policies.yaml — o hot reload aplica ao vivo (§8); ou
 #   2) Suba o serviço apontando para este arquivo:
-#        KLIMITER_POLICIES_PATH=test/load/policies.sample.yaml ./gradlew bootRun
+#        KLIMITER_POLICIES_PATH=scripts/load-test/policies.sample.yaml ./gradlew bootRun
 #
-# Formato/semântica: docs/POLITICAS.md. Tunagem por objetivo de teste: ver test/load/README.md.
+# Formato/semântica: docs/POLITICAS.md. Tunagem por objetivo de teste: ver scripts/load-test/README.md.
 version: 1
 
 policies:

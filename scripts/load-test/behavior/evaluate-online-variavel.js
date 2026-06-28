@@ -11,16 +11,16 @@ import { Counter } from 'k6/metrics';
 //
 // Pré-requisitos:
 //   - serviço de pé (ex.: `docker compose up`), gRPC em ${TARGET}
-//   - as 3 dimensões existindo no policies.yaml (ver test/load/policies.sample.yaml e o README)
+//   - as 3 dimensões existindo no policies.yaml (ver scripts/load-test/policies.sample.yaml e o README)
 //   - `k6` com suporte a gRPC
 //
 // Uso (a partir da raiz do repositório):
-//   k6 run test/load/behavior/evaluate-online-variavel.js
-//   k6 run -e DURATION=1m -e ONLINE_MAX_RPS=70 -e BAIXA_PRIORIDADE_RPS=1000 test/load/behavior/evaluate-online-variavel.js
+//   k6 run scripts/load-test/behavior/evaluate-online-variavel.js
+//   k6 run -e DURATION=1m -e ONLINE_MAX_RPS=70 -e BAIXA_PRIORIDADE_RPS=1000 scripts/load-test/behavior/evaluate-online-variavel.js
 // === OPENTELEMETRY (exporta métricas do k6 para o LGTM do compose) ===
 //   K6_OTEL_GRPC_EXPORTER_ENDPOINT=localhost:4317 \
 //   K6_OTEL_GRPC_EXPORTER_INSECURE=true \
-//   k6 run --out opentelemetry test/load/behavior/evaluate-online-variavel.js
+//   k6 run --out opentelemetry scripts/load-test/behavior/evaluate-online-variavel.js
 const TARGET = __ENV.TARGET || 'localhost:9090';
 const DURATION = __ENV.DURATION || '30m';
 
