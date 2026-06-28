@@ -46,8 +46,19 @@ class LocalBudget(
         hits: Long,
         priority: Priority,
         nowMillis: Long,
-    ): Reservation {
-        val bucket = bucketFor(dimension, value, policy, epochSecond(nowMillis))
+    ): Reservation = reserve(
+        bucketFor(dimension, value, policy, epochSecond(nowMillis)),
+        policy,
+        hits,
+        priority,
+        nowMillis,
+    )
+
+    /**
+     * Reserva sobre um [bucket] já resolvido (§4.2/§5/§6). O lote resolve o bucket uma única vez na
+     * inspeção (§7.1) e o reaproveita aqui, evitando recomputar a janela e reabrir o índice por item.
+     */
+    suspend fun reserve(bucket: Bucket, policy: Policy, hits: Long, priority: Priority, nowMillis: Long): Reservation {
         val reservation = when (priority) {
             Priority.HIGH -> ReserveHigh.reserve(bucket, counter, prefetchBlock(policy), hits, nowMillis, metrics)
             Priority.LOW -> Pacing.reserveLow(bucket, counter, hits, nowMillis)
@@ -68,14 +79,14 @@ class LocalBudget(
         hits: Long,
         priority: Priority,
         nowMillis: Long,
-    ): Decision {
-        val bucket = bucketFor(dimension, value, policy, epochSecond(nowMillis))
-        return when {
-            hits <= 0 -> bucket.allowed(nowMillis)
-            hits > bucket.capacity -> bucket.denied(nowMillis)
-            priority == Priority.HIGH -> inspectHigh(bucket, hits, nowMillis)
-            else -> inspectLow(bucket, hits, nowMillis)
-        }
+    ): Decision = inspect(bucketFor(dimension, value, policy, epochSecond(nowMillis)), hits, priority, nowMillis)
+
+    /** Inspeção (§7.1) sobre um [bucket] já resolvido — ver [reserve] para o porquê do reaproveitamento. */
+    fun inspect(bucket: Bucket, hits: Long, priority: Priority, nowMillis: Long): Decision = when {
+        hits <= 0 -> bucket.allowed(nowMillis)
+        hits > bucket.capacity -> bucket.denied(nowMillis)
+        priority == Priority.HIGH -> inspectHigh(bucket, hits, nowMillis)
+        else -> inspectLow(bucket, hits, nowMillis)
     }
 
     /** §7.1 ALTA: esgotado E nem o disponível estimado (local + livre global) serve. */
@@ -111,7 +122,8 @@ class LocalBudget(
 
     private fun prefetchBlock(policy: Policy): Long = policy.prefetch.units(policy.capacity).toLong()
 
-    private fun epochSecond(nowMillis: Long): Long = Math.floorDiv(nowMillis, MILLIS_PER_SECOND)
+    /** Converte ms → segundos do epoch alinhado à [Clock] (§3.2). Público p/ o lote resolver o bucket. */
+    fun epochSecond(nowMillis: Long): Long = Math.floorDiv(nowMillis, MILLIS_PER_SECOND)
 
     private companion object {
         const val MILLIS_PER_SECOND = 1000L
