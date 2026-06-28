@@ -64,14 +64,18 @@ Propriedades definidas pelo projeto (binding relaxado do Spring, caminho **R** �
 | Variável | Caminho | Propriedade | Valor no projeto |
 |----------|---------|-------------|------------------|
 | `KLIMITER_POLICIES_PATH` | R | `klimiter.policies.path` | `config/policies/policies.yaml` (`application.yaml`) |
+| `KLIMITER_POLICIES_RELOAD_DEBOUNCE` | R | `klimiter.policies.reload-debounce` | `200ms` (`application.yaml`) |
 
-Caminho do arquivo de políticas (formato em [`POLITICAS.md`](POLITICAS.md)); relativo ao diretório
-de trabalho ou absoluto.
+`path`: caminho do arquivo de políticas (formato em [`POLITICAS.md`](POLITICAS.md)); relativo ao
+diretório de trabalho ou absoluto. `reload-debounce`: janela de silêncio do hot reload — eventos do
+filesystem em rajada são coalescidos num único reload (aceita formato de duração do Spring, ex.:
+`200ms`, `1s`).
 
 ```yaml
 klimiter:
   policies:
     path: config/policies/policies.yaml
+    reload-debounce: 200ms
 ```
 
 ---

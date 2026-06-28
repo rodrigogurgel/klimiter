@@ -6,3 +6,5 @@ klimiter:
   policies:
     # Caminho do arquivo de políticas (ver docs/POLITICAS.md). Sobrescrevível por KLIMITER_POLICIES_PATH.
     path: config/policies/policies.yaml
+    # Janela de silêncio do hot reload: eventos em rajada são coalescidos num único reload.
+    reload-debounce: 200ms
