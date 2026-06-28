@@ -33,18 +33,20 @@ internal fun PolicyDocument.toSnapshot(): PolicySnapshot {
 private fun DimensionDocument.toDimensionPolicy(): DimensionPolicy {
     val default = requireNotNull(default) { "default é obrigatório" }
     val overridePolicies = overrides.entries.associate { (value, rule) ->
-        DimensionValue(value) to inOverride(value) { rule.toPolicy() }
+        // Override: detailed_metric default false (opt-in, evita PII/cardinalidade por valor, §1.3).
+        DimensionValue(value) to inOverride(value) { rule.toPolicy(defaultDetailed = false) }
     }
-    return DimensionPolicy(default.toPolicy(), overridePolicies)
+    // Default da dimensão: detailed_metric default true.
+    return DimensionPolicy(default.toPolicy(defaultDetailed = true), overridePolicies)
 }
 
-private fun RuleDocument.toPolicy(): Policy {
+private fun RuleDocument.toPolicy(defaultDetailed: Boolean): Policy {
     val requestsPerUnit = requireNotNull(requestsPerUnit) { "requests_per_unit é obrigatório" }
     val unit = requireNotNull(unit) { "unit é obrigatório" }
     val rateLimitUnit = runCatching { RateLimitUnit.valueOf(unit) }.getOrElse {
         throw IllegalArgumentException("unit inválida '$unit' (use ${RateLimitUnit.entries.joinToString()})")
     }
-    return Policy(Capacity(requestsPerUnit), rateLimitUnit, prefetch.toPrefetch())
+    return Policy(Capacity(requestsPerUnit), rateLimitUnit, prefetch.toPrefetch(), detailedMetric ?: defaultDetailed)
 }
 
 private fun PrefetchDocument?.toPrefetch(): Prefetch {

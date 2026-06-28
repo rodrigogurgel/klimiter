@@ -2,6 +2,7 @@ package io.github.rodrigogurgel.klimiter.adapter.outbound.policy
 
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
+import io.github.rodrigogurgel.klimiter.core.policy.PolicyMeterKey
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyResolution
 import io.github.rodrigogurgel.klimiter.core.policy.PolicySnapshot
 import io.github.rodrigogurgel.klimiter.core.policy.Prefetch
@@ -9,6 +10,7 @@ import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -102,6 +104,62 @@ class PolicyDocumentMapperTest {
                 mapOf("d" to DimensionDocument(RuleDocument(10, "SECOND", PrefetchDocument()))),
             ).toSnapshot()
         }
+    }
+
+    @Test
+    fun `detailed_metric defaults to true on the dimension default and false on overrides`() {
+        val doc = PolicyDocument(
+            1,
+            mapOf(
+                "user_id" to DimensionDocument(
+                    default = RuleDocument(10, "SECOND"),
+                    overrides = mapOf("vip" to RuleDocument(1000, "MINUTE")),
+                ),
+            ),
+        )
+        val snapshot = doc.toSnapshot()
+        assertTrue(policyOf(snapshot, "user_id", "anon").detailedMetric)
+        assertFalse(policyOf(snapshot, "user_id", "vip").detailedMetric)
+    }
+
+    @Test
+    fun `detailed_metric honors explicit values overriding the defaults`() {
+        val doc = PolicyDocument(
+            1,
+            mapOf(
+                "user_id" to DimensionDocument(
+                    default = RuleDocument(10, "SECOND", detailedMetric = false),
+                    overrides = mapOf("vip" to RuleDocument(1000, "MINUTE", detailedMetric = true)),
+                ),
+            ),
+        )
+        val snapshot = doc.toSnapshot()
+        assertFalse(policyOf(snapshot, "user_id", "anon").detailedMetric)
+        assertTrue(policyOf(snapshot, "user_id", "vip").detailedMetric)
+    }
+
+    @Test
+    fun `detailedMeterKeys lists enabled default and overrides, excluding disabled ones`() {
+        val doc = PolicyDocument(
+            1,
+            mapOf(
+                "user_id" to DimensionDocument(
+                    default = RuleDocument(10, "SECOND"), // default → true
+                    overrides = mapOf(
+                        "vip" to RuleDocument(1000, "MINUTE", detailedMetric = true),
+                        "anon" to RuleDocument(5, "SECOND"), // override → false
+                    ),
+                ),
+                "ip" to DimensionDocument(RuleDocument(100, "SECOND", detailedMetric = false)), // default off
+            ),
+        )
+        assertEquals(
+            setOf(
+                PolicyMeterKey(Dimension("user_id"), null),
+                PolicyMeterKey(Dimension("user_id"), DimensionValue("vip")),
+            ),
+            doc.toSnapshot().detailedMeterKeys(),
+        )
     }
 
     @Test

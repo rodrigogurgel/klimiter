@@ -63,6 +63,10 @@
         "prefetch": {
           "description": "Amortização do lease de alta prioridade (§5). Opcional. Exatamente um entre 'percent' e 'count'.",
           "$ref": "#/$defs/prefetch"
+        },
+        "detailed_metric": {
+          "description": "Liga o contador por policy 'klimiter.policy.reserve' desta regra (OBSERVABILIDADE.md). Opcional; default true na regra 'default' da dimensão e false nos 'overrides'.",
+          "type": "boolean"
         }
       }
     },
