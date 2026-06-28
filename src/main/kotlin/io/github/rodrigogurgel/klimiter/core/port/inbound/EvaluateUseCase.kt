@@ -8,6 +8,6 @@ import io.github.rodrigogurgel.klimiter.core.domain.BatchResult
  * dirigida pela borda gRPC (R2/R3 da ARQUITETURA.md). `suspend` porque a avaliação pode tocar o
  * contador central (§4) sem bloquear thread.
  */
-interface EvaluateUseCase {
+fun interface EvaluateUseCase {
     suspend fun evaluate(batch: Batch): BatchResult
 }

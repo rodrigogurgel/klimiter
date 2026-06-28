@@ -7,7 +7,7 @@ import io.github.rodrigogurgel.klimiter.core.policy.PolicySnapshot
  * consistentes. A implementação (adapter) carrega o arquivo e publica o snapshot de forma
  * visível entre threads; o core consome apenas esta interface.
  */
-interface PolicyRepository {
+fun interface PolicyRepository {
     /** O snapshot de políticas vigente. Sempre consistente (nunca meio-atualizado). */
     fun current(): PolicySnapshot
 }
