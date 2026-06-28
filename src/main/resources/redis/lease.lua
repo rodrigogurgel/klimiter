@@ -30,12 +30,12 @@ if leased < capacity then
   end
   if granted > 0 then
     leased = redis.call('INCRBY', key, granted)
+    -- O contador só cresce a partir de 0 (invariante §9): leased == granted ⟺ esta INCRBY
+    -- acabou de CRIAR a chave. Só então aplicamos o TTL — dispensa o PTTL de toda chamada.
+    if leased == granted then
+      redis.call('PEXPIRE', key, ttl_ms)
+    end
   end
-end
-
--- PTTL == -1: a chave existe e não tem expiração. Só então aplicamos o TTL.
-if redis.call('PTTL', key) == -1 then
-  redis.call('PEXPIRE', key, ttl_ms)
 end
 
 local free_global = capacity - leased
