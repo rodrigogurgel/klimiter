@@ -1,55 +1,79 @@
 # Stack local do klimiter: serviço gRPC + Redis (contador global, §4) + RedisInsight (GUI) +
 # Grafana/OTel-LGTM (observabilidade: traces, métricas e logs via OTLP).
 #
-#   docker compose up --build
+# Dois modos MUTUAMENTE EXCLUSIVOS, via COMPOSE_PROFILES (o .env já default p/ 'standalone'):
+#   docker compose up --build                              # standalone (klimiter + redis)
+#   COMPOSE_PROFILES=redis-cluster docker compose up --build   # cluster (klimiter-cluster + 3 nós)
+# Atalhos: `make up` (standalone) e `make up-cluster` (cluster). Escolher o profile 'redis-cluster'
+# NÃO sobe o redis standalone (e vice-versa) — cada serviço está atrás do seu profile.
 #
 # Grafana:      http://localhost:3000  (anônimo/admin)
-# RedisInsight: http://localhost:5540  (conecte em  redis:6379)
+# RedisInsight: http://localhost:5540  (standalone: redis:6379; cluster: redis-node-1:6379)
 # gRPC:         localhost:9090
 #
-# SonarQube local (OPT-IN, perfil 'sonar' — não sobe por padrão):
-#   docker compose --profile sonar up -d sonarqube     # http://localhost:9000
+# SonarQube local (OPT-IN, perfil 'sonar'):  docker compose --profile sonar up -d sonarqube
 name: klimiter
 
+# Env comum aos dois klimiter (mesclado com `<<` nos serviços, somando só o REDIS_*).
+x-klimiter-env: &klimiter-env
+  # Políticas montadas como DIRETÓRIO (hot reload sobrevive ao swap atômico do editor/ConfigMap, §8).
+  KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.sample.yaml
+  # Observabilidade: as OTEL_* são reconhecidas pelo starter (VARIAVEIS-DE-AMBIENTE.md §3).
+  OTEL_SERVICE_NAME: klimiter
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+  # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
+  JAVA_TOOL_OPTIONS: >-
+    -XX:+UseZGC -XX:+ZGenerational
+    -XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75
+    -XX:+ExitOnOutOfMemoryError
+
+# Config comum aos dois klimiter (build, porta, volumes, limites).
+x-klimiter-base: &klimiter-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: klimiter:dev
+  ports:
+    - "9090:9090" # gRPC (spring.grpc.server.port)
+  volumes:
+    - ./scripts/load-test:/etc/klimiter/policies:ro
+  restart: unless-stopped
+  mem_limit: 4g
+  mem_reservation: 512m
+  cpus: 2
+
+# Config comum aos nós do cluster (profile 'redis-cluster').
+x-redis-cluster-node: &redis-cluster-node
+  image: redis:8.8.0
+  profiles: ["redis-cluster"]
+  command: ["redis-server", "/etc/redis/redis.conf"]
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 5s
+    timeout: 3s
+    retries: 5
+    start_period: 3s
+  restart: unless-stopped
+
 services:
+  # ---- Modo standalone (profile 'standalone', default via .env) -------------
   klimiter:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: klimiter:dev
+    <<: *klimiter-base
+    profiles: ["standalone"]
     depends_on:
       redis:
         condition: service_healthy
       lgtm:
         condition: service_started
-    ports:
-      - "9090:9090" # gRPC (spring.grpc.server.port)
     environment:
-      # Contador global em Redis (§4).
+      <<: *klimiter-env
       KLIMITER_REDIS_URI: redis://redis:6379
-      # Políticas montadas como DIRETÓRIO (hot reload sobrevive ao swap atômico do editor/ConfigMap, §8).
-      #KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.yaml
-      KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.sample.yaml
-      # Observabilidade: as OTEL_* são reconhecidas pelo starter (VARIAVEIS-DE-AMBIENTE.md §3).
-      OTEL_SERVICE_NAME: klimiter
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
-      # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
-      JAVA_TOOL_OPTIONS: >-
-        -XX:+UseZGC -XX:+ZGenerational
-        -XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75
-        -XX:+ExitOnOutOfMemoryError
-    volumes:
-      #- ./config/policies:/etc/klimiter/policies:ro
-      - ./scripts/load-test:/etc/klimiter/policies:ro
-    restart: unless-stopped
-    mem_limit: 4g
-    mem_reservation: 512m
-    cpus: 2
 
   redis:
     image: redis:8.8.0
+    profiles: ["standalone"]
     # Persistência (AOF): o contador da janela precisa sobreviver dentro da janela (§11).
     command: ["redis-server", "--appendonly", "yes"]
     ports:
@@ -64,12 +88,70 @@ services:
       start_period: 5s
     restart: unless-stopped
 
+  # ---- Modo cluster (profile 'redis-cluster') -------------------------------
+  klimiter-cluster:
+    <<: *klimiter-base
+    profiles: ["redis-cluster"]
+    depends_on:
+      redis-cluster-init:
+        condition: service_completed_successfully
+      lgtm:
+        condition: service_started
+    environment:
+      <<: *klimiter-env
+      # Endpoint-semente; o client descobre a topologia do cluster a partir dele.
+      KLIMITER_REDIS_URI: redis://redis-node-1:6379
+      KLIMITER_REDIS_CLUSTER: "true"
+
+  redis-node-1:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-1-data:/data
+    ports:
+      - "7001:6379"
+
+  redis-node-2:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-2-data:/data
+    ports:
+      - "7002:6379"
+
+  redis-node-3:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-3-data:/data
+    ports:
+      - "7003:6379"
+
+  # One-shot: forma o cluster (idempotente — pula se já está ok). Os nós se alcançam pelo IP interno.
+  redis-cluster-init:
+    image: redis:8.8.0
+    profiles: ["redis-cluster"]
+    depends_on:
+      redis-node-1:
+        condition: service_healthy
+      redis-node-2:
+        condition: service_healthy
+      redis-node-3:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        redis-cli -h redis-node-1 cluster info | grep -q cluster_state:ok ||
+        redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379
+        --cluster-replicas 0 --cluster-yes
+    restart: "no"
+
+  # ---- Infra compartilhada (sempre liga) ------------------------------------
   redisinsight:
     image: redis/redisinsight:3.6.0
-    depends_on:
-      - redis
     ports:
-      - "5540:5540" # UI web — adicione a conexão para redis:6379
+      - "5540:5540" # UI web — adicione a conexão (standalone: redis:6379; cluster: redis-node-1:6379)
     volumes:
       - redisinsight-data:/data
     restart: unless-stopped
@@ -106,6 +188,9 @@ services:
 
 volumes:
   redis-data:
+  redis-node-1-data:
+  redis-node-2-data:
+  redis-node-3-data:
   redisinsight-data:
   sonarqube-data:
   sonarqube-extensions:

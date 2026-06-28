@@ -37,7 +37,7 @@ SAT_REDIS    ?= redis://localhost:6379
 SAT_POLICIES ?= scripts/load-test/policies.sample.yaml
 SAT_OTEL_OFF ?= -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true
 
-.PHONY: help up down logs sat-server saturation load-test sonar-local sonar-reset
+.PHONY: help up up-cluster down logs logs-cluster sat-server saturation load-test sonar-local sonar-reset
 
 # --- SonarQube local (profile 'sonar' do docker-compose) -------------------
 SONAR_URL      ?= http://localhost:9000
@@ -47,17 +47,25 @@ SONAR_PASSWORD ?= Klimiter-Local-2026    # política do Sonar: >=12, maiúscula+
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/^## /  /'
 
-## up: sobe a stack local (klimiter + Redis + RedisInsight + Grafana/LGTM) e (re)builda a imagem
+## up: sobe a stack local STANDALONE (klimiter + Redis + RedisInsight + Grafana/LGTM) e (re)builda
 up:
-	docker compose up -d --build
+	COMPOSE_PROFILES=standalone docker compose up -d --build
 
-## down: derruba a stack (use `make down ARGS=-v` para apagar os volumes)
+## up-cluster: sobe a stack local CLUSTER (klimiter-cluster + 3 nós Redis); NÃO sobe o standalone
+up-cluster:
+	COMPOSE_PROFILES=redis-cluster docker compose up -d --build
+
+## down: derruba a stack, qualquer modo (use `make down ARGS=-v` para apagar os volumes)
 down:
-	docker compose down $(ARGS)
+	COMPOSE_PROFILES=standalone,redis-cluster docker compose down $(ARGS)
 
-## logs: acompanha os logs do serviço klimiter
+## logs: acompanha os logs do serviço klimiter (standalone)
 logs:
 	docker compose logs -f klimiter
+
+## logs-cluster: acompanha os logs do serviço klimiter-cluster
+logs-cluster:
+	docker compose logs -f klimiter-cluster
 
 ## sat-server: serviço pinado em 2 cores, OTel off, políticas de carga (foreground; precisa do Redis no ar)
 sat-server:

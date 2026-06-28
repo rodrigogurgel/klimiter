@@ -6,11 +6,15 @@ import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
-import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.coroutines
 import io.lettuce.core.api.coroutines.RedisScriptingCoroutinesCommands
+import io.lettuce.core.cluster.ClusterClientOptions
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions
+import io.lettuce.core.cluster.RedisClusterClient
+import io.lettuce.core.cluster.api.coroutines
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
+import java.time.Duration as JavaDuration
 
 /**
  * Adapter Redis (Lettuce) da porta [GlobalCounter] (§4): um POOL de N conexões multiplexadas e
@@ -21,20 +25,22 @@ import kotlin.time.Duration
  * multiplexa comandos concorrentes pipelinados; espalhar por N usa N event-loops do Netty e mantém
  * mais comandos em voo — sobretudo no caminho BAIXA (§6), que faz 1 round-trip por request.
  *
- * As [Duration] da porta são convertidas para os ms que os scripts Lua usam (§6.2).
+ * **Standalone ou cluster** ([standalone]/[cluster]): como os scripts são single-key (`KEYS[1]`), o
+ * cluster roteia cada comando por slot sem CROSSSLOT; o adapter só depende da interface de comandos
+ * ([RedisScriptingCoroutinesCommands]), comum aos dois modos. As [Duration] da porta viram os ms dos
+ * scripts Lua (§6.2). [closeable] encerra conexões e client.
  */
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
-class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection<String, String>>) :
-    GlobalCounter,
+class LettuceGlobalCounter(
+    private val commands: List<RedisScriptingCoroutinesCommands<String, String>>,
+    private val closeable: AutoCloseable,
+) : GlobalCounter,
     AutoCloseable {
     init {
-        require(connections.isNotEmpty()) { "LettuceGlobalCounter exige ao menos uma conexão" }
+        require(commands.isNotEmpty()) { "LettuceGlobalCounter exige ao menos uma conexão" }
     }
 
     private val scripts = LuaScripts()
-
-    private val commands: List<RedisScriptingCoroutinesCommands<String, String>> =
-        connections.map { it.coroutines() }
 
     /** Cursor de round-robin lock-free; `and MAX_VALUE` evita índice negativo no overflow. */
     private val cursor = AtomicInteger(0)
@@ -75,15 +81,45 @@ class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection
         return PaceResult(admitted = result.longAt(0) == 1L, freeGlobal = result.longAt(1))
     }
 
-    override fun close() = connections.forEach { it.close() }
+    override fun close() = closeable.close()
 
     companion object {
-        /** Cria client + [poolSize] conexões multiplexadas, sempre abertas. O caller fecha ambos. */
-        fun connect(redisUri: String, poolSize: Int): Pair<RedisClient, LettuceGlobalCounter> {
+        /** Refresh periódico da topologia do cluster (além do adaptativo em MOVED/ASK). */
+        private val CLUSTER_TOPOLOGY_REFRESH = JavaDuration.ofSeconds(30)
+
+        /** Standalone: client + [poolSize] conexões multiplexadas sempre abertas. */
+        fun standalone(redisUri: String, poolSize: Int): LettuceGlobalCounter {
             require(poolSize > 0) { "poolSize deve ser > 0" }
             val client = RedisClient.create(redisUri)
             val connections = List(poolSize) { client.connect() }
-            return client to LettuceGlobalCounter(connections)
+            return LettuceGlobalCounter(connections.map { it.coroutines() }, closer(connections, client::shutdown))
+        }
+
+        /**
+         * Cluster (Redis Cluster / ElastiCache cluster mode enabled): client com descoberta de
+         * topologia (adaptive refresh em MOVED/ASK/reconnect + refresh periódico — sobrevive a
+         * failover/resharding) e [poolSize] conexões. Escritas roteiam para o master do slot.
+         */
+        fun cluster(redisUri: String, poolSize: Int): LettuceGlobalCounter {
+            require(poolSize > 0) { "poolSize deve ser > 0" }
+            val client = RedisClusterClient.create(redisUri)
+            client.setOptions(clusterOptions())
+            val connections = List(poolSize) { client.connect() }
+            return LettuceGlobalCounter(connections.map { it.coroutines() }, closer(connections, client::shutdown))
+        }
+
+        private fun clusterOptions(): ClusterClientOptions {
+            val topology = ClusterTopologyRefreshOptions.builder()
+                .enableAllAdaptiveRefreshTriggers()
+                .enablePeriodicRefresh(CLUSTER_TOPOLOGY_REFRESH)
+                .build()
+            return ClusterClientOptions.builder().topologyRefreshOptions(topology).build()
+        }
+
+        /** Fecha as conexões e desliga o client (o caller fecha o [LettuceGlobalCounter]). */
+        private fun closer(connections: List<AutoCloseable>, shutdown: () -> Unit) = AutoCloseable {
+            connections.forEach { it.close() }
+            shutdown()
         }
     }
 }

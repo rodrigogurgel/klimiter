@@ -53,6 +53,19 @@ make logs        # acompanha os logs do serviço
 make down        # derruba a stack (make down ARGS=-v apaga volumes)
 ```
 
+O Redis sobe em **dois modos mutuamente exclusivos** (profiles do compose, selecionados por
+`COMPOSE_PROFILES`; o `.env` já default para `standalone`):
+
+```bash
+make up           # standalone: klimiter + 1 Redis (default)
+make up-cluster   # cluster:    klimiter-cluster + 3 nós Redis Cluster (flag klimiter.redis.cluster)
+make logs-cluster # logs do serviço no modo cluster
+```
+
+Escolher um modo **não** sobe o outro: `make up-cluster` não inicia o Redis standalone e
+`make up` não inicia o cluster. Em produção, use `KLIMITER_REDIS_CLUSTER=true` ao apontar para um
+Redis Cluster / ElastiCache (cluster mode enabled) — ver [docs/VARIAVEIS-DE-AMBIENTE.md](docs/VARIAVEIS-DE-AMBIENTE.md).
+
 ### Só o serviço (Gradle), com Redis no Docker
 
 ```bash
