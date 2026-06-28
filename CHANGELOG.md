@@ -9,6 +9,13 @@ Este arquivo é **gerado automaticamente** pelo [git-cliff](https://git-cliff.or
 a partir do histórico de commits — não edite à mão. Veja `cliff.toml` e o
 [CONTRIBUTING.md](CONTRIBUTING.md#changelog).
 
+## [0.1.1] - 2026-06-28
+
+### Manutenção
+
+- **make:** Torna o taskset opcional no sat-server para suportar macOS
+- **compose:** Exporta métricas OTLP a cada 10s no ambiente local
+
 ## [0.1.0] - 2026-06-28
 
 ### Adicionado

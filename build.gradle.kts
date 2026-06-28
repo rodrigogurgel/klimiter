@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "io.github.rodrigogurgel"
-version = "0.1.0"
+version = "0.1.1"
 
 java {
 	toolchain {
