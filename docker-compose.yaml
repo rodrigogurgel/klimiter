@@ -1,0 +1,85 @@
+# Stack local do klimiter: serviço gRPC + Redis (contador global, §4) + RedisInsight (GUI) +
+# Grafana/OTel-LGTM (observabilidade: traces, métricas e logs via OTLP).
+#
+#   docker compose up --build
+#
+# Grafana:      http://localhost:3000  (anônimo/admin)
+# RedisInsight: http://localhost:5540  (conecte em  redis:6379)
+# gRPC:         localhost:9090
+name: klimiter
+
+services:
+  klimiter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: klimiter:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      lgtm:
+        condition: service_started
+    ports:
+      - "9090:9090" # gRPC (spring.grpc.server.port)
+    environment:
+      # Contador global em Redis (§4).
+      KLIMITER_REDIS_URI: redis://redis:6379
+      # Políticas montadas como DIRETÓRIO (hot reload sobrevive ao swap atômico do editor/ConfigMap, §8).
+      #KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.yaml
+      KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.sample.yaml
+      # Observabilidade: as OTEL_* são reconhecidas pelo starter (VARIAVEIS-DE-AMBIENTE.md §3).
+      OTEL_SERVICE_NAME: klimiter
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+      # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
+      JAVA_TOOL_OPTIONS: >-
+        -XX:+UseZGC -XX:+ZGenerational
+        -XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75
+        -XX:+ExitOnOutOfMemoryError
+    volumes:
+      #- ./config/policies:/etc/klimiter/policies:ro
+      - ./test/load:/etc/klimiter/policies:ro
+    restart: unless-stopped
+    mem_limit: 4g
+    mem_reservation: 512m
+    cpus: 2
+
+  redis:
+    image: redis:8.8.0
+    # Persistência (AOF): o contador da janela precisa sobreviver dentro da janela (§11).
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  redisinsight:
+    image: redis/redisinsight:3.6.0
+    depends_on:
+      - redis
+    ports:
+      - "5540:5540" # UI web — adicione a conexão para redis:6379
+    volumes:
+      - redisinsight-data:/data
+    restart: unless-stopped
+
+  lgtm:
+    # All-in-one: Grafana + Tempo (traces) + Loki (logs) + Prometheus (métricas) + OTel Collector.
+    image: grafana/otel-lgtm:0.28.0
+    ports:
+      - "3000:3000" # Grafana
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  redisinsight-data:
