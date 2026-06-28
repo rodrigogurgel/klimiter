@@ -8,3 +8,15 @@ klimiter:
     path: config/policies/policies.yaml
     # Janela de silêncio do hot reload: eventos em rajada são coalescidos num único reload.
     reload-debounce: 200ms
+  redis:
+    # Contador global por janela (§4). Sobrescrevível por KLIMITER_REDIS_*.
+    uri: redis://localhost:6379
+    pool-size: 8
+    key-prefix: klimiter
+  eviction:
+    # Varredura do índice local de buckets (§4.2).
+    interval: 60s
+  observability:
+    # Fração das observações por-RPC do gRPC a registrar (1.0=todas; 0=off p/ recuperar throughput
+    # sob CPU apertada — ver docs/SATURACAO.md §5.2). Não afeta os contadores klimiter.* nem o export.
+    grpc-sample-rate: 1.0

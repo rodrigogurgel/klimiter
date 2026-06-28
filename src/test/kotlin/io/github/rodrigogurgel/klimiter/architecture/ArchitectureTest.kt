@@ -60,6 +60,7 @@ class ArchitectureTest {
             "org.springframework",
             "io.grpc",
             "io.lettuce",
+            "io.micrometer", // métricas entram pela porta RateLimitMetrics, não direto no core
             "redis.",
             "com.fasterxml.jackson",
             "tools.jackson",
