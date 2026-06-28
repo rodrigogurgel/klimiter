@@ -168,11 +168,17 @@ campo desconhecido — para pegar erros de digitação cedo.
 
 ## 6. Hot reload
 
-As políticas são recarregadas **sem reiniciar** o serviço (§8). O observador acompanha o
-**diretório** `config/policies/` (não o arquivo), porque editores salvam via rename/replace:
+As políticas são recarregadas **sem reiniciar** o serviço (§8). Um observador (`WatchService` do
+JDK, gerenciado como `SmartLifecycle`) acompanha o **diretório** do arquivo (não o arquivo),
+porque editores salvam via rename/replace:
 
 - **criação/modificação** → recarrega, **revalida o arquivo inteiro** (§5) e, se válido, faz a
   **troca atômica** do índice de políticas; leituras nunca veem estado meio-atualizado;
 - **deleção** → ignorada de propósito (um save transitório não derruba a config);
-- **arquivo ausente no boot** → começa com políticas default até ele aparecer;
-- **falha de parsing/validação** → mantém a última config boa e loga o erro.
+- **arquivo ausente no boot** → começa com políticas default e passa a valer assim que ele aparece;
+- **falha de parsing/validação** → mantém a última config boa e loga o erro; o observador segue vivo.
+
+Eventos em rajada (um único save costuma gerar vários eventos) são **coalescidos** por um debounce
+configurável — `klimiter.policies.reload-debounce` (default 200ms, ver
+[`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md)): após o último evento, espera-se esse
+intervalo de silêncio e recarrega-se **uma só vez**.
