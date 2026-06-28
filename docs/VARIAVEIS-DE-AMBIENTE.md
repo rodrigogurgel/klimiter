@@ -163,6 +163,18 @@ Usado no projeto:
 | `SONAR_TOKEN` | sem default; usado em `-Dsonar.token=$SONAR_TOKEN` | Token de autenticação (obrigatório p/ `./gradlew sonar`). |
 | `SONAR_HOST_URL` | fallback `https://sonarcloud.io` (`build.gradle.kts`) | URL do servidor Sonar. |
 
+**Rodar contra um SonarQube local** (perfil `sonar` do `docker-compose`, opt-in — não sobe na stack padrão):
+
+```bash
+docker compose --profile sonar up -d sonarqube          # http://localhost:9000 (admin/admin no 1º login)
+# crie um token no SonarQube (My Account → Security) e rode:
+SONAR_HOST_URL=http://localhost:9000 ./gradlew sonar -Dsonar.token=<token>
+```
+
+O serviço usa SonarQube Community com **H2 embutido** (apenas avaliação/dev — o Sonar avisa que H2 não é
+para produção) e `SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true` para subir sem ajustar `vm.max_map_count` no host.
+Se o Elasticsearch interno não subir, aumente o `vm.max_map_count` (`sysctl -w vm.max_map_count=524288`).
+
 **Referência completa:** [SonarScanner for Gradle — Analysis parameters](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/analysis-parameters/).
 
 ### 6.3 Testcontainers — testes de integração (versão pelo BOM do Spring Boot)
