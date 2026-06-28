@@ -174,3 +174,61 @@ Config extra do pod (independente do acima):
 - **OTel:** `OTEL_EXPORTER_OTLP_ENDPOINT` → collector do cluster. Sob CPU apertada, lembre do custo da
   observação por-RPC (§5.2) — considere a amostragem.
 - **Redis:** durável o bastante para sobreviver à janela (§11) e, de preferência, fora do nó do limiter.
+
+---
+
+## 7. Premissas de transferência p/ Kubernetes (o que a régua NÃO captura)
+
+Estes números são um **piso de sanidade e um mapa de *inclinações/ratios*** — **não** uma régua
+absoluta de produção. São medidos num **host único** (servidor + `ghz` + Redis na VM do Docker
+disputando a mesma máquina), com **carga sintética** (lote fixo de 3 dimensões, **puro HIGH ou puro
+LOW**, `hits=1`), **Redis local** e **sem ingress/mesh**. Antes de usá-los como fonte da verdade do
+cluster, conheça o que **não** está embutido. *(Referência de escala medida: HIGH ~linear ~+19k
+RPS/core; LOW plateau ~18k/pod; instrumentação ON ~−20% no HIGH — ver
+[OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md).)*
+
+### 7.1 O que torna os números FICÇÃO se ignorado
+
+- **CFS throttling (§4/§6).** `limits.cpu` = quota CFS → throttle a cada ~100 ms → a p99 desaba e o
+  joelho craterа. A régua **só vale** com QoS **Guaranteed + `cpu-manager-policy=static`** (cores
+  exclusivos, = `taskset`) **ou** `requests.cpu` **sem** `limits.cpu`. Com `limits.cpu` apertado os
+  números são fantasia.
+- **Heap acoplado à memória (ZGC stalla com heap apertado).** Sob rajada em poucos cores, `-Xmx` baixo
+  (ex.: 768m) faz o ZGC **stallar** → colapsos transitórios de p99 que derrubam o joelho. Regra de
+  bolso: **`-Xmx` ≥ ~1 GB/core** (via `-XX:MaxRAMPercentage` casado com `limits.memory`). **A régua é
+  (cores ​**E**​ memória)** — dimensionar core sem memória reproduz o colapso.
+
+### 7.2 O que torna os números OTIMISTAS (gap de ambiente)
+
+- **Redis pela rede derruba o LOW.** O LOW é **latency-bound** (não é CPU do servidor nem do Redis —
+  medido). Redis em outro pod/nó soma RTT de rede a **cada** round-trip (§6.1) → o plateau de ~18k/pod
+  **cai** proporcionalmente. O LOW local é teto otimista de co-locação.
+- **Teto agregado de Redis não medido.** "Cada pod soma ~18k de LOW" vale **até o Redis agregado
+  saturar** — N pods batendo num Redis fazem dele o gargalo. A escala horizontal do LOW tem um teto de
+  Redis que **este teste não exercita**.
+- **Sem ingress/mesh.** O `ghz` bate no loopback. kube-proxy/iptables, Service/LB, sidecar, TLS e o RTT
+  real do cliente consomem do orçamento de p99 e CPU por request — **em cima** do custo da observação
+  per-RPC (§5.2).
+
+### 7.3 O que limita a GENERALIZAÇÃO
+
+- **Linearidade validada só até ~4 cores.** Acima disso o `ghz` local satura antes do servidor (joelho
+  de HIGH ≥ 4 cores **não é mensurável** numa só máquina). Em pods grandes podem surgir NUMA, limite de
+  event-loops do Netty e **contenção de lock** (`renewMutex` por bucket, `ConcurrentHashMap`) — **não
+  assuma `+19k/core` linear indefinidamente**; prefira escalar **horizontal**.
+- **Workload-bound.** O joelho do LOW depende de quão often a chave quente faz short-circuit vs vai ao
+  central — função da **sua** carga (cardinalidades, tamanho do lote, nº de dimensões). E o teste usa
+  **prioridade pura**; a dinâmica de **prioridade mista** no mesmo lote (§6.5) **não foi medida sob
+  carga**.
+- **SLO-específico.** O joelho é definido por `KNEE_MS` (p99 < 15 ms aqui). Outro SLA → outro joelho.
+- **Zero efeitos distribuídos.** Foi **1 processo**. Skew de relógio, durabilidade do Redis no failover,
+  thundering-herd do latch e prefetch encalhado entre pods são **premissas de corretude** (§11), não de
+  perf, e **não** são exercitadas aqui.
+- **Cold start.** Medido com JIT quente; pod recém-escalado pela HPA entrega bem menos por ~30–60 s —
+  deixe **headroom**/pré-aquecimento.
+
+### 7.4 Para virar régua de verdade
+
+Calibre **in-cluster**: QoS Guaranteed (ou sem `limits.cpu`) + memória ≥ ~1 GB/core, Redis na topologia
+real, **carga representativa com prioridade mista**, e meça o **agregado de N pods contra o Redis real**
+para achar o teto horizontal. Dimensione por **(cores ​**E**​ memória)** com o **SLO explícito**.
