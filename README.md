@@ -21,7 +21,7 @@ capacidade para a alta.
 | Linguagem   | Kotlin 2.3.21 (JVM, toolchain JDK 21)          |
 | Framework   | Spring Boot 4.1 + Spring gRPC                  |
 | Transporte  | gRPC + Protobuf                                |
-| Build       | Gradle 9.5 (Kotlin DSL, via `./gradlew`)       |
+| Build       | Gradle 9.6 (Kotlin DSL, via `./gradlew`)       |
 | Central     | Redis (contador por janela, scripts Lua atômicos) |
 | Pacote raiz | `io.github.rodrigogurgel.klimiter`             |
 

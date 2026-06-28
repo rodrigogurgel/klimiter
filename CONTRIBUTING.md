@@ -23,7 +23,7 @@ commits, ferramentas de qualidade e o checklist antes de abrir um PR.
 | Ferramenta   | Versão            | Observação                                            |
 |--------------|-------------------|-------------------------------------------------------|
 | JDK          | 21 (LTS)          | O Gradle usa toolchain 21; recomendado via SDKMAN.    |
-| Gradle       | 9.5.1 (wrapper)   | Use sempre `./gradlew`, nunca um Gradle global.       |
+| Gradle       | 9.6.0 (wrapper)   | Use sempre `./gradlew`, nunca um Gradle global.       |
 | git          | 2.36+             | Necessário para git flow e git-cliff.                 |
 | git-cliff    | 2.x               | Geração do CHANGELOG (`cargo install git-cliff`).     |
 | git-flow     | AVH (opcional)    | Atalhos do fluxo; o modelo funciona com git puro.     |

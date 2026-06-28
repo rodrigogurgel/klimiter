@@ -23,7 +23,7 @@ de baixa prioridade).
 |-----------------|----------------------------------------------------|
 | Linguagem       | Kotlin 2.3.21 (JVM, toolchain JDK 21)              |
 | Framework       | Spring Boot 4.1 + Spring gRPC                       |
-| Build           | Gradle 9.5.1 (Kotlin DSL, via `./gradlew`)         |
+| Build           | Gradle 9.6.0 (Kotlin DSL, via `./gradlew`)         |
 | RPC             | gRPC + Protobuf (plugin `com.google.protobuf`)     |
 | Pacote raiz     | `io.github.rodrigogurgel.klimiter`                 |
 

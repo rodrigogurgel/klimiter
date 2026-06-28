@@ -153,12 +153,12 @@ ambiente).
 
 Não afetam a aplicação em execução nem têm equivalente em `application.yaml`.
 
-### 6.1 Gradle — wrapper 9.5.1
+### 6.1 Gradle — wrapper 9.6.0
 
 Variáveis de ambiente do build (JVM do Gradle, home, propriedades de projeto). Nada definido no
 projeto.
 
-**Referência completa:** [Gradle 9.5.1 — Build Environment](https://docs.gradle.org/9.5.1/userguide/build_environment.html).
+**Referência completa:** [Gradle 9.6.0 — Build Environment](https://docs.gradle.org/9.6.0/userguide/build_environment.html).
 
 ### 6.2 Sonar — plugin `org.sonarqube` 7.2.2
 
