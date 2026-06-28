@@ -39,14 +39,18 @@ class LuaScripts {
     val lease = LuaScript("redis/lease.lua")
     val paceLease = LuaScript("redis/pace_lease.lua")
 
-    /** Executa o script (saída MULTI → lista de inteiros), com EVALSHA → fallback EVAL no NOSCRIPT. */
-    @Suppress("UNCHECKED_CAST", "SpreadOperator") // varargs repassados à API do Lettuce
-    suspend fun evalLongs(
+    /**
+     * Executa o script (saída MULTI → lista de inteiros), com EVALSHA → fallback EVAL no NOSCRIPT.
+     * Devolve a lista crua do Lettuce; o caller lê as posições com [longAt] — evita alocar uma
+     * `List<Long>` intermediária no hot path (§4.1/§6.4, 1–3 chamadas por request).
+     */
+    @Suppress("SpreadOperator") // varargs repassados à API do Lettuce
+    suspend fun eval(
         commands: RedisScriptingCoroutinesCommands<String, String>,
         script: LuaScript,
         key: String,
         vararg args: String,
-    ): List<Long> {
+    ): List<Any?> {
         val keys = arrayOf(key)
         val raw = try {
             commands.evalsha<List<Any?>>(script.sha1, ScriptOutputType.MULTI, keys, *args)
@@ -58,6 +62,11 @@ class LuaScripts {
                 .log()
             commands.eval<List<Any?>>(script.source, ScriptOutputType.MULTI, keys, *args)
         }
-        return raw.orEmpty().map { (it as Number).toLong() }
+        return raw.orEmpty()
+    }
+
+    companion object {
+        /** Lê a posição [index] da saída crua do script como [Long] (0 se ausente). */
+        fun List<Any?>.longAt(index: Int): Long = (getOrNull(index) as? Number)?.toLong() ?: 0L
     }
 }
