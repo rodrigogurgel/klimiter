@@ -162,6 +162,38 @@ Exemplos:
 > absolutos — confirme no hardware de produção. Joelho de HIGH ≥ 4 cores exige host de carga dedicado.
 > Heap: use `-Xmx` folgado (regra de bolso ≥ 1 GB/core) para o ZGC não stallar sob rajada.
 
+### Sensibilidade do LOW ao RTT do Redis (cenário Fargate / Redis remoto)
+
+No co-locado deste doc o Redis tem RTT ~0,1 ms. No Fargate (ou qualquer Redis pela rede) o RTT sobe, e só
+o **LOW** sente (o HIGH é caminho local). Para medir **sem um Redis dedicado**, injeta-se latência na
+interface do container do Redis com **`tc netem`** (kernel-level, não limita vazão — ao contrário de um
+proxy TCP como o toxiproxy, que satura e vira ele mesmo o gargalo):
+
+```bash
+# +Xms na eth0 do Redis (sidecar privilegiado no netns do container); klimiter fala DIRETO no Redis
+docker run --rm --net container:<redis> --cap-add NET_ADMIN alpine \
+  sh -c 'apk add -q iproute2 && tc qdisc replace dev eth0 root netem delay 1ms'
+# medir o RTT real: redis-cli -h <redis> --latency  (de outro container na mesma rede)
+# remover: tc qdisc del dev eth0 root
+```
+
+Joelho do LOW vs. RTT do Redis (2 cores, OFF, **SLO p99 < 15 ms**):
+
+| RTT do Redis | Joelho LOW | p50 |
+|---:|---:|---:|
+| ~0,1 ms (direto) | **18k** | 0,5 ms |
+| ~1,1 ms | **18k** | 1,6 ms |
+| ~2–5 ms | ~14–16k | 2–5 ms |
+| **~11 ms** | **~3k** ⚠️ | 11 ms |
+
+> **HIGH:** ~inalterado (~36k a 3 ms de RTT) — o RTT do Redis quase não afeta o caminho local.
+
+**Modelo:** `joelho_LOW ≈ min(teto ~18k, vazão onde a p99 bate o SLO dado o RTT base)`. Com SLO de 15 ms há
+**folga** sobre poucos ms de RTT, então o LOW **não despenca** por estar na rede — ele cai conforme o RTT
+**se aproxima do SLO** (o termo que manda é `headroom = SLO − RTT`). **Implicação:** ElastiCache **mesma
+AZ** (~0,5–1 ms) deixa o LOW perto do co-locado; o risco é **cross-region** (RTT alto) ou **SLO apertado**
+(p99 < 5 ms torna 2–3 ms de RTT caro). Ver [SATURACAO.md §8.3](SATURACAO.md#83-eks-fargate-especificidades).
+
 ## Recomendações / próximos passos
 
 - **Mergear** a branch: o ganho de HIGH é real e o LOW não regrediu; o `check` está verde.

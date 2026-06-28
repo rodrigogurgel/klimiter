@@ -290,9 +290,14 @@ arredondados para um combo válido de vCPU/memória (+ ~256 MB de overhead da VM
 
 **Cuidados (mudam o dimensionamento):**
 - **Sem co-locar o Redis.** Fargate **não roda DaemonSet** nem sidecar com afinidade de host — o Redis é
-  sempre **outra VM** (ElastiCache ou um Redis em nó normal). Round-trip pela rede a cada admissão (§6.1)
-  → o **plateau do LOW cai** vs. os números co-locados deste doc. **HIGH** (caminho local) quase não sente.
-  Ponha o Redis **na mesma AZ/subnet** e use ElastiCache para minimizar o RTT.
+  sempre **outra VM** (ElastiCache ou um Redis em nó normal). O round-trip pela rede a cada admissão (§6.1)
+  **mexe no LOW, não no HIGH** (caminho local). Mas — medido injetando RTT no Redis (curva completa em
+  [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md)) — **o LOW é tolerante a RTT enquanto sobrar
+  *headroom* sobre o SLO**: com SLO p99 < 15 ms, RTT ≤ ~1 ms ⇒ sem perda (~18k); 2–5 ms ⇒ perda pequena
+  (~14–16k); o joelho só **despenca quando o RTT se aproxima do SLO** (RTT ~11 ms ⇒ ~3k). O fator é
+  `headroom = SLO − RTT`. **Recomendação:** Redis (ElastiCache) na **mesma AZ** (RTT ~0,5–1 ms) ⇒ LOW
+  fica perto do co-locado. Cuidado com **cross-region** ou **SLO apertado** (p99 < 5 ms torna 2–3 ms de
+  RTT caro).
 - **Combo vCPU×memória fixo.** vCPU ∈ {0,25; 0,5; 1; 2; 4; 8; 16}; a memória tem faixa por vCPU (ex.:
   2 vCPU → 4–16 GB). **Escolha o combo que dê ≥ 1 GB/core de heap** (§8.1) — fácil: 2 vCPU + 4–8 GB.
   Fixe `ActiveProcessorCount` = vCPU do combo (em fração de vCPU, force =1).
@@ -303,7 +308,7 @@ arredondados para um combo válido de vCPU/memória (+ ~256 MB de overhead da VM
   `initialDelaySeconds` folgado.
 
 ```yaml
-# Fargate — micro-VM dedicada (= Guaranteed). Redis SEMPRE pela rede (ElastiCache/Service) → LOW menor.
+# Fargate — micro-VM dedicada (= Guaranteed). Redis SEMPRE pela rede (ElastiCache/Service) → use mesma AZ.
 resources: { requests: { cpu: "2", memory: 4Gi } }   # Fargate arredonda p/ um combo válido
 env:
   - { name: JAVA_TOOL_OPTIONS, value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60" }
@@ -311,4 +316,5 @@ env:
 ```
 
 > Como sempre (§7): números absolutos **desta máquina**; o que transfere são as **inclinações/ratios**.
-> No Fargate, valide o **LOW** in-place — é o que mais muda por causa do Redis remoto.
+> No Fargate, valide o **LOW** in-place medindo o **RTT real ao Redis** e conferindo o *headroom* sobre o
+> seu SLO — é o que governa o joelho do LOW (curva em [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md)).
