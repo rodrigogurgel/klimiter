@@ -34,14 +34,25 @@ class FilePolicyRepository(private val properties: PolicyProperties, private val
     fun reload() {
         val path = Path.of(properties.path)
         if (Files.notExists(path)) {
-            logger.warn("arquivo de políticas ausente em {} — mantendo o snapshot atual (pass-through)", path)
+            logger.atWarn()
+                .addKeyValue("path", path)
+                .setMessage("arquivo de políticas ausente; mantendo o snapshot atual (pass-through)")
+                .log()
             return
         }
         try {
             snapshot.set(loader.load(path))
-            logger.info("políticas carregadas de {} ({} dimensões)", path, snapshot.get().size)
+            logger.atInfo()
+                .addKeyValue("path", path)
+                .addKeyValue("dimensions", snapshot.get().size)
+                .setMessage("políticas carregadas")
+                .log()
         } catch (e: PolicyFileException) {
-            logger.error("falha ao carregar políticas de {} — mantendo a última config boa", path, e)
+            logger.atError()
+                .setCause(e)
+                .addKeyValue("path", path)
+                .setMessage("falha ao carregar políticas; mantendo a última config boa")
+                .log()
         }
     }
 }
