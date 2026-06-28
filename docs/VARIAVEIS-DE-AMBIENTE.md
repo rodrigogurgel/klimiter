@@ -65,17 +65,37 @@ Propriedades definidas pelo projeto (binding relaxado do Spring, caminho **R** �
 |----------|---------|-------------|------------------|
 | `KLIMITER_POLICIES_PATH` | R | `klimiter.policies.path` | `config/policies/policies.yaml` (`application.yaml`) |
 | `KLIMITER_POLICIES_RELOAD_DEBOUNCE` | R | `klimiter.policies.reload-debounce` | `200ms` (`application.yaml`) |
+| `KLIMITER_REDIS_URI` | R | `klimiter.redis.uri` | `redis://localhost:6379` (`application.yaml`) |
+| `KLIMITER_REDIS_POOL_SIZE` | R | `klimiter.redis.pool-size` | `8` (`application.yaml`) |
+| `KLIMITER_REDIS_KEY_PREFIX` | R | `klimiter.redis.key-prefix` | `klimiter` (`application.yaml`) |
+| `KLIMITER_EVICTION_INTERVAL` | R | `klimiter.eviction.interval` | `60s` (`application.yaml`) |
+| `KLIMITER_OBSERVABILITY_GRPC_SAMPLE_RATE` | R | `klimiter.observability.grpc-sample-rate` | `1.0` (`application.yaml`) |
 
 `path`: caminho do arquivo de políticas (formato em [`POLITICAS.md`](POLITICAS.md)); relativo ao
 diretório de trabalho ou absoluto. `reload-debounce`: janela de silêncio do hot reload — eventos do
 filesystem em rajada são coalescidos num único reload (aceita formato de duração do Spring, ex.:
 `200ms`, `1s`).
 
+`redis`: conexão com o contador global por janela (§4). `uri` no formato `redis://host:porta`;
+`pool-size` é o nº de conexões multiplexadas sempre abertas (round-robin, PA-2); `key-prefix` prefixa
+as chaves `prefixo:dimensão:valor:início` (§3.2). `eviction.interval`: período da varredura do
+índice local de buckets (§4.2; aceita formato de duração do Spring). `observability.grpc-sample-rate`:
+fração das observações por-RPC do gRPC a registrar (1.0 = todas; 0.0 = desliga) — knob de custo, ver
+[`OBSERVABILIDADE.md`](OBSERVABILIDADE.md) §2 e [`SATURACAO.md`](SATURACAO.md) §5.2.
+
 ```yaml
 klimiter:
   policies:
     path: config/policies/policies.yaml
     reload-debounce: 200ms
+  redis:
+    uri: redis://localhost:6379
+    pool-size: 8
+    key-prefix: klimiter
+  eviction:
+    interval: 60s
+  observability:
+    grpc-sample-rate: 1.0
 ```
 
 ---
@@ -145,6 +165,19 @@ Usado no projeto:
 
 **Referência completa:** [SonarScanner for Gradle — Analysis parameters](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/analysis-parameters/).
 
+### 6.3 Testcontainers — testes de integração (versão pelo BOM do Spring Boot)
+
+Usado nos testes de integração do adapter Redis (`@Testcontainers(disabledWithoutDocker = true)`):
+sem Docker os ITs são pulados. Definido no test runner (`build.gradle.kts`):
+
+| Variável | Valor no projeto | Descrição |
+|----------|------------------|-----------|
+| `TESTCONTAINERS_RYUK_DISABLED` | `true` (override pelo ambiente) | Desliga o reaper Ryuk (dispensável em CI/dev). |
+| `DOCKER_HOST` | repassado do host quando setado | Socket do Docker (ex.: Docker Desktop fora do padrão). |
+| `api.version` (system property) | `1.43` (override por `-Dapi.version` ou `DOCKER_API_VERSION`) | Versão da API do docker-java (o default 1.32 é antigo demais para daemons modernos). |
+
+**Referência completa:** [Testcontainers — Configuration](https://java.testcontainers.org/features/configuration/).
+
 ---
 
 ## 7. Dependências e plugins sem variáveis de ambiente próprias
@@ -155,6 +188,8 @@ config cai em `spring.*`/`management.*` já coberto acima):
 - **Codegen (build):** plugin `com.google.protobuf`, `grpc-kotlin-stub`, `protobuf-kotlin`.
 - **Runtime Kotlin/Reactor:** `kotlinx-coroutines-core`/`-reactor`, `reactor-kotlin-extensions`,
   `kotlin-reflect`.
+- **Redis (runtime):** `lettuce-core` — conexão configurada via URI/código (ver wiring do
+  contador global), sem variáveis de ambiente próprias.
 - **Serialização:** `jackson-module-kotlin` — configurado por `spring.jackson.*` (ver §1).
 - **Qualidade/docs:** plugins `dev.detekt`, `org.jetbrains.dokka`, `jacoco`,
   `com.github.ben-manes.versions`, `io.spring.dependency-management`; libs de teste `konsist`,

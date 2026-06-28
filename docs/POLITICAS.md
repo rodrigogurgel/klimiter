@@ -159,8 +159,8 @@ As regras estruturais cobertas (em ambos os níveis): `version` correta, ao meno
 (`SECOND`/`MINUTE`/`HOUR`/`DAY`), `prefetch` com exatamente um entre `percent`/`count`, e nenhum
 campo desconhecido — para pegar erros de digitação cedo.
 
-> **Knobs globais não vivem aqui.** Modo de pacing (fundido × probe, §6.4), carência de TTL
-> (§3.2) e a conexão com o armazenamento central são configuração de runtime — ficam em
+> **Knobs globais não vivem aqui.** A carência de TTL (§3.2) e a conexão com o armazenamento
+> central são configuração de runtime — ficam em
 > `application.yaml`/ambiente (ver [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md)), não no
 > `policies.yaml`, que é só o catálogo de limites por dimensão.
 
