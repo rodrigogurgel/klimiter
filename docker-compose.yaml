@@ -6,6 +6,9 @@
 # Grafana:      http://localhost:3000  (anônimo/admin)
 # RedisInsight: http://localhost:5540  (conecte em  redis:6379)
 # gRPC:         localhost:9090
+#
+# SonarQube local (OPT-IN, perfil 'sonar' — não sobe por padrão):
+#   docker compose --profile sonar up -d sonarqube     # http://localhost:9000
 name: klimiter
 
 services:
@@ -80,6 +83,29 @@ services:
       - "4318:4318" # OTLP HTTP
     restart: unless-stopped
 
+  # SonarQube local para análise OFFLINE (perfil 'sonar', OPT-IN — não sobe na stack padrão).
+  #   docker compose --profile sonar up -d sonarqube      # http://localhost:9000 (admin/admin no 1º login)
+  #   SONAR_HOST_URL=http://localhost:9000 ./gradlew sonar -Dsonar.token=<token-do-projeto>
+  # Banco H2 embutido (só avaliação/dev — o Sonar avisa que não é p/ produção; ver docs/VARIAVEIS-DE-AMBIENTE §6.2).
+  sonarqube:
+    image: sonarqube:lts-community
+    profiles: ["sonar"]
+    ports:
+      - "9000:9000"
+    environment:
+      # Pula os bootstrap checks do Elasticsearch (vm.max_map_count) p/ subir em dev sem mexer em sysctl.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    restart: unless-stopped
+    mem_limit: 4g
+    mem_reservation: 1g
+
 volumes:
   redis-data:
   redisinsight-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
