@@ -16,6 +16,7 @@ esse catálogo — ele registra apenas:
 > |-----------|----------|
 > | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | o quê — fluxos, invariantes |
 > | [`ARQUITETURA.md`](ARQUITETURA.md) | como o código é estruturado |
+> | [`POLITICAS.md`](POLITICAS.md) | formato do arquivo de políticas (limites por dimensão) |
 > | [`OBSERVABILIDADE.md`](OBSERVABILIDADE.md) | o que o serviço expõe para observação |
 > | **`VARIAVEIS-DE-AMBIENTE.md`** (este) | configuração via ambiente |
 
@@ -55,6 +56,23 @@ spring:
 
 **Referência completa:** [Spring Boot — Common Application Properties (Core)](https://docs.spring.io/spring-boot/appendix/application-properties/index.html#appendix.application-properties.core)
 — inclui `spring.profiles.active`, `spring.jackson.*` (serialização JSON) e demais `spring.*`.
+
+### 1.1 Configuração própria do klimiter (`klimiter.*`)
+
+Propriedades definidas pelo projeto (binding relaxado do Spring, caminho **R** — `@ConfigurationProperties`).
+
+| Variável | Caminho | Propriedade | Valor no projeto |
+|----------|---------|-------------|------------------|
+| `KLIMITER_POLICIES_PATH` | R | `klimiter.policies.path` | `config/policies/policies.yaml` (`application.yaml`) |
+
+Caminho do arquivo de políticas (formato em [`POLITICAS.md`](POLITICAS.md)); relativo ao diretório
+de trabalho ou absoluto.
+
+```yaml
+klimiter:
+  policies:
+    path: config/policies/policies.yaml
+```
 
 ---
 

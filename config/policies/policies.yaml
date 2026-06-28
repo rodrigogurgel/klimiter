@@ -1,0 +1,41 @@
+# Catálogo de políticas de rate limit do klimiter.
+#
+# Formato e semântica: docs/POLITICAS.md. Validado por policies.schema.json (o comentário
+# abaixo liga o schema ao editor para autocomplete e erros inline).
+#
+# yaml-language-server: $schema=./policies.schema.json
+version: 1
+
+policies:
+  # Dimensão por usuário: 1000 req/min, com bloco de prefetch de 10% da capacidade.
+  user_id:
+    default:
+      requests_per_unit: 1000
+      unit: MINUTE
+      prefetch:
+        percent: 10
+    overrides:
+      # Conta de serviço com limite mais alto e prefetch absoluto.
+      service-account:
+        requests_per_unit: 50000
+        unit: MINUTE
+        prefetch:
+          count: 500
+      # Usuário específico isento de prefetch (arrenda exatamente o necessário).
+      user-42:
+        requests_per_unit: 5000
+        unit: MINUTE
+
+  # Dimensão por IP: 100 req/s, sem prefetch (default).
+  ip:
+    default:
+      requests_per_unit: 100
+      unit: SECOND
+
+  # Dimensão por tenant: 1.000.000 req/dia.
+  tenant:
+    default:
+      requests_per_unit: 1000000
+      unit: DAY
+      prefetch:
+        percent: 5

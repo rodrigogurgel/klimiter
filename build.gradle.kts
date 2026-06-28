@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.grpc.kotlin.stub)
     // Versões gerenciadas pelo BOM do Spring Boot / plugin Kotlin (sem versão própria).
     implementation("com.google.protobuf:protobuf-kotlin")
+    implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
