@@ -2,6 +2,7 @@ package io.github.rodrigogurgel.klimiter.adapter.outbound.policy
 
 import io.github.rodrigogurgel.klimiter.core.policy.PolicySnapshot
 import io.github.rodrigogurgel.klimiter.core.port.outbound.PolicyRepository
+import io.github.rodrigogurgel.klimiter.core.port.outbound.RateLimitMetrics
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -18,8 +19,11 @@ import java.util.concurrent.atomic.AtomicReference
  * ponto de entrada para o hot reload (observador de diretório — passo seguinte).
  */
 @Component
-class FilePolicyRepository(private val properties: PolicyProperties, private val loader: YamlPolicyLoader) :
-    PolicyRepository {
+class FilePolicyRepository(
+    private val properties: PolicyProperties,
+    private val loader: YamlPolicyLoader,
+    private val metrics: RateLimitMetrics = RateLimitMetrics.NOOP,
+) : PolicyRepository {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val snapshot = AtomicReference(PolicySnapshot.EMPTY)
 
@@ -41,10 +45,13 @@ class FilePolicyRepository(private val properties: PolicyProperties, private val
             return
         }
         try {
-            snapshot.set(loader.load(path))
+            val loaded = loader.load(path)
+            snapshot.set(loaded)
+            // Reconcilia os meters por policy com o novo snapshot (cria os novos, remove os que saíram).
+            metrics.syncDetailedPolicies(loaded.detailedMeterKeys())
             logger.atInfo()
                 .addKeyValue("path", path)
-                .addKeyValue("dimensions", snapshot.get().size)
+                .addKeyValue("dimensions", loaded.size)
                 .setMessage("políticas carregadas")
                 .log()
         } catch (e: PolicyFileException) {
