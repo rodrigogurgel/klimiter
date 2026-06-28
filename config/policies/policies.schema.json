@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rodrigogurgel/klimiter/blob/main/config/policies/policies.schema.json",
+  "title": "klimiter — catálogo de políticas de rate limit",
+  "description": "Contrato do arquivo de políticas (config/policies/policies.yaml). Espelha o modelo Envoy RLS do DESIGN-CONCEITUAL.md: cada regra é requests_per_unit + unit (§3.1); resolução por precedência dimensão → override por valor → default → pass-through (§8.1).",
+  "type": "object",
+  "required": ["version", "policies"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "description": "Versão do formato deste arquivo. Atual: 1.",
+      "const": 1
+    },
+    "policies": {
+      "description": "Mapa dimensão (eixo do limite, ex.: user_id) → política. Uma dimensão ausente significa pass-through: admitido, não cobra nada (§8.1).",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/dimensionName" },
+      "additionalProperties": { "$ref": "#/$defs/dimension" }
+    }
+  },
+  "$defs": {
+    "dimensionName": {
+      "description": "Nome do eixo do limite. Identificador estável: letras, dígitos, '_', '.' e '-'.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.-]+$"
+    },
+    "dimension": {
+      "description": "Política de uma dimensão: um default obrigatório e overrides opcionais por valor exato (§8.1).",
+      "type": "object",
+      "required": ["default"],
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "description": "Regra aplicada a qualquer valor da dimensão sem override.",
+          "$ref": "#/$defs/rule"
+        },
+        "overrides": {
+          "description": "Mapa valor exato → regra. Tem precedência sobre o default para aquele valor.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/rule" }
+        }
+      }
+    },
+    "rule": {
+      "description": "Uma regra de limite no modelo Envoy RLS: capacidade por unidade de tempo (§3.1).",
+      "type": "object",
+      "required": ["requests_per_unit", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "requests_per_unit": {
+          "description": "Capacidade: requisições permitidas por UMA unit. A janela tem o tamanho de exatamente uma unit (§3.1).",
+          "type": "integer",
+          "minimum": 1
+        },
+        "unit": {
+          "description": "Unidade da janela. A janela é alinhada ao epoch/UTC (§3.2).",
+          "type": "string",
+          "enum": ["SECOND", "MINUTE", "HOUR", "DAY"]
+        },
+        "prefetch": {
+          "description": "Amortização do lease de alta prioridade (§5). Opcional. Exatamente um entre 'percent' e 'count'.",
+          "$ref": "#/$defs/prefetch"
+        }
+      }
+    },
+    "prefetch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "percent": {
+          "description": "Tamanho do bloco como percentual de requests_per_unit (1–100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "count": {
+          "description": "Tamanho do bloco em unidades absolutas.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "oneOf": [
+        { "required": ["percent"] },
+        { "required": ["count"] }
+      ]
+    }
+  }
+}

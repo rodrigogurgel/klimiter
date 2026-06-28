@@ -1,3 +1,8 @@
 spring:
   application:
     name: klimiter
+
+klimiter:
+  policies:
+    # Caminho do arquivo de políticas (ver docs/POLITICAS.md). Sobrescrevível por KLIMITER_POLICIES_PATH.
+    path: config/policies/policies.yaml

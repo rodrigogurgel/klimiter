@@ -114,8 +114,10 @@ cliff.toml                # config do git-cliff (geração do CHANGELOG)
 config/detekt/detekt.yml  # regras do detekt (sobre o default)
 docs/DESIGN-CONCEITUAL.md # especificação da lógica (LER PRIMEIRO)
 docs/ARQUITETURA.md       # estrutura do código + regras de fronteira (hexagonal)
+docs/POLITICAS.md         # formato do config/policies/policies.yaml + JSON Schema
 docs/OBSERVABILIDADE.md   # contrato de telemetria: métricas, traces/spans, logs
 docs/VARIAVEIS-DE-AMBIENTE.md # variáveis de ambiente: aplicação, deps, JVM, build
+config/policies/          # policies.yaml (catálogo de limites) + policies.schema.json
 src/main/kotlin/...        # código de produção
 src/test/kotlin/...        # testes
 CONTRIBUTING.md           # fluxo de contribuição completo
@@ -127,5 +129,6 @@ AGENTS.md                 # este arquivo
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo completo, git flow, checklist de PR.
 - [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md) — a lógica do rate limiter (*o quê*).
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — estrutura do código e regras de fronteira (*o como*).
+- [`docs/POLITICAS.md`](docs/POLITICAS.md) — formato do arquivo de políticas, JSON Schema e resolução.
 - [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) — métricas, traces/spans e logs expostos.
 - [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md) — variáveis de ambiente (app, deps, JVM, build).

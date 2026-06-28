@@ -10,6 +10,7 @@ descreve fronteiras e restrições, não escolhas de implementação.
 > |-----------|----------|---------------------|
 > | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | **o quê** — fluxos, invariantes, premissas | comportamento |
 > | **`ARQUITETURA.md`** (este) | **como o código é estruturado** — camadas, fronteiras | estrutura |
+> | [`POLITICAS.md`](POLITICAS.md) | **como configurar limites** — formato, schema, resolução | configuração de políticas |
 > | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | como **interagir** com o projeto | git flow, qualidade |
 > | [`AGENTS.md`](../AGENTS.md) | quickref operacional | comandos e convenções |
 >
