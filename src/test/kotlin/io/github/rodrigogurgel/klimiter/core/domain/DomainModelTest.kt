@@ -30,6 +30,14 @@ class DomainModelTest {
     }
 
     @Test
+    fun `dimension and value reject blank and expose raw via toString`() {
+        assertFailsWith<IllegalArgumentException> { Dimension("  ") }
+        assertFailsWith<IllegalArgumentException> { DimensionValue("") }
+        assertEquals("user_id", Dimension("user_id").toString())
+        assertEquals("user-42", DimensionValue("user-42").toString())
+    }
+
+    @Test
     fun `request carries the limit axis as value objects`() {
         val request = Request(Dimension("user_id"), DimensionValue("user-42"), Hits(1), Priority.HIGH)
         assertEquals("user_id", request.dimension.raw)

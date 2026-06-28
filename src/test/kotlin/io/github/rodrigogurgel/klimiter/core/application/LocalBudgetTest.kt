@@ -47,6 +47,25 @@ class LocalBudgetTest {
     }
 
     @Test
+    fun `reserve low is admitted through the pacing path`() = runTest {
+        val reservation = budget().reserve(dim, value, policy, hits = 1, priority = Priority.LOW, nowMillis = 60_000)
+        assertEquals(Status.ALLOWED, reservation.decision.status)
+    }
+
+    @Test
+    fun `inspect routes low priority through the pacing pre-gate`() {
+        // bucket fresco, início da janela → abaixo da linha → permitido (pré-portão não nega)
+        val decision = budget().inspect(dim, value, policy, hits = 1, priority = Priority.LOW, nowMillis = 90_000)
+        assertEquals(Status.ALLOWED, decision.status)
+    }
+
+    @Test
+    fun `inspect routes high priority through the high pre-gate`() {
+        val decision = budget().inspect(dim, value, policy, hits = 1, priority = Priority.HIGH, nowMillis = 60_000)
+        assertEquals(Status.ALLOWED, decision.status)
+    }
+
+    @Test
     fun `inspect denies when hits exceed capacity`() {
         val decision = budget().inspect(dim, value, policy, hits = 101, priority = Priority.HIGH, nowMillis = 60_000)
         assertEquals(Status.DENIED, decision.status)
