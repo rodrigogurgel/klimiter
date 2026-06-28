@@ -163,17 +163,29 @@ Usado no projeto:
 | `SONAR_TOKEN` | sem default; usado em `-Dsonar.token=$SONAR_TOKEN` | Token de autenticação (obrigatório p/ `./gradlew sonar`). |
 | `SONAR_HOST_URL` | fallback `https://sonarcloud.io` (`build.gradle.kts`) | URL do servidor Sonar. |
 
-**Rodar contra um SonarQube local** (perfil `sonar` do `docker-compose`, opt-in — não sobe na stack padrão):
+**Rodar contra um SonarQube local** (perfil `sonar` do `docker-compose`, opt-in — não sobe na stack padrão).
+
+**Atalho (um comando):** sobe o Sonar, **semeia a senha do admin**, gera o token e roda a análise:
 
 ```bash
-docker compose --profile sonar up -d sonarqube          # http://localhost:9000 (admin/admin no 1º login)
-# crie um token no SonarQube (My Account → Security) e rode:
-SONAR_HOST_URL=http://localhost:9000 ./gradlew sonar -Dsonar.token=<token>
+make sonar-local                                   # tudo automático; usa SONAR_PASSWORD (>=12, com
+                                                   # maiúscula+minúscula+dígito+especial)
+make sonar-reset                                   # zera o Sonar (volumes) — após upgrade de major
+```
+
+**Manual**, se preferir:
+
+```bash
+docker compose --profile sonar up -d sonarqube     # http://localhost:9000
+# defina a senha do admin (>=12, maiúscula+minúscula+dígito+especial), crie um token e rode:
+SONAR_HOST_URL=http://localhost:9000 ./gradlew test detekt jacocoTestReport sonar -Dsonar.token=<token>
 ```
 
 O serviço usa SonarQube Community com **H2 embutido** (apenas avaliação/dev — o Sonar avisa que H2 não é
 para produção) e `SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true` para subir sem ajustar `vm.max_map_count` no host.
 Se o Elasticsearch interno não subir, aumente o `vm.max_map_count` (`sysctl -w vm.max_map_count=524288`).
+A senha do admin **não nasce pronta** na Community (não há env de boot); o `make sonar-local` a semeia via
+API no 1º boot (idempotente) — é o mesmo padrão do Helm chart oficial.
 
 **Referência completa:** [SonarScanner for Gradle — Analysis parameters](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/analysis-parameters/).
 
