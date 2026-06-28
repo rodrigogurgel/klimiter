@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package klimiter.v1;
+
+import "google/protobuf/duration.proto";
+
+option java_package = "io.github.rodrigogurgel.klimiter.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "RateLimitProto";
+
+// Contrato gRPC do klimiter — espelha o §2 (Contrato de entrada e saída) do
+// docs/DESIGN-CONCEITUAL.md. Um pedido do cliente é um LOTE de descritores,
+// avaliado all-or-nothing (§7).
+
+// Prioridade do tráfego (§2.1). ALTA consome agressivamente (lease, §5);
+// BAIXA passa por pacing — só abaixo da linha de liberação (§6).
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_HIGH = 1; // ALTA
+  PRIORITY_LOW = 2;  // BAIXA
+}
+
+// Status de uma decisão (§2.1), compartilhado por alta e baixa prioridade.
+enum Status {
+  STATUS_UNSPECIFIED = 0; // não preenchido (default proto)
+  STATUS_ALLOWED = 1;     // PERMITIDO
+  STATUS_DENIED = 2;      // NEGADO
+  STATUS_UNKNOWN = 3;     // DESCONHECIDO (degradação por falha de backend, §7.4)
+}
+
+// Um item do lote (§2.1).
+message RateLimitDescriptor {
+  string key = 1;        // eixo do limite (ex.: "user_id")
+  string value = 2;      // valor dentro do eixo (ex.: "user-42")
+  uint32 hits = 3;       // N — unidades a consumir (tipicamente 1; 0 = nada a cobrar)
+  Priority priority = 4;
+}
+
+// Pedido do cliente: um lote de um ou mais descritores, all-or-nothing (§7).
+message RateLimitRequest {
+  repeated RateLimitDescriptor descriptors = 1;
+}
+
+// Decisão por item (§2.1).
+message RateLimitDecision {
+  Status status = 1;
+  uint64 remaining = 2;                      // capacidade restante estimada (0 quando negado)
+  google.protobuf.Duration reset_after = 3;  // quanto falta p/ a janela virar
+  uint64 capacity = 4;                       // requests_per_unit da política
+}
+
+// Resultado do lote (§2.1, §7): status coletivo + a decisão de cada item,
+// na mesma ordem dos descritores do pedido.
+message RateLimitResponse {
+  Status overall_status = 1;
+  repeated RateLimitDecision decisions = 2;
+}
+
+// Serviço de rate limiting (nome no estilo Envoy RLS, §3.1).
+service RateLimitService {
+  // Avalia um lote e devolve o veredito coletivo + as decisões por item.
+  rpc ShouldRateLimit(RateLimitRequest) returns (RateLimitResponse);
+}

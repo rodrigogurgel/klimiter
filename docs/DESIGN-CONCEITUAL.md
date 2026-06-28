@@ -64,7 +64,7 @@ serialização:
 
 **Request**
 
-- `dimensão` — o eixo do limite (ex.: `user_id`).
+- `dimensão` (campo `key` no proto) — o eixo do limite (ex.: `user_id`).
 - `valor` — o valor concreto dentro do eixo (ex.: `user-42`).
 - `N` (hits) — unidades que esta requisição quer consumir (tipicamente 1).
 - `prioridade` — `ALTA` ou `BAIXA`.
@@ -73,12 +73,12 @@ Um pedido do cliente é um **lote** de um ou mais requests, avaliado all-or-noth
 
 **Decisão (por request)**
 
-- `verdict` — `PERMITIDO` | `NEGADO` | `DESCONHECIDO` (enum compartilhado por alta e baixa).
+- `status` — `PERMITIDO` | `NEGADO` | `DESCONHECIDO` (enum compartilhado por alta e baixa).
 - `remaining` — estimativa de capacidade restante na janela (0 quando negado).
 - `reset_after` — quanto falta para a janela virar.
 - `capacity` — a capacidade da política (`requests_per_unit`).
 
-O **resultado do lote** carrega o `verdict` coletivo (§7) mais a decisão de cada item.
+O **resultado do lote** carrega o `status` coletivo (§7) mais a decisão de cada item.
 
 ### 2.2 Roteamento de uma requisição
 
@@ -236,7 +236,6 @@ o esgotado:
 
 - renovação que **não** concede nada (global já cheio);
 - renovação que **concede, mas zera** o livre global (drenou a última folga);
-- probe de pacing somente-leitura;
 - lease fundido (tanto quando admite quanto quando nega).
 
 Toda leitura — **mesmo as que negam** — também **atualiza o snapshot do livre global**. É
@@ -253,7 +252,7 @@ nunca over-admitiria — a admissão é sempre confirmada pelo central (§6.1).
 ```mermaid
 flowchart LR
     subgraph Aprende["Aprende (custa um round-trip)"]
-        R["qualquer leitura central:<br/>renovação / probe / fundido"] --> Obs["atualizar snapshot<br/>do livre global"]
+        R["qualquer leitura central:<br/>renovação / fundido"] --> Obs["atualizar snapshot<br/>do livre global"]
         Obs --> Z{"livre global ≤ 0?"}
         Z -->|sim| Set["latchar ESGOTADO"]
         Z -->|não| Keep["apenas refrescar snapshot"]
@@ -334,7 +333,7 @@ memória fraco, isso exige barreiras/atômicos sequencialmente consistentes. **I
 mais simples e igualmente correta:** fazer todos os testes (não só a renovação) **sob a
 trava do bucket** — aí a ordenação é automática e esta nota não se aplica.
 
-**Resultados possíveis (enum de verdict, compartilhado por alta e baixa):**
+**Resultados possíveis (enum de status, compartilhado por alta e baixa):**
 
 - **Permitido** — admitido.
 - **Negado** — para a alta, significa janela esgotada ou `N > capacidade`; o motivo "acima da
@@ -370,7 +369,7 @@ flowchart TD
     T1 -->|não| Split["local_usável = min(local, N)<br/>faltante = max(0, N − local)"]
     Split --> Pre{"pré-portão local nega?<br/>(usa faltante, §6.3)"}
     Pre -->|sim| NOp["NEGADO<br/>(sem round-trip)"]
-    Pre -->|não| Central["central: lê contador C, calcula linha L<br/>(fundido §6.4 ou probe-separado §6.3)"]
+    Pre -->|não| Central["central: lê contador C, calcula linha L<br/>(fundido, §6.4)"]
     Central --> Gate{"C + faltante ≤ L?"}
     Gate -->|não| NOc["NEGADO"]
     Gate -->|sim| Do["arrenda 'faltante' (C += faltante)<br/>+ consome 'local_usável' do pool"]
@@ -404,9 +403,8 @@ isso exige uma operação atômica de consumo; em runtime single-threaded/async,
 suspensão no meio do consumo, já é naturalmente atômico — mesmo espírito do single-flight
 do §4.2.
 
-**Dois modos de operação central** (por configuração): o **fundido** (valida a linha e arrenda
-o faltante num round-trip atômico, fechando o TOCTOU — §6.4) e o **probe separado** (linha
-somente-leitura e, se admitido, um lease do faltante à parte).
+**Operação central (fundida, §6.4):** valida a linha **e** arrenda o faltante num round-trip
+atômico, fechando o TOCTOU; com `faltante = 0` degenera numa validação somente-leitura da linha.
 
 ### 6.2 A linha de liberação
 
@@ -485,17 +483,12 @@ o snapshot é apenas o default 0, e negar (ou confiar nele) seria infundado. Por
 observação prévia, a resposta é sempre "inconclusivo → consultar o central".
 
 Quando o pré-portão é inconclusivo, vai ao central. Cada round-trip **atualiza o
-snapshot**, então uma rajada de negações **colapsa num único probe**.
+snapshot**, então uma rajada de negações **colapsa num único round-trip**.
 
-**Contrato (probe somente-leitura, no central).** Entrada: `chave`, `capacidade`, `faltante`,
-`decorrido`, `duração`. Saída: `admite` (1/0 conforme `contador + faltante ≤ linha`) e
-`já_arrendado` (para o nó refrescar o snapshot do livre global). **Não escreve.** Quando
-`faltante = 0`, é uma validação pura da linha (`contador ≤ linha`).
+### 6.4 Operação central: pacear e arrendar num round-trip atômico
 
-### 6.4 Variante fundida: pacear e arrendar num round-trip
-
-Em vez de "probe somente-leitura + lease separado" (dois round-trips), uma operação atômica
-**valida a linha E arrenda o faltante de uma vez** — fechando o TOCTOU.
+Uma única operação atômica **valida a linha E arrenda o faltante de uma vez**, fechando o TOCTOU
+(sem janela entre validar e arrendar).
 
 ```mermaid
 flowchart TD
@@ -509,10 +502,9 @@ flowchart TD
     Lease --> OKR["PERMITIDO"]
 ```
 
-A diferença para o probe-separado é só **atomicidade**: validar a linha e arrendar o faltante
-acontecem no mesmo passo, então nenhum outro nó arrenda no meio. Quando `faltante = 0` a
-operação degenera num **read** (só valida a linha). Em ambos os modos a admissão é sempre
-confirmada pelo central — o crédito local nunca admite sozinho (§6.1).
+Validar a linha e arrendar o faltante acontecem no mesmo passo, então nenhum outro nó arrenda no
+meio. Quando `faltante = 0` a operação degenera num **read** (só valida a linha). A admissão é
+sempre confirmada pelo central — o crédito local nunca admite sozinho (§6.1).
 
 **Contrato (fundido, atômico).** Entrada: `chave`, `capacidade`, `faltante`, `decorrido`,
 `duração`, `ttl`. Saída: `admitido` (1/0) e `livre_global`. Admite sse `contador + faltante ≤
@@ -792,8 +784,8 @@ forem satisfeitos, o desvio possível é o anotado.
   causa over-admission até a janela expirar. Requisito: o armazenamento central **deve** ser
   configurado durável/persistente o suficiente para sobreviver à janela (replicação/persistência
   conforme a tecnologia escolhida).
-- **Operações centrais atômicas (read-modify-write).** As três operações do central — lease
-  (§4.1), probe de pacing (§6.3) e lease fundido (§6.4) — **devem** executar como um
+- **Operações centrais atômicas (read-modify-write).** As operações do central — lease
+  (§4.1) e o pacing fundido (§6.4) — **devem** executar como um
   read-modify-write **atômico server-side**: ler o contador, calcular e escrever, sem
   interleaving de outro nó no meio. Em Redis isso é um script Lua; em outro backend, uma
   stored procedure ou transação serializável. Implementá-las como comandos separados (ex.:

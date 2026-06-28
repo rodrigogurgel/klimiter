@@ -1,0 +1,197 @@
+# Stack local do klimiter: serviço gRPC + Redis (contador global, §4) + RedisInsight (GUI) +
+# Grafana/OTel-LGTM (observabilidade: traces, métricas e logs via OTLP).
+#
+# Dois modos MUTUAMENTE EXCLUSIVOS, via COMPOSE_PROFILES (o .env já default p/ 'standalone'):
+#   docker compose up --build                              # standalone (klimiter + redis)
+#   COMPOSE_PROFILES=redis-cluster docker compose up --build   # cluster (klimiter-cluster + 3 nós)
+# Atalhos: `make up` (standalone) e `make up-cluster` (cluster). Escolher o profile 'redis-cluster'
+# NÃO sobe o redis standalone (e vice-versa) — cada serviço está atrás do seu profile.
+#
+# Grafana:      http://localhost:3000  (anônimo/admin)
+# RedisInsight: http://localhost:5540  (standalone: redis:6379; cluster: redis-node-1:6379)
+# gRPC:         localhost:9090
+#
+# SonarQube local (OPT-IN, perfil 'sonar'):  docker compose --profile sonar up -d sonarqube
+name: klimiter
+
+# Env comum aos dois klimiter (mesclado com `<<` nos serviços, somando só o REDIS_*).
+x-klimiter-env: &klimiter-env
+  # Políticas montadas como DIRETÓRIO (hot reload sobrevive ao swap atômico do editor/ConfigMap, §8).
+  KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.sample.yaml
+  # Observabilidade: as OTEL_* são reconhecidas pelo starter (VARIAVEIS-DE-AMBIENTE.md §3).
+  OTEL_SERVICE_NAME: klimiter
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+  # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
+  JAVA_TOOL_OPTIONS: >-
+    -XX:+UseZGC -XX:+ZGenerational
+    -XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75
+    -XX:+ExitOnOutOfMemoryError
+
+# Config comum aos dois klimiter (build, porta, volumes, limites).
+x-klimiter-base: &klimiter-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: klimiter:dev
+  ports:
+    - "9090:9090" # gRPC (spring.grpc.server.port)
+  volumes:
+    - ./scripts/load-test:/etc/klimiter/policies:ro
+  restart: unless-stopped
+  mem_limit: 4g
+  mem_reservation: 512m
+  cpus: 2
+
+# Config comum aos nós do cluster (profile 'redis-cluster').
+x-redis-cluster-node: &redis-cluster-node
+  image: redis:8.8.0
+  profiles: ["redis-cluster"]
+  command: ["redis-server", "/etc/redis/redis.conf"]
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 5s
+    timeout: 3s
+    retries: 5
+    start_period: 3s
+  restart: unless-stopped
+
+services:
+  # ---- Modo standalone (profile 'standalone', default via .env) -------------
+  klimiter:
+    <<: *klimiter-base
+    profiles: ["standalone"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      lgtm:
+        condition: service_started
+    environment:
+      <<: *klimiter-env
+      KLIMITER_REDIS_URI: redis://redis:6379
+
+  redis:
+    image: redis:8.8.0
+    profiles: ["standalone"]
+    # Persistência (AOF): o contador da janela precisa sobreviver dentro da janela (§11).
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  # ---- Modo cluster (profile 'redis-cluster') -------------------------------
+  klimiter-cluster:
+    <<: *klimiter-base
+    profiles: ["redis-cluster"]
+    depends_on:
+      redis-cluster-init:
+        condition: service_completed_successfully
+      lgtm:
+        condition: service_started
+    environment:
+      <<: *klimiter-env
+      # Endpoint-semente; o client descobre a topologia do cluster a partir dele.
+      KLIMITER_REDIS_URI: redis://redis-node-1:6379
+      KLIMITER_REDIS_CLUSTER: "true"
+
+  redis-node-1:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-1-data:/data
+    ports:
+      - "7001:6379"
+
+  redis-node-2:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-2-data:/data
+    ports:
+      - "7002:6379"
+
+  redis-node-3:
+    <<: *redis-cluster-node
+    volumes:
+      - ./docker/redis-cluster/redis.conf:/etc/redis/redis.conf:ro
+      - redis-node-3-data:/data
+    ports:
+      - "7003:6379"
+
+  # One-shot: forma o cluster (idempotente — pula se já está ok). Os nós se alcançam pelo IP interno.
+  redis-cluster-init:
+    image: redis:8.8.0
+    profiles: ["redis-cluster"]
+    depends_on:
+      redis-node-1:
+        condition: service_healthy
+      redis-node-2:
+        condition: service_healthy
+      redis-node-3:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        redis-cli -h redis-node-1 cluster info | grep -q cluster_state:ok ||
+        redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379
+        --cluster-replicas 0 --cluster-yes
+    restart: "no"
+
+  # ---- Infra compartilhada (sempre liga) ------------------------------------
+  redisinsight:
+    image: redis/redisinsight:3.6.0
+    ports:
+      - "5540:5540" # UI web — adicione a conexão (standalone: redis:6379; cluster: redis-node-1:6379)
+    volumes:
+      - redisinsight-data:/data
+    restart: unless-stopped
+
+  lgtm:
+    # All-in-one: Grafana + Tempo (traces) + Loki (logs) + Prometheus (métricas) + OTel Collector.
+    image: grafana/otel-lgtm:0.28.0
+    ports:
+      - "3000:3000" # Grafana
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    restart: unless-stopped
+
+  # SonarQube local para análise OFFLINE (perfil 'sonar', OPT-IN — não sobe na stack padrão).
+  #   make sonar-local                                    # sobe + semeia a senha + token + análise (atalho)
+  #   docker compose --profile sonar up -d sonarqube      # http://localhost:9000 (modo manual)
+  # Banco H2 embutido (só avaliação/dev — o Sonar avisa que não é p/ produção; ver docs/VARIAVEIS-DE-AMBIENTE §6.2).
+  sonarqube:
+    # Pinado p/ reprodutibilidade; num upgrade de major o H2 do volume pode ficar incompatível — `make sonar-reset`.
+    image: sonarqube:26.6.0.123539-community
+    profiles: ["sonar"]
+    ports:
+      - "9000:9000"
+    environment:
+      # Pula os bootstrap checks do Elasticsearch (vm.max_map_count) p/ subir em dev sem mexer em sysctl.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    restart: unless-stopped
+    mem_limit: 4g
+    mem_reservation: 1g
+
+volumes:
+  redis-data:
+  redis-node-1-data:
+  redis-node-2-data:
+  redis-node-3-data:
+  redisinsight-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:

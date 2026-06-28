@@ -1,0 +1,12 @@
+# O build acontece no stage `build` do Dockerfile; só o necessário vai no contexto.
+.git
+.gradle
+.kotlin
+build
+**/build
+.idea
+*.iml
+
+# Docs e artefatos que não entram na imagem.
+docs
+*.md
