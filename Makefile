@@ -37,7 +37,11 @@ SAT_REDIS    ?= redis://localhost:6379
 SAT_POLICIES ?= test/load/policies.sample.yaml
 SAT_OTEL_OFF ?= -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true
 
-.PHONY: help up down logs sat-server saturation load-test
+.PHONY: help up down logs sat-server saturation load-test sonar-local sonar-reset
+
+# --- SonarQube local (profile 'sonar' do docker-compose) -------------------
+SONAR_URL      ?= http://localhost:9000
+SONAR_PASSWORD ?= Klimiter-Local-2026    # política do Sonar: >=12, maiúscula+minúscula+dígito+especial
 
 ## help: lista os alvos disponíveis
 help:
@@ -89,3 +93,12 @@ load-test:
 	echo "  test_run_id : $$RUNID"; \
 	echo "  log         : $$LOG   (tail -f para acompanhar)"; \
 	echo "  Grafana     : http://localhost:3000/explore  (sem dashboard provisionado; consulte k6_klimiter_* / grpc_req_duration no Explore, filtrando test_run_id=$$RUNID)"
+
+## sonar-local: sobe o SonarQube local, semeia a senha do admin e roda a análise (envia ao Sonar local)
+sonar-local:
+	@SONAR_URL=$(SONAR_URL) SONAR_PASSWORD=$(SONAR_PASSWORD) bash scripts/sonar-local.sh
+
+## sonar-reset: derruba o SonarQube local e APAGA seus volumes (zera senha/dados; use após upgrade de major)
+sonar-reset:
+	docker compose rm -sf sonarqube
+	docker volume rm -f klimiter_sonarqube-data klimiter_sonarqube-extensions klimiter_sonarqube-logs
