@@ -40,7 +40,9 @@ if leased + missing <= line then
   admitted = 1
   if missing > 0 then
     leased = redis.call('INCRBY', key, missing)
-    if redis.call('PTTL', key) == -1 then
+    -- leased == missing ⟺ esta INCRBY criou a chave (contador só cresce de 0, §9): TTL só aqui,
+    -- dispensando o PTTL de toda chamada.
+    if leased == missing then
       redis.call('PEXPIRE', key, ttl_ms)
     end
   end

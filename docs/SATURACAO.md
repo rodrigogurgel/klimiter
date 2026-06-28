@@ -174,3 +174,147 @@ Config extra do pod (independente do acima):
 - **OTel:** `OTEL_EXPORTER_OTLP_ENDPOINT` → collector do cluster. Sob CPU apertada, lembre do custo da
   observação por-RPC (§5.2) — considere a amostragem.
 - **Redis:** durável o bastante para sobreviver à janela (§11) e, de preferência, fora do nó do limiter.
+
+---
+
+## 7. Premissas de transferência p/ Kubernetes (o que a régua NÃO captura)
+
+Estes números são um **piso de sanidade e um mapa de *inclinações/ratios*** — **não** uma régua
+absoluta de produção. São medidos num **host único** (servidor + `ghz` + Redis na VM do Docker
+disputando a mesma máquina), com **carga sintética** (lote fixo de 3 dimensões, **puro HIGH ou puro
+LOW**, `hits=1`), **Redis local** e **sem ingress/mesh**. Antes de usá-los como fonte da verdade do
+cluster, conheça o que **não** está embutido. *(Referência de escala medida: HIGH ~linear ~+19k
+RPS/core; LOW plateau ~18k/pod; instrumentação ON ~−20% no HIGH — ver
+[OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md).)*
+
+### 7.1 O que torna os números FICÇÃO se ignorado
+
+- **CFS throttling (§4/§6).** `limits.cpu` = quota CFS → throttle a cada ~100 ms → a p99 desaba e o
+  joelho craterа. A régua **só vale** com QoS **Guaranteed + `cpu-manager-policy=static`** (cores
+  exclusivos, = `taskset`) **ou** `requests.cpu` **sem** `limits.cpu`. Com `limits.cpu` apertado os
+  números são fantasia.
+- **Heap acoplado à memória (ZGC stalla com heap apertado).** Sob rajada em poucos cores, `-Xmx` baixo
+  (ex.: 768m) faz o ZGC **stallar** → colapsos transitórios de p99 que derrubam o joelho. Regra de
+  bolso: **`-Xmx` ≥ ~1 GB/core** (via `-XX:MaxRAMPercentage` casado com `limits.memory`). **A régua é
+  (cores ​**E**​ memória)** — dimensionar core sem memória reproduz o colapso.
+
+### 7.2 O que torna os números OTIMISTAS (gap de ambiente)
+
+- **Redis pela rede derruba o LOW.** O LOW é **latency-bound** (não é CPU do servidor nem do Redis —
+  medido). Redis em outro pod/nó soma RTT de rede a **cada** round-trip (§6.1) → o plateau de ~18k/pod
+  **cai** proporcionalmente. O LOW local é teto otimista de co-locação.
+- **Teto agregado de Redis não medido.** "Cada pod soma ~18k de LOW" vale **até o Redis agregado
+  saturar** — N pods batendo num Redis fazem dele o gargalo. A escala horizontal do LOW tem um teto de
+  Redis que **este teste não exercita**.
+- **Sem ingress/mesh.** O `ghz` bate no loopback. kube-proxy/iptables, Service/LB, sidecar, TLS e o RTT
+  real do cliente consomem do orçamento de p99 e CPU por request — **em cima** do custo da observação
+  per-RPC (§5.2).
+
+### 7.3 O que limita a GENERALIZAÇÃO
+
+- **Linearidade validada só até ~4 cores.** Acima disso o `ghz` local satura antes do servidor (joelho
+  de HIGH ≥ 4 cores **não é mensurável** numa só máquina). Em pods grandes podem surgir NUMA, limite de
+  event-loops do Netty e **contenção de lock** (`renewMutex` por bucket, `ConcurrentHashMap`) — **não
+  assuma `+19k/core` linear indefinidamente**; prefira escalar **horizontal**.
+- **Workload-bound.** O joelho do LOW depende de quão often a chave quente faz short-circuit vs vai ao
+  central — função da **sua** carga (cardinalidades, tamanho do lote, nº de dimensões). E o teste usa
+  **prioridade pura**; a dinâmica de **prioridade mista** no mesmo lote (§6.5) **não foi medida sob
+  carga**.
+- **SLO-específico.** O joelho é definido por `KNEE_MS` (p99 < 15 ms aqui). Outro SLA → outro joelho.
+- **Zero efeitos distribuídos.** Foi **1 processo**. Skew de relógio, durabilidade do Redis no failover,
+  thundering-herd do latch e prefetch encalhado entre pods são **premissas de corretude** (§11), não de
+  perf, e **não** são exercitadas aqui.
+- **Cold start.** Medido com JIT quente; pod recém-escalado pela HPA entrega bem menos por ~30–60 s —
+  deixe **headroom**/pré-aquecimento.
+
+### 7.4 Para virar régua de verdade
+
+Calibre **in-cluster**: QoS Guaranteed (ou sem `limits.cpu`) + memória ≥ ~1 GB/core, Redis na topologia
+real, **carga representativa com prioridade mista**, e meça o **agregado de N pods contra o Redis real**
+para achar o teto horizontal. Dimensione por **(cores ​**E**​ memória)** com o **SLO explícito**.
+
+---
+
+## 8. Recomendações de deployment (Kubernetes e Fargate)
+
+Consolida as decisões de runtime. O **dimensionamento por carga** (cores p/ HIGH, pods p/ LOW) está em
+[OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md); aqui ficam **CPU/QoS, heap/memória e Fargate**.
+
+### 8.1 Heap e memória — o ZGC precisa de folga
+
+**Heap apertado derruba o joelho** (não por falta de throughput, mas porque o ZGC **stalla** sob rajada
+em poucos cores → picos de p99). Sweep a **2 cores, OFF** (joelho p99 < 15 ms):
+
+| `-Xmx` (= por core) | Joelho HIGH | Joelho LOW |
+|---|---|---|
+| 768m (384m/core) | ~24k | ~14k |
+| 1024m (512m/core) | ~28k | ~16k |
+| **2048m (1 GB/core)** | ~28–33k | **~18k** |
+| 4096m (2 GB/core) | ~40k | ~18k |
+
+- **Regra: `-Xmx` ≥ ~1 GB/core.** Abaixo disso o joelho cai ~20–40 % (stalls do ZGC). O **LOW plateia
+  em ~18k já com 1 GB/core** — mais heap não sobe o LOW (volta a ser round-trip-bound). O HIGH (mais
+  alocador) ainda ganha um pouco até ~2 GB/core, mas com retorno decrescente — o teto vira CPU.
+- **`-XX:MaxRAMPercentage`** casado com `resources.limits.memory` (ex.: `limits.memory: 4Gi` +
+  `MaxRAMPercentage=60` → ~2,4 GB de heap num pod de 2 cores = 1,2 GB/core). Deixe ~30–40 % do container
+  para fora-do-heap (metaspace, threads, Netty/direct buffers, ZGC).
+- **`-Xms=-Xmx`** (ou `InitialRAMPercentage=MaxRAMPercentage`): **commita o heap no boot**, evitando
+  jitter de resize/page-fault sob a primeira rajada. *(Não isolei o efeito em teste — é estabilidade de
+  latência, não teto de throughput.)*
+- **`-XX:ActiveProcessorCount=N`** = nº de cores do pod (a auto-detecção erra sob cgroup/fração de vCPU
+  e desalinha pools do Netty/ForkJoin/ZGC).
+
+### 8.2 CPU e QoS (resumo do §6) + dimensionamento
+
+- **Cores exclusivos, sem quota CFS:** QoS **Guaranteed + `cpu-manager-policy=static`** (cores inteiros)
+  **ou** só `requests.cpu` sem `limits.cpu`. **Nunca** `limits.cpu` apertado sem CPU manager static (§4/§6).
+- **HIGH escala vertical** (~+19k RPS/core); **LOW não** (plateau ~18k/pod, round-trip-bound). Logo:
+  `cores ≈ RPS_HIGH/19000` (÷ 0,8 se OTel on) e **`réplicas ≥ ⌈RPS_LOW/18000⌉`** — o que for maior manda.
+  LOW se escala **adicionando pods**, não cores.
+
+```yaml
+# Nó comum — QoS Guaranteed (requests == limits), CPU inteiro, kubelet com --cpu-manager-policy=static
+resources: { requests: { cpu: "2", memory: 4Gi }, limits: { cpu: "2", memory: 4Gi } }
+env:
+  - { name: JAVA_TOOL_OPTIONS, value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60" }
+```
+
+### 8.3 EKS Fargate (especificidades)
+
+No Fargate **cada pod roda na sua própria micro-VM (Firecracker)** dimensionada pelos *requests* do pod,
+arredondados para um combo válido de vCPU/memória (+ ~256 MB de overhead da VM).
+
+**A favor (é bom para um rate limiter sensível a latência):**
+- **vCPU dedicada, sem *noisy neighbor* nem throttling de CFS entre tenants** → comporta-se como
+  **Guaranteed** por construção; os números pinados (§5) transferem melhor que num nó compartilhado.
+
+**Cuidados (mudam o dimensionamento):**
+- **Sem co-locar o Redis.** Fargate **não roda DaemonSet** nem sidecar com afinidade de host — o Redis é
+  sempre **outra VM** (ElastiCache ou um Redis em nó normal). O round-trip pela rede a cada admissão (§6.1)
+  **mexe no LOW, não no HIGH** (caminho local). Mas — medido injetando RTT no Redis (curva completa em
+  [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md)) — **o LOW é tolerante a RTT enquanto sobrar
+  *headroom* sobre o SLO**: com SLO p99 < 15 ms, RTT ≤ ~1 ms ⇒ sem perda (~18k); 2–5 ms ⇒ perda pequena
+  (~14–16k); o joelho só **despenca quando o RTT se aproxima do SLO** (RTT ~11 ms ⇒ ~3k). O fator é
+  `headroom = SLO − RTT`. **Recomendação:** Redis (ElastiCache) na **mesma AZ** (RTT ~0,5–1 ms) ⇒ LOW
+  fica perto do co-locado. Cuidado com **cross-region** ou **SLO apertado** (p99 < 5 ms torna 2–3 ms de
+  RTT caro).
+- **Combo vCPU×memória fixo.** vCPU ∈ {0,25; 0,5; 1; 2; 4; 8; 16}; a memória tem faixa por vCPU (ex.:
+  2 vCPU → 4–16 GB). **Escolha o combo que dê ≥ 1 GB/core de heap** (§8.1) — fácil: 2 vCPU + 4–8 GB.
+  Fixe `ActiveProcessorCount` = vCPU do combo (em fração de vCPU, force =1).
+- **Cold start pior** (provisão da micro-VM **+** warmup do JVM, dezenas de segundos). A HPA não te dá
+  capacidade instantânea → **mantenha headroom** (escale por utilização baixa, ou pré-aqueça). Não conte
+  com escalar *durante* a rajada.
+- **Sem `privileged`/`hostNetwork`/DaemonSet** e startup mais lento — planeje probes (`grpc:` nativa) com
+  `initialDelaySeconds` folgado.
+
+```yaml
+# Fargate — micro-VM dedicada (= Guaranteed). Redis SEMPRE pela rede (ElastiCache/Service) → use mesma AZ.
+resources: { requests: { cpu: "2", memory: 4Gi } }   # Fargate arredonda p/ um combo válido
+env:
+  - { name: JAVA_TOOL_OPTIONS, value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60" }
+  - { name: KLIMITER_REDIS_URI, value: "redis://meu-elasticache.xxxx.cache.amazonaws.com:6379" }
+```
+
+> Como sempre (§7): números absolutos **desta máquina**; o que transfere são as **inclinações/ratios**.
+> No Fargate, valide o **LOW** in-place medindo o **RTT real ao Redis** e conferindo o *headroom* sobre o
+> seu SLO — é o que governa o joelho do LOW (curva em [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md)).

@@ -133,3 +133,4 @@ AGENTS.md                 # este arquivo
 - [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) — métricas, traces/spans e logs expostos.
 - [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md) — variáveis de ambiente (app, deps, JVM, build).
 - [`docs/SATURACAO.md`](docs/SATURACAO.md) — como medir o joelho (saturação): metodologia, `make sat-*`, leitura da saída.
+- [`docs/OTIMIZACAO-THROUGHPUT.md`](docs/OTIMIZACAO-THROUGHPUT.md) — rodada de otimização do joelho: ganhos, escala por cores e a conta de dimensionamento (CPU/pod).

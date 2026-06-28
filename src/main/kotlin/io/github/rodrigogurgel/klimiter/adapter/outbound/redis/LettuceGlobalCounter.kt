@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
+import io.github.rodrigogurgel.klimiter.adapter.outbound.redis.LuaScripts.Companion.longAt
 import io.github.rodrigogurgel.klimiter.core.domain.LeaseResult
 import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
@@ -42,7 +43,7 @@ class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection
         commands[(cursor.getAndIncrement() and Int.MAX_VALUE) % commands.size]
 
     override suspend fun lease(key: String, capacity: Long, requested: Long, ttl: Duration): LeaseResult {
-        val result = scripts.evalLongs(
+        val result = scripts.eval(
             next(),
             scripts.lease,
             key,
@@ -50,7 +51,7 @@ class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection
             requested.toString(),
             ttl.inWholeMilliseconds.toString(),
         )
-        return LeaseResult(granted = result[0], freeGlobal = result[1])
+        return LeaseResult(granted = result.longAt(0), freeGlobal = result.longAt(1))
     }
 
     override suspend fun paceLease(
@@ -61,7 +62,7 @@ class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection
         duration: Duration,
         ttl: Duration,
     ): PaceResult {
-        val result = scripts.evalLongs(
+        val result = scripts.eval(
             next(),
             scripts.paceLease,
             key,
@@ -71,7 +72,7 @@ class LettuceGlobalCounter(private val connections: List<StatefulRedisConnection
             duration.inWholeMilliseconds.toString(),
             ttl.inWholeMilliseconds.toString(),
         )
-        return PaceResult(admitted = result[0] == 1L, freeGlobal = result[1])
+        return PaceResult(admitted = result.longAt(0) == 1L, freeGlobal = result.longAt(1))
     }
 
     override fun close() = connections.forEach { it.close() }
