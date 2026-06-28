@@ -49,7 +49,11 @@ class PolicyFileWatcher(properties: PolicyProperties, private val repository: Fi
             }
         } catch (e: IOException) {
             running.set(false)
-            logger.warn("não foi possível observar {} para hot reload — seguindo sem watcher", directory, e)
+            logger.atWarn()
+                .setCause(e)
+                .addKeyValue("directory", directory)
+                .setMessage("não foi possível observar o diretório para hot reload; seguindo sem watcher")
+                .log()
             return
         }
         watchService = service
@@ -57,7 +61,11 @@ class PolicyFileWatcher(properties: PolicyProperties, private val repository: Fi
             isDaemon = true
             start()
         }
-        logger.info("hot reload de políticas ativo em {} (debounce {}ms)", directory, debounceMillis)
+        logger.atInfo()
+            .addKeyValue("directory", directory)
+            .addKeyValue("debounceMillis", debounceMillis)
+            .setMessage("hot reload de políticas ativo")
+            .log()
     }
 
     override fun stop() {
@@ -79,9 +87,12 @@ class PolicyFileWatcher(properties: PolicyProperties, private val repository: Fi
                 }
             }
         } catch (e: ClosedWatchServiceException) {
-            logger.debug("watch service encerrado — finalizando o observador de políticas", e)
+            logger.atDebug()
+                .setCause(e)
+                .setMessage("watch service encerrado; finalizando o observador de políticas")
+                .log()
         } catch (e: InterruptedException) {
-            logger.debug("observador de políticas interrompido", e)
+            logger.atDebug().setCause(e).setMessage("observador de políticas interrompido").log()
             Thread.currentThread().interrupt()
         }
     }

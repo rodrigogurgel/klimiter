@@ -10,6 +10,7 @@ dokka = "2.2.0"
 sonar = "7.2.2.6593"
 mockk = "1.14.11"
 benManesVersions = "0.54.0"
+testcontainers = "1.21.4"
 
 # Apenas deps com versão própria. Deps gerenciadas por BOM/plugin (sem versão) são
 # declaradas como coordenada direta no build.gradle.kts — ver CONTRIBUTING.md.
@@ -18,6 +19,7 @@ grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKot
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 detekt-rules-ktlint-wrapper = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

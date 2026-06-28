@@ -132,3 +132,4 @@ AGENTS.md                 # este arquivo
 - [`docs/POLITICAS.md`](docs/POLITICAS.md) — formato do arquivo de políticas, JSON Schema e resolução.
 - [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) — métricas, traces/spans e logs expostos.
 - [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md) — variáveis de ambiente (app, deps, JVM, build).
+- [`docs/SATURACAO.md`](docs/SATURACAO.md) — como medir o joelho (saturação): metodologia, `make sat-*`, leitura da saída.

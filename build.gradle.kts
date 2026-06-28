@@ -44,6 +44,9 @@ dependencies {
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
+    // Redis: contador global por janela (§4). API coroutines do Lettuce (bridge do Reactor →
+    // exige kotlinx-coroutines-reactive, transitivo de -reactor). Versão gerenciada pelo BOM.
+    implementation("io.lettuce:lettuce-core")
     detektPlugins(libs.detekt.rules.ktlint.wrapper)
 
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
@@ -54,6 +57,11 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation(libs.mockk)
     testImplementation(libs.konsist)
+    // Redis real nos testes de integração do adapter. O Spring Boot não gerencia o Testcontainers;
+    // a versão vem do BOM do próprio Testcontainers (catálogo), e os módulos ficam sem versão.
+    testImplementation(platform(libs.testcontainers.bom))
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
 }
@@ -89,15 +97,48 @@ protobuf {
 }
 
 // ---------------------------------------------------------------------------
+// Empacotamento
+// ---------------------------------------------------------------------------
+// Só o bootJar executável vai para a imagem; o jar "plain" não é necessário e tornaria ambíguo o
+// glob de extração de camadas no Dockerfile.
+tasks.jar {
+	enabled = false
+}
+
+// ---------------------------------------------------------------------------
 // Testes + cobertura (JaCoCo)
 // ---------------------------------------------------------------------------
 tasks.withType<Test> {
 	useJUnitPlatform()
 	finalizedBy(tasks.jacocoTestReport)
+	// Testcontainers (testes de integração do adapter Redis). Sem Docker, os ITs anotados com
+	// @Testcontainers(disabledWithoutDocker = true) são pulados; os unitários seguem rodando.
+	// Ryuk é dispensável em CI/dev local; o docker-java (shaded) negocia uma API antiga (1.32) por
+	// default — daemons modernos exigem >= 1.40, então fixa-se um piso compatível, com override.
+	environment("TESTCONTAINERS_RYUK_DISABLED", System.getenv("TESTCONTAINERS_RYUK_DISABLED") ?: "true")
+	systemProperty("api.version", System.getProperty("api.version") ?: System.getenv("DOCKER_API_VERSION") ?: "1.43")
+	// Docker Desktop expõe o socket fora do padrão; repassa DOCKER_HOST do host quando setado.
+	System.getenv("DOCKER_HOST")?.let { environment("DOCKER_HOST", it) }
 }
 
 jacoco {
 	toolVersion = "0.8.12"
+}
+
+// Fora da métrica de cobertura: código gerado (protobuf/gRPC), o bootstrap, o composition root e a
+// infra Redis (esta coberta pelos testes de integração com Docker, não pelos unitários). Aplicado
+// igualmente ao relatório e à verificação para o piso refletir a lógica testável sem Docker.
+val coverageExclusions = listOf(
+	"**/grpc/v1/**",
+	"**/KlimiterApplication*",
+	"**/config/**",
+	"**/adapter/outbound/redis/**",
+)
+
+fun org.gradle.testing.jacoco.tasks.JacocoReportBase.excludeNonCoverable() {
+	classDirectories.setFrom(
+		files(classDirectories.files.map { fileTree(it) { exclude(coverageExclusions) } }),
+	)
 }
 
 tasks.jacocoTestReport {
@@ -108,25 +149,24 @@ tasks.jacocoTestReport {
 		html.required.set(true)
 		csv.required.set(false)
 	}
-	classDirectories.setFrom(
-		files(classDirectories.files.map {
-			fileTree(it) {
-				// Código gerado (protobuf/gRPC) e o bootstrap não contam para cobertura.
-				exclude("**/generated/**", "**/KlimiterApplication*")
-			}
-		})
-	)
+	excludeNonCoverable()
 }
 
 tasks.jacocoTestCoverageVerification {
 	dependsOn(tasks.jacocoTestReport)
+	excludeNonCoverable()
 	violationRules {
 		rule {
 			limit {
-				minimum = "0.00".toBigDecimal() // suba a meta conforme o projeto amadurece
+				// Piso da lógica testável. Suba conforme o projeto amadurece (ver AGENTS.md).
+				minimum = "0.80".toBigDecimal()
 			}
 		}
 	}
+}
+
+tasks.check {
+	dependsOn(tasks.jacocoTestCoverageVerification)
 }
 
 // ---------------------------------------------------------------------------
