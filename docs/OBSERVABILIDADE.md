@@ -52,6 +52,7 @@ Instrumentação própria, registrada no `MeterRegistry` (Micrometer) e exportad
 | `klimiter.batch.refund` | counter | — | Lotes refundados (§7.4): veredito coletivo não-PERMITIDO desfez as reservas. |
 | `klimiter.central.roundtrip` | timer | `op` = `lease`\|`pace_lease` | Latência de cada round-trip ao contador global em Redis (§4). Medido no boundary (`MeteredGlobalCounter`). |
 | `klimiter.bucket.index.size` | gauge | — | Tamanho do índice local de buckets por nó (§4.2); cresce com a cardinalidade e cai na evicção. |
+| `klimiter.policy.reserve.<dimensão>[.<valor>]` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | **Reserva por policy** (negócio), ligada por regra via `detailed_metric` (POLITICAS.md). A identidade da policy vai no **nome** do meter: `...<dimensão>` para a `default`, `...<dimensão>.<valor>` para um `override` (valor saneado). Emitida pelo `BatchEvaluator`; pré-criada/removida no reload (eager). |
 
 **Derivações** (sem métrica própria, de propósito): o **shed do pré-portão** da BAIXA =
 `klimiter.reserve{priority=low}` − `klimiter.central.roundtrip{op=pace_*}` (a distribuição da ALTA já
@@ -66,6 +67,13 @@ por **log** (§3.3).
   (`op`, e futuramente `status`/`priority`/`path`).
 - **Cardinalidade:** **nunca** usar `dimension`/`value`/chave como tag (alta cardinalidade e PII).
   Só rótulos de domínio fechado.
+- **Exceção deliberada (`klimiter.policy.reserve`):** a métrica de negócio por policy embute
+  `dimension` e, nos overrides, `value` no **nome** do meter — opt-in via `detailed_metric`
+  (POLITICAS.md). É segura porque a cardinalidade é **limitada pela config**, não pelo tráfego: o meter
+  de override só existe para valores que casam **exatamente** uma entrada do arquivo, e o conjunto é
+  reconciliado no reload (criado ao entrar, removido ao sair). O custo aceito é que o **valor
+  configurado** (não o tráfego) aparece no nome — por isso o default é `false` nos overrides. Itens
+  negados por short-circuit (§7.2) não passam pela reserva e, como no `klimiter.reserve`, não contam.
 
 ---
 

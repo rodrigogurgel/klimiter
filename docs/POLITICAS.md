@@ -94,6 +94,7 @@ unidade de tempo, não uma duração arbitrária (§3.1).
 | `requests_per_unit` | sim | inteiro ≥ 1 | Capacidade: requisições permitidas por **uma** `unit`. |
 | `unit` | sim | enum | Unidade da janela: `SECOND`, `MINUTE`, `HOUR`, `DAY`. |
 | `prefetch` | não | objeto | Amortização do lease de alta prioridade (§5). |
+| `detailed_metric` | não | booleano | Liga o contador por policy `klimiter.policy.reserve` desta regra (ver OBSERVABILIDADE.md). Default **`true`** na regra `default` da dimensão e **`false`** nos `overrides`. |
 
 A **janela tem sempre o tamanho de exatamente uma `unit`** (§3.1) e é alinhada ao epoch/UTC
 (§3.2). Não existe "a cada 10 segundos" nem "a cada 90 minutos".
@@ -115,6 +116,15 @@ política, em **um** de dois modos mutuamente exclusivos:
 - `prefetch.count` — número absoluto de unidades (≥ 0).
 
 Omitir `prefetch` significa **sem prefetch**: arrenda-se apenas o necessário.
+
+### Métrica detalhada por policy
+
+`detailed_metric` liga o contador `klimiter.policy.reserve` para a regra, com a identidade da policy
+embutida no **nome** do meter (`...reserve.<dimensão>` para a `default`; `...reserve.<dimensão>.<valor>`
+para um `override`) e `priority`/`status` como tags. O default é **assimétrico** — `true` na `default`
+da dimensão (cardinalidade baixa, uma por dimensão) e `false` nos `overrides` (opt-in, pois o valor do
+override aparece no nome do meter; ver a nota de cardinalidade em OBSERVABILIDADE.md). Os meters são
+reconciliados no hot reload: criados ao entrar na config e removidos ao sair.
 
 ---
 
