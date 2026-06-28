@@ -122,7 +122,7 @@ class LocalBudget(
 
     private fun prefetchBlock(policy: Policy): Long = policy.prefetch.units(policy.capacity).toLong()
 
-    /** Converte ms → segundos do epoch alinhado à [Clock] (§3.2). Público p/ o lote resolver o bucket. */
+    /** Converte ms → segundos do epoch alinhado à `Clock` (§3.2). Público p/ o lote resolver o bucket. */
     fun epochSecond(nowMillis: Long): Long = Math.floorDiv(nowMillis, MILLIS_PER_SECOND)
 
     private companion object {
