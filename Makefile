@@ -29,16 +29,52 @@ SAT_FLOW_KEYS     ?= 1
 BEHAVIOR_SCRIPT   := scripts/load-test/behavior/evaluate-online-variavel.js
 SATURATION_SCRIPT := scripts/load-test/performance/saturation-ghz.sh
 
-# `sat-server`: serviço PINADO em 2 cores, OTel off (harness confiável — ver docs/SATURACAO.md;
+# `sat-server`: serviço PINADO em 2 cores, telemetria off por default (harness confiável — ver docs/SATURACAO.md;
 # NÃO use o `cpus`/cpuset do Docker, que distorce o joelho). Precisa do Redis no ar.
 SAT_CPUS     ?= 0,1
+# Nº de cores visível à JVM (-XX:ActiveProcessorCount). A auto-detecção erra sob cgroup/fração de vCPU
+# e desalinha os pools do Netty/ForkJoin/ZGC → alloc stall e p99 ruidosa (SATURACAO.md §8.1). Fixe =
+# nº de cores em SAT_CPUS. Mude também SAT_HEAP junto (regra: >=1GB/core).
+SAT_CORES    ?= 2
 # Pinning real só no Linux (taskset). No macOS não há afinidade de CPU em userland: cai para a JVM
-# limitada por -XX:ActiveProcessorCount=2 (sem isolamento de core; o joelho fica menos confiável).
+# limitada por -XX:ActiveProcessorCount=$(SAT_CORES) (sem isolamento de core; o joelho fica menos confiável).
 SAT_PIN      := $(shell command -v taskset >/dev/null 2>&1 && echo "taskset -c $(SAT_CPUS)")
-SAT_JVM      ?= -XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m
+# Heap COMMITADO (Xms=Xmx) e >=1GB/core: com 768m (384m/core) o ZGC stalla sob rajada e derruba a p99
+# — foi a maior fonte de RUÍDO nas medições, deprimindo o joelho que se quer medir (SATURACAO.md §8.1).
+# 2 cores → 2g (1GB/core). Commitar no boot evita jitter de resize/page-fault na primeira rajada.
+SAT_HEAP     ?= 2048m
+SAT_JVM      ?= -XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=$(SAT_CORES) -Xms$(SAT_HEAP) -Xmx$(SAT_HEAP)
 SAT_REDIS    ?= redis://localhost:6379
 SAT_POLICIES ?= scripts/load-test/policies.sample.yaml
-SAT_OTEL_OFF ?= -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true
+# Timeout de comando Redis GENEROSO no harness: o default de prod (10ms) dispara além do joelho —
+# sob CPU saturada o wall-clock do comando infla, vira UNKNOWN + refund (§7.4) e contamina a curva
+# com timeout, não saturação. Aqui o joelho reflete CPU. Ver docs/SATURACAO.md.
+SAT_REDIS_TIMEOUT ?= 50ms
+# Pool Redis do harness — case com o de prod p/ medir a config que você shipa (A/B com KLIMITER_REDIS_POOL_SIZE).
+SAT_POOL_SIZE     ?= 8
+# Telemetria OFF por default (harness confiável: remove o Observation por-RPC, ~35% da CPU). SAT_TELEMETRY=on
+# mede o teto COM telemetria — precisa de um endpoint OTLP no ar (ex.: `make up`), senão os exports só logam erro.
+SAT_TELEMETRY ?= off
+SAT_OTEL_OFF  ?= -Dspring.autoconfigure.exclude=org.springframework.boot.grpc.server.autoconfigure.GrpcServerObservationAutoConfiguration -Dmanagement.tracing.enabled=false -Dmanagement.otlp.metrics.export.enabled=false -Dotel.sdk.disabled=true
+ifeq ($(SAT_TELEMETRY),on)
+SAT_OTEL :=
+else
+SAT_OTEL := $(SAT_OTEL_OFF)
+endif
+# Amostragem da Observation por-RPC do gRPC — SÓ tem efeito com SAT_TELEMETRY=on (com off o interceptor
+# nem é registrado). 1.0=telemetria cheia (pior caso); ex. 0.1 = ponto intermediário entre off e cheia.
+SAT_GRPC_SAMPLE ?= 1.0
+# Controle de admissão (load shedding) no harness. SAT_ADMISSION_MODE = off (default) | fixed | adaptive.
+#   fixed    → teto SAT_MAX_INFLIGHT (abaixo de Little: ~50 segura p99<=15ms a 25k no LOW/2 cores).
+#   adaptive → teto auto-calibra pela latência (sem constante por-hardware); gauge klimiter.admission.limit.
+# off não exporta env → propriedade ausente → bean não criado (overhead zero).
+SAT_ADMISSION_MODE ?= off
+SAT_MAX_INFLIGHT   ?= 50
+ifeq ($(SAT_ADMISSION_MODE),fixed)
+SAT_ADMISSION := KLIMITER_ADMISSION_MODE=fixed KLIMITER_ADMISSION_MAX_INFLIGHT=$(SAT_MAX_INFLIGHT)
+else ifeq ($(SAT_ADMISSION_MODE),adaptive)
+SAT_ADMISSION := KLIMITER_ADMISSION_MODE=adaptive
+endif
 
 .PHONY: help up up-cluster down logs logs-cluster sat-server saturation load-test sonar-local sonar-reset
 
@@ -70,16 +106,21 @@ logs:
 logs-cluster:
 	docker compose logs -f klimiter-cluster
 
-## sat-server: serviço pinado em 2 cores, OTel off, políticas de carga (foreground; precisa do Redis no ar)
+## sat-server: serviço pinado em 2 cores, telemetria off (SAT_TELEMETRY=on p/ ligar), políticas de carga (foreground; precisa do Redis no ar)
 sat-server:
 	./gradlew -q bootJar -x test
 ifeq ($(SAT_PIN),)
 	@echo ">> AVISO: 'taskset' indisponível (macOS?) — SEM pinning real de core; JVM limitada a ActiveProcessorCount=2. O joelho é menos confiável (ver docs/SATURACAO.md §4)."
 else
-	@echo ">> klimiter pinado em CPUs $(SAT_CPUS), OTel off. Ctrl-C p/ parar; rode 'make saturation' noutro terminal."
+	@echo ">> klimiter pinado em CPUs $(SAT_CPUS), telemetria=$(SAT_TELEMETRY). Ctrl-C p/ parar; rode 'make saturation' noutro terminal."
+endif
+ifeq ($(SAT_TELEMETRY),on)
+	@echo ">> telemetria LIGADA — garanta um endpoint OTLP no ar (ex.: 'make up'), senão os exports só logam erro. Este teto NÃO é comparável ao de telemetria off."
 endif
 	KLIMITER_REDIS_URI=$(SAT_REDIS) KLIMITER_POLICIES_PATH=$(SAT_POLICIES) \
-		$(SAT_PIN) java $(SAT_JVM) $(SAT_OTEL_OFF) -jar build/libs/klimiter-*.jar
+	KLIMITER_REDIS_COMMAND_TIMEOUT=$(SAT_REDIS_TIMEOUT) KLIMITER_REDIS_POOL_SIZE=$(SAT_POOL_SIZE) \
+	KLIMITER_OBSERVABILITY_GRPC_SAMPLE_RATE=$(SAT_GRPC_SAMPLE) $(SAT_ADMISSION) \
+		$(SAT_PIN) java $(SAT_JVM) $(SAT_OTEL) -jar build/libs/klimiter-*.jar
 
 ## saturation: PERFORMANCE com ghz (rode `make sat-server` noutro terminal antes) — degraus até o joelho
 saturation:

@@ -16,6 +16,8 @@ name: klimiter
 
 # Env comum aos dois klimiter (mesclado com `<<` nos serviços, somando só o REDIS_*).
 x-klimiter-env: &klimiter-env
+  LOGGING_LEVEL_IO_GITHUB_RODRIGOGURGEL_KLIMITER: INFO
+  LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
   # Políticas montadas como DIRETÓRIO (hot reload sobrevive ao swap atômico do editor/ConfigMap, §8).
   KLIMITER_POLICIES_PATH: /etc/klimiter/policies/policies.sample.yaml
   # Observabilidade: as OTEL_* são reconhecidas pelo starter (VARIAVEIS-DE-AMBIENTE.md §3).
