@@ -29,9 +29,9 @@ class KlimiterConfiguration {
     @Bean(destroyMethod = "close")
     fun globalCounter(redis: RedisProperties, registry: MeterRegistry): MeteredGlobalCounter {
         val lettuce = if (redis.cluster) {
-            LettuceGlobalCounter.cluster(redis.uri, redis.poolSize)
+            LettuceGlobalCounter.cluster(redis.uri, redis.poolSize, redis.commandTimeout)
         } else {
-            LettuceGlobalCounter.standalone(redis.uri, redis.poolSize)
+            LettuceGlobalCounter.standalone(redis.uri, redis.poolSize, redis.commandTimeout)
         }
         return MeteredGlobalCounter(lettuce, registry)
     }
