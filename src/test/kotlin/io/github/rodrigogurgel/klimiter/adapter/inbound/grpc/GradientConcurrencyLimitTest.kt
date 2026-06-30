@@ -8,12 +8,14 @@ import kotlin.test.assertTrue
 class GradientConcurrencyLimitTest {
     private fun limit(initial: Int = 50) = GradientConcurrencyLimit(initial, MIN, MAX, WINDOW, TARGET)
 
-    /** Alimenta `count` amostras de `rtt`, uma a cada meia-janela (≈ 2 fecham por janela), sob carga. */
-    private fun GradientConcurrencyLimit.drive(rtt: Long, count: Int, startMs: Long = 1000L): Long {
+    /** Roda `windows` janelas de `rtt` com [SAMPLES] completions estáveis por janela (goodput estável,
+     *  como no harness real — evita o ruído que dispara o piso de goodput em janelas minúsculas). */
+    private fun GradientConcurrencyLimit.drive(rtt: Long, windows: Int, startMs: Long = 1000L): Long {
         var t = startMs
-        repeat(count) {
-            observe(rtt, current, t) // inFlight = current → sob carga
-            t += WINDOW / 2
+        repeat(windows) {
+            repeat(SAMPLES) { observe(rtt, current, t) } // amostras dentro da janela (sob carga)
+            observe(rtt, current, t + WINDOW) // fecha a janela
+            t += WINDOW
         }
         return t
     }
@@ -21,23 +23,23 @@ class GradientConcurrencyLimitTest {
     @Test
     fun `grows while the mean stays below the target`() {
         val limit = limit(initial = 50)
-        limit.drive(rtt = 2, count = 40) // média 2ms < alvo 5ms
+        limit.drive(rtt = 2, windows = 20) // média 2ms < alvo 5ms
         assertTrue(limit.current > 50, "esperava crescer, ficou ${limit.current}")
     }
 
     @Test
     fun `shrinks substantially when the mean exceeds the target`() {
         val limit = limit(initial = 50)
-        val t = limit.drive(rtt = 2, count = 20) // cresce sob latência baixa
+        val t = limit.drive(rtt = 2, windows = 10) // cresce sob latência baixa
         val grown = limit.current
-        limit.drive(rtt = 30, count = 40, startMs = t) // média 30ms ≫ alvo → corta
+        limit.drive(rtt = 30, windows = 20, startMs = t) // média 30ms ≫ alvo → corta
         assertTrue(limit.current * 2 < grown, "esperava encolher >2× de $grown, ficou ${limit.current}")
     }
 
     @Test
     fun `grows to maxLimit under low latency and clamps`() {
         val limit = limit(initial = 50)
-        limit.drive(rtt = 1, count = 800)
+        limit.drive(rtt = 1, windows = 400)
         assertEquals(MAX, limit.current)
     }
 
@@ -61,6 +63,22 @@ class GradientConcurrencyLimitTest {
     }
 
     @Test
+    fun `goodput floor holds the limit near the knee under sustained queueing`() {
+        val knee = 40
+        val limit = limit(initial = 100)
+        var t = 1000L
+        repeat(80) {
+            // goodput ∝ min(teto, joelho): platô acima do joelho, cai abaixo (simula a curva real)
+            val samples = minOf(limit.current, knee).coerceAtLeast(1)
+            repeat(samples) { limit.observe(rttMillis = 30, inFlight = limit.current, nowMillis = t) }
+            limit.observe(rttMillis = 30, inFlight = limit.current, nowMillis = t + WINDOW) // fecha a janela
+            t += WINDOW
+        }
+        // latência sempre alta (shed-CPU): SEM o piso colapsaria pro mínimo; COM o piso segura ~o joelho
+        assertTrue(limit.current >= knee / 2, "piso deveria segurar perto do joelho ($knee), ficou ${limit.current}")
+    }
+
+    @Test
     fun `rejects invalid parameters`() {
         assertFailsWith<IllegalArgumentException> { GradientConcurrencyLimit(50, 0, 100, 100, 5) } // minLimit < 1
         assertFailsWith<IllegalArgumentException> { GradientConcurrencyLimit(50, 10, 5, 100, 5) } // max < min
@@ -74,5 +92,6 @@ class GradientConcurrencyLimitTest {
         const val MAX = 1000
         const val WINDOW = 100L
         const val TARGET = 5L
+        const val SAMPLES = 30 // completions/janela estáveis (goodput sem ruído)
     }
 }
