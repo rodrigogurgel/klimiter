@@ -23,3 +23,16 @@ klimiter:
     # Fração das observações por-RPC do gRPC a registrar (1.0=todas; 0=off p/ recuperar throughput
     # sob CPU apertada — ver docs/SATURACAO.md §5.2). Não afeta os contadores klimiter.* nem o export.
     grpc-sample-rate: 1.0
+  # Controle de admissão (load shedding). DESLIGADO por default (mode=off → interceptor fora da cadeia,
+  # overhead zero). Acima do teto recusa com RESOURCE_EXHAUSTED em vez de enfileirar (segura o p99).
+  #   mode: fixed     → teto constante (max-inflight). Dimensione ABAIXO de Little (joelho×SLO é a
+  #                     média; p99≈4-5× → use ~⅕): em 2 cores no LOW, ~50 segura p99≤15ms a 25k.
+  #   mode: adaptive  → teto que se auto-calibra pela latência (elimina a constante por-hardware).
+  # admission:
+  #   mode: adaptive
+  #   max-inflight: 50          # modo fixed
+  #   adaptive:                 # modo adaptive
+  #     initial-limit: 50
+  #     min-limit: 4
+  #     max-limit: 1000
+  #     window: 100ms
