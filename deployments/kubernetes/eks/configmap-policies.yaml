@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: klimiter-policies
+  namespace: klimiter
+  labels: { app.kubernetes.io/name: klimiter }
+data:
+  # Mesmos caps do glimiter (comparação justa): account=60/s, source=1000/s, flow=6000/s, prefetch 10%.
+  policies.yaml: |
+    version: 1
+    policies:
+      rate_limit_account_id:
+        default:
+          requests_per_unit: 60
+          unit: SECOND
+          prefetch:
+            percent: 10
+      rate_limit_source:
+        default:
+          requests_per_unit: 1000
+          unit: SECOND
+          prefetch:
+            percent: 10
+      rate_limit_flow:
+        default:
+          requests_per_unit: 6000
+          unit: SECOND
+          prefetch:
+            percent: 10

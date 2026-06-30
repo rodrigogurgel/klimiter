@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klimiter
+  namespace: klimiter
+  labels: { app.kubernetes.io/name: klimiter }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app.kubernetes.io/name: klimiter }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: klimiter
+        sidecar.istio.io/inject: "false"
+      annotations:
+        admission.datadoghq.com/enabled: "false"
+    spec:
+      # Comparação isolada: nó dedicado (NodePool bench-klimiter, taint workload=klimiter).
+      # Pool é amd64-only -> mesma arquitetura do glimiter, sem confound Graviton×x86 e
+      # sem compartilhar CPU com glimiter ou geradores ghz.
+      nodeSelector: { workload: klimiter }
+      tolerations:
+        - { key: workload, operator: Equal, value: klimiter, effect: NoSchedule }
+      containers:
+        - name: klimiter
+          image: 068064050187.dkr.ecr.us-east-1.amazonaws.com/klimiter:latest
+          ports:
+            - { containerPort: 9090, name: grpc }
+          env:
+            - name: KLIMITER_REDIS_URI
+              valueFrom: { secretKeyRef: { name: klimiter-redis, key: uri } }
+            - name: KLIMITER_REDIS_KEY_PREFIX
+              value: "klimiter"
+            - name: KLIMITER_REDIS_POOL_SIZE
+              value: "64"
+            - name: KLIMITER_REDIS_CLUSTER
+              value: "false"
+            - name: KLIMITER_POLICIES_PATH
+              value: "/etc/klimiter/policies.yaml"
+            - name: SPRING_GRPC_SERVER_PORT
+              value: "9090"
+            # JVM como o klimiter usa em saturação: ZGC (baixa pausa), 2 processadores
+            # (≈ GOMAXPROCS=2 do glimiter), heap 512–768m.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m"
+          volumeMounts:
+            - { name: policies, mountPath: /etc/klimiter, readOnly: true }
+          readinessProbe:
+            grpc: { port: 9090 }
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            grpc: { port: 9090 }
+            initialDelaySeconds: 45
+            periodSeconds: 10
+          # QoS Guaranteed: requests == limits -> CPU dedicada, sem throttling do CFS
+          # nem contenção. Envelope IDÊNTICO ao glimiter (2 CPU / 2Gi de teto).
+          resources:
+            requests: { cpu: "2", memory: "2Gi" }
+            limits: { cpu: "2", memory: "2Gi" }
+          securityContext:
+            # A imagem já define USER klimiter (não-root); runAsNonRoot omitido pois
+            # o USER é nominal (não-numérico) e o kubelet não consegue verificá-lo.
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+      volumes:
+        - name: policies
+          configMap: { name: klimiter-policies }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app.kubernetes.io/name: klimiter }
