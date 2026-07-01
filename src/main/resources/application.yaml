@@ -1,7 +1,6 @@
 spring:
   application:
     name: klimiter
-
 klimiter:
   policies:
     # Caminho do arquivo de políticas (ver docs/POLITICAS.md). Sobrescrevível por KLIMITER_POLICIES_PATH.
@@ -19,6 +18,21 @@ klimiter:
   eviction:
     # Varredura do índice local de buckets (§4.2).
     interval: 60s
+  shed:
+    # Load shedding: rejeita (UNAVAILABLE) antes do hot path ao se aproximar do joelho de CPU.
+    # Ambos opt-in e combináveis; cortes contados em klimiter.shed.count{reason}. Ver docs/SATURACAO.md.
+    cpu:
+      # Portão por carga de CPU (limiar fixo, sinal atrasado ~1s). Sobrescrevível por KLIMITER_SHED_CPU_*.
+      enabled: false
+      threshold: 0.90
+      sample-interval: 250ms
+    concurrency:
+      # Limitador adaptativo (Gradient2): teto de chamadas em voo guiado pelo RTT. KLIMITER_SHED_CONCURRENCY_*.
+      enabled: false
+      initial-limit: 100
+      min-limit: 20
+      max-concurrency: 1000
+      rtt-tolerance: 1.5
   observability:
     # Fração das observações por-RPC do gRPC a registrar (1.0=todas; 0=off p/ recuperar throughput
     # sob CPU apertada — ver docs/SATURACAO.md §5.2). Não afeta os contadores klimiter.* nem o export.
