@@ -36,6 +36,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
 
     implementation(libs.grpc.kotlin.stub)
+    // Concurrency limiting adaptativo (Gradient2/Vegas) para short-circuit sob saturação, inferida
+    // pela latência (§ load shedding). O interceptor gRPC nativo vem do módulo -grpc; o -core traz
+    // os algoritmos e a SPI de métricas (declarado runtime no pom do -grpc, mas usado em compile aqui).
+    implementation(libs.concurrency.limits.core)
+    implementation(libs.concurrency.limits.grpc)
     // Versões gerenciadas pelo BOM do Spring Boot / plugin Kotlin (sem versão própria).
     implementation("com.google.protobuf:protobuf-kotlin")
     implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
