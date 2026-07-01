@@ -144,6 +144,43 @@ as métricas de JVM/sistema + export OTLP (todos baratos); só a telemetria `grp
 fica amostrada. Em produção com mais cores a folga absorve o custo; o knob é para quando o teto do LOW
 importa. (Implementado por um `ObservationPredicate`; ver `config/ObservabilityConfiguration`.)
 
+### 5.3 Além do joelho — brownout, não crash
+
+O que acontece ao **ultrapassar** o joelho (sweep shed OFF, 2 cores; nesta rodada o joelho ficou em
+~28k HIGH / ~17k LOW — mais baixo que a §5.1 por carga de fundo no host, o que vale é a **forma**):
+
+| HIGH (joelho ~28k) | p50 | p99 | rps_real | CPU |
+|---|---:|---:|---:|---:|
+| 36k | 0,3 | 28 ms | 36,0k | 150/200 |
+| 44k | 3,6 | 42 ms | 44,0k | 173/200 |
+| 52k | 3,1 | 35 ms | **51,3k** | 166/200 |
+| 60k | 16,0 | 40 ms | **54,7k** ⚠️ | **190/200** |
+
+| LOW (joelho ~17k) | p50 | p99 | rps_real | CPU |
+|---|---:|---:|---:|---:|
+| 22k | 3,5 | 51 ms | 22,0k | 157/200 |
+| 28k | **24 ms** | 72 ms | 27,9k | 185/200 |
+| 34k | 27 ms | 64 ms | **32,8k** ⚠️ | **193/200** |
+| 40k | 28 ms | 63 ms | **32,5k** ⚠️ | 193/200 |
+
+**Dois regimes:**
+
+1. **Brownout** (logo depois do joelho): a p99 sobe acima do SLO, mas o servidor ainda serve **tudo**
+   que é ofertado (`rps_real` = alvo, `nonOK` ≈ 0 — **sem** erro de transporte). Degrada por
+   **latência**, não recusando conexão → **todos** os chamadores pegam latência ruim. É o pior modo de
+   falha p/ um serviço latency-sensitive.
+2. **Teto de throughput** (bem depois): `rps_real` **trava** (~52–55k HIGH, ~32k LOW) e a CPU finalmente
+   crava ~95% (190–193/200). A CPU **só satura muito além do joelho** — o joelho é fixado pela
+   **latência** (HIGH: contention na hot key; LOW: round-trip ao central), não pela CPU (~63–68% dos 2
+   cores no joelho, §5.1).
+
+**A forma difere por caminho:** o **HIGH degrada suave** (o p50 fica sub-ms; só a **cauda** sofre — o
+fast-path local absorve). O **LOW degrada duro** (o p50 **colapsa junto**: 2 ms → 24 ms — round-trip-
+bound, quando o in-flight passa o que o pipeline de round-trips drena, **tudo** enfileira).
+
+**Implicação:** sem proteção, a sobrecarga vira brownout global. Segurar **antes** do joelho é o papel
+do load shedding (§9).
+
 ---
 
 ## 6. Em Kubernetes — os números transferem?
@@ -318,3 +355,76 @@ env:
 > Como sempre (§7): números absolutos **desta máquina**; o que transfere são as **inclinações/ratios**.
 > No Fargate, valide o **LOW** in-place medindo o **RTT real ao Redis** e conferindo o *headroom* sobre o
 > seu SLO — é o que governa o joelho do LOW (curva em [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md)).
+
+---
+
+## 9. Load shedding — segurando antes do brownout
+
+Sem proteção, a sobrecarga vira **brownout global** (§5.3): todo mundo pega latência ruim. O klimiter
+tem dois mecanismos de *load shedding* (opt-in, combináveis) que **rejeitam** o excedente com
+`UNAVAILABLE` **antes** do hot path, mantendo os admitidos no SLO. Config em `klimiter.shed.*`
+(`config/ShedProperties`, `config/ShedConfiguration`); cortes contados em `klimiter.shed.count{reason}`.
+
+### 9.1 Os dois mecanismos
+
+- **Limitador de concorrência adaptativo (Gradient2, Netflix concurrency-limits)** — teto de chamadas
+  em voo guiado pelo **RTT**: cresce enquanto a latência fica estável, encolhe quando sobe (sinal de
+  saturação). É o **protetor efetivo** aqui, porque o joelho do klimiter é latency-bound (§5.3) — o
+  limitador reage ao mesmo sinal. `reason=concurrency`; teto/RTT internos em `klimiter.shed.concurrency.*`.
+- **Portão por carga de CPU** — corta acima de um limiar de utilização. `reason=cpu`.
+
+### 9.2 O que os testes acharam (2 cores, sweep ghz)
+
+**O portão de CPU quase não ajuda neste workload.** Os 2 cores **não saturam no joelho** (§5.3:
+~63–68%), então o portão só dispararia bem depois do brownout já instalado. Medido a HIGH 44k: o portão
+corta ~24k/s e a p99 **ainda** fica ~34 ms; o limitador corta menos e segura em **~5 ms**. Por isso vem
+**`cpu.enabled=false`** por default — fica como rede de segurança p/ perfis realmente CPU-bound.
+
+> ⚠️ **Bug corrigido:** `OperatingSystemMXBean.getProcessCpuLoad()` **ignora** `ActiveProcessorCount`/
+> `taskset` e divide o tempo de CPU pelos cores do **host** — num host de 16 com o processo pinado em 2,
+> dois cores 100% ocupados leem **0,127** (= 2/16) e o portão nunca dispara. O `CpuLoadSampler` passou a
+> derivar de `getProcessCpuTime()/(Δt × cores)`, com `cores = availableProcessors()` (respeita
+> `ActiveProcessorCount` e cgroup). O `threshold` é fração dos **cores alocados**.
+
+**`rtt-tolerance` é o knob que importa** — trade-off goodput × p99. Sweep sob overload (LOW @ 26k sobre
+joelho ~16k; HIGH @ 44k sobre ~24k):
+
+| `rtt-tolerance` | HIGH goodput / p99 | LOW goodput / p99 |
+|---|---|---|
+| 1.2 | 27,0k / 5,8 ms | 15,0k / 7,7 ms |
+| **1.3** ✅ | **28,1k / 5,1 ms** | **14,7k / 10,4 ms** |
+| 1.4 | 28,5k / 12,2 ms | 15,0k / 17,7 ms ⚠️ |
+| 1.5 | 30,1k / 28,3 ms ❌ | 16,0k / 21,3 ms ❌ |
+
+**`1.3` é o ideal p/ os dois caminhos** — mantém a p99 sob o SLO de 15 ms no joelho (HIGH ~5 ms, LOW
+~10 ms), em overload leve (1,25×) e pesado (1,8×). `1.5` já deixa a p99 estourar. Valor **com** vs
+**sem** shed, mesma sobrecarga:
+
+| Cenário | p99 dos servidos |
+|---|---|
+| LOW 26k **sem** shed | 61 ms (todos lentos) |
+| LOW 26k **com** shed (1.3) | **~10 ms** |
+| HIGH 44k **sem** shed | 42 ms |
+| HIGH 44k **com** shed (1.3) | **~5 ms** |
+
+### 9.3 Config recomendada (2 cores)
+
+```yaml
+klimiter.shed:
+  concurrency:            # protetor efetivo
+    enabled: true
+    rtt-tolerance: 1.3    # 1.5 estoura o SLO; 1.0 corta cedo demais
+    initial-limit: 40     # o teto adaptativo converge p/ ~30–45 em voo a 2 cores
+    min-limit: 10
+    max-concurrency: 200  # rede de segurança (o convergido fica ~40)
+  cpu:
+    enabled: false        # os cores não saturam no joelho; corta sem segurar a p99
+    threshold: 0.90       # fração dos cores ALOCADOS; ligar só em perfil CPU-bound
+```
+
+Em caixas maiores o Gradient2 sobe o teto sozinho (HIGH escala com cores, §8.2); `rtt-tolerance` não
+muda com o nº de cores. **Como calibrar:** rode `make saturation` observando `klimiter.shed.count` e o
+teto (`klimiter.shed.concurrency.limit`) — o corte deve começar **no** joelho do seu SLO, não antes.
+
+> Números **desta máquina** (§7): o que transfere é o **ratio** — `rtt-tolerance ≈ 1.3` p/ SLO p99 <
+> 15 ms sobre baseline sub-ms. SLO diferente → recalibre a tolerância.
