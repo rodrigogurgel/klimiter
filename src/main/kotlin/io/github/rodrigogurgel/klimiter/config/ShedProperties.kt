@@ -21,9 +21,13 @@ data class ShedProperties(val cpu: Cpu = Cpu(), val concurrency: Concurrency = C
      * Portão por carga de CPU do processo.
      *
      * @property enabled liga o portão (`KLIMITER_SHED_CPU_ENABLED`).
-     * @property threshold fração de CPU do processo `[0.0, 1.0]` a partir da qual as chamadas são
-     *   cortadas (`KLIMITER_SHED_CPU_THRESHOLD`). Leituras inválidas (`< 0`, ex.: JVM sem suporte)
-     *   nunca cortam — *fail open*.
+     * @property threshold fração `[0.0, 1.0]` dos **cores alocados** (`availableProcessors`, que
+     *   respeita `ActiveProcessorCount`/cgroup) a partir da qual as chamadas são cortadas
+     *   (`KLIMITER_SHED_CPU_THRESHOLD`). Leituras inválidas (`< 0`) nunca cortam — *fail open*.
+     *   Nota: no workload medido do klimiter os cores **não saturam** no joelho (caminho HIGH é
+     *   contention-bound; LOW é round-trip-bound), então o portão raramente ajuda — o
+     *   [Concurrency] (latência) é o protetor efetivo. Mantido como rede de segurança p/ perfis
+     *   realmente CPU-bound; por isso vem `enabled=false` por default (ver docs/SATURACAO.md).
      * @property sampleInterval período de amostragem da carga fora do hot path; o interceptor lê o
      *   último valor cacheado (`KLIMITER_SHED_CPU_SAMPLE_INTERVAL`).
      */
@@ -56,8 +60,10 @@ data class ShedProperties(val cpu: Cpu = Cpu(), val concurrency: Concurrency = C
      *   (`KLIMITER_SHED_CONCURRENCY_MIN_LIMIT`).
      * @property maxConcurrency teto máximo absoluto que o algoritmo pode alcançar
      *   (`KLIMITER_SHED_CONCURRENCY_MAX_CONCURRENCY`).
-     * @property rttTolerance multiplicador de tolerância do RTT: `1.0` é agressivo, valores maiores
-     *   (ex.: `1.5`) toleram mais jitter antes de encolher (`KLIMITER_SHED_CONCURRENCY_RTT_TOLERANCE`).
+     * @property rttTolerance multiplicador de tolerância do RTT — o knob de trade-off goodput×p99.
+     *   Medido a 2 cores: `1.3` mantém a p99 sob o SLO de 15 ms (HIGH ~5 ms, LOW ~10 ms) no joelho;
+     *   `1.5` já deixa a p99 estourar (~21–28 ms); `1.0` corta cedo demais
+     *   (`KLIMITER_SHED_CONCURRENCY_RTT_TOLERANCE`).
      */
     data class Concurrency(
         val enabled: Boolean = false,
@@ -76,10 +82,12 @@ data class ShedProperties(val cpu: Cpu = Cpu(), val concurrency: Concurrency = C
         }
 
         private companion object {
-            const val DEFAULT_INITIAL_LIMIT = 100
-            const val DEFAULT_MIN_LIMIT = 20
-            const val DEFAULT_MAX_CONCURRENCY = 1000
-            const val DEFAULT_RTT_TOLERANCE = 1.5
+            // Defaults calibrados a 2 cores (o limite adaptativo converge p/ ~30–45 em voo no joelho;
+            // ver docs/SATURACAO.md). Em caixas maiores o Gradient2 sobe o teto sozinho.
+            const val DEFAULT_INITIAL_LIMIT = 40
+            const val DEFAULT_MIN_LIMIT = 10
+            const val DEFAULT_MAX_CONCURRENCY = 200
+            const val DEFAULT_RTT_TOLERANCE = 1.3
         }
     }
 }

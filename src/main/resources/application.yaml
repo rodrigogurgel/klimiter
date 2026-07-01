@@ -19,20 +19,23 @@ klimiter:
     # Varredura do índice local de buckets (§4.2).
     interval: 60s
   shed:
-    # Load shedding: rejeita (UNAVAILABLE) antes do hot path ao se aproximar do joelho de CPU.
-    # Ambos opt-in e combináveis; cortes contados em klimiter.shed.count{reason}. Ver docs/SATURACAO.md.
-    cpu:
-      # Portão por carga de CPU (limiar fixo, sinal atrasado ~1s). Sobrescrevível por KLIMITER_SHED_CPU_*.
-      enabled: false
-      threshold: 0.90
-      sample-interval: 250ms
+    # Load shedding: rejeita (UNAVAILABLE) antes do hot path sob saturação. Cortes em
+    # klimiter.shed.count{reason}. Valores CALIBRADOS a 2 cores por load test (ver docs/SATURACAO.md).
     concurrency:
-      # Limitador adaptativo (Gradient2): teto de chamadas em voo guiado pelo RTT. KLIMITER_SHED_CONCURRENCY_*.
+      # Protetor EFETIVO: limitador adaptativo (Gradient2), teto de chamadas em voo guiado pelo RTT.
+      # rtt-tolerance=1.3 mantém p99 < SLO 15ms no joelho (medido). KLIMITER_SHED_CONCURRENCY_*.
+      enabled: true
+      initial-limit: 40
+      min-limit: 10
+      max-concurrency: 200
+      rtt-tolerance: 1.3
+    cpu:
+      # Portão por carga de CPU: OFF por padrão. No workload do klimiter os 2 cores NÃO saturam no
+      # joelho (HIGH é contention-bound, LOW é round-trip-bound), então o portão quase não ajuda —
+      # medido, corta muito e não segura a p99. Ligar só em perfis realmente CPU-bound. KLIMITER_SHED_CPU_*.
       enabled: false
-      initial-limit: 100
-      min-limit: 20
-      max-concurrency: 1000
-      rtt-tolerance: 1.5
+      threshold: 0.90      # fração dos cores ALOCADOS (availableProcessors), não do host
+      sample-interval: 250ms
   observability:
     # Fração das observações por-RPC do gRPC a registrar (1.0=todas; 0=off p/ recuperar throughput
     # sob CPU apertada — ver docs/SATURACAO.md §5.2). Não afeta os contadores klimiter.* nem o export.
