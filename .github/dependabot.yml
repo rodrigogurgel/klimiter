@@ -1,0 +1,20 @@
+# Atualizações automáticas de dependências — os PRs abertos aqui seguem o mesmo crivo manual do
+# AGENTS.md (regra 7): confirmar compatibilidade com o stack antes de mergear, nunca saltar major
+# às cegas.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
