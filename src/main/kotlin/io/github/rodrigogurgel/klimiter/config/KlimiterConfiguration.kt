@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.config
 
+import io.github.rodrigogurgel.klimiter.adapter.inbound.grpc.GrpcProperties
 import io.github.rodrigogurgel.klimiter.adapter.inbound.grpc.RateLimitService
 import io.github.rodrigogurgel.klimiter.adapter.outbound.redis.LettuceGlobalCounter
 import io.github.rodrigogurgel.klimiter.adapter.outbound.redis.MeteredGlobalCounter
@@ -59,5 +60,6 @@ class KlimiterConfiguration {
 
     /** Registrado como `BindableService` — o Spring gRPC o associa ao servidor (§7). */
     @Bean
-    fun rateLimitService(useCase: EvaluateUseCase): RateLimitService = RateLimitService(useCase)
+    fun rateLimitService(useCase: EvaluateUseCase, grpc: GrpcProperties): RateLimitService =
+        RateLimitService(useCase, grpc.maxBatchSize)
 }

@@ -70,6 +70,7 @@ Propriedades definidas pelo projeto (binding relaxado do Spring, caminho **R** �
 | `KLIMITER_REDIS_KEY_PREFIX` | R | `klimiter.redis.key-prefix` | `klimiter` (`application.yaml`) |
 | `KLIMITER_REDIS_CLUSTER` | R | `klimiter.redis.cluster` | `false` (`application.yaml`) |
 | `KLIMITER_REDIS_COMMAND_TIMEOUT` | R | `klimiter.redis.command-timeout` | `10ms` (`application.yaml`) |
+| `KLIMITER_GRPC_MAX_BATCH_SIZE` | R | `klimiter.grpc.max-batch-size` | `100` (`application.yaml`) |
 | `KLIMITER_EVICTION_INTERVAL` | R | `klimiter.eviction.interval` | `60s` (`application.yaml`) |
 | `KLIMITER_OBSERVABILITY_GRPC_SAMPLE_RATE` | R | `klimiter.observability.grpc-sample-rate` | `1.0` (`application.yaml`) |
 
@@ -87,7 +88,8 @@ CROSSSLOT. `false` = standalone (inclui ElastiCache cluster mode disabled, via o
 Localmente: `make up-cluster` (profile `redis-cluster` do compose). `command-timeout`: timeout de
 cada comando ao Redis (o default da Lettuce é 60s — inaceitável no hot path); estourar degrada o
 item para `UNKNOWN` (§7.4). Dimensione acima do p99 do round-trip ao seu Redis.
-`eviction.interval`: período da varredura do
+`grpc.max-batch-size`: nº máximo de descriptors por `RateLimitRequest` — lote acima disso é
+rejeitado com `INVALID_ARGUMENT` antes de tocar o core. `eviction.interval`: período da varredura do
 índice local de buckets (§4.2; aceita formato de duração do Spring). `observability.grpc-sample-rate`:
 fração das observações por-RPC do gRPC a registrar (1.0 = todas; 0.0 = desliga) — knob de custo, ver
 [`OBSERVABILIDADE.md`](OBSERVABILIDADE.md) §2 e [`SATURACAO.md`](SATURACAO.md) §5.2.
@@ -103,6 +105,8 @@ klimiter:
     key-prefix: klimiter
     cluster: false
     command-timeout: 10ms
+  grpc:
+    max-batch-size: 100
   eviction:
     interval: 60s
   observability:
