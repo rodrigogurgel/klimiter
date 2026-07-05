@@ -13,6 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.minutes
+import java.time.Duration as JavaDuration
 
 /**
  * Integração do adapter no modo **cluster** ([LettuceGlobalCounter.cluster]) contra um Redis real em
@@ -29,7 +30,11 @@ class LettuceClusterGlobalCounterIT {
     fun setUp() {
         redis.execInContainer("redis-cli", "-p", "$PORT", "cluster", "addslotsrange", "0", "16383")
         waitClusterOk()
-        counter = LettuceGlobalCounter.cluster("redis://${redis.host}:$PORT", poolSize = 2)
+        counter = LettuceGlobalCounter.cluster(
+            "redis://${redis.host}:$PORT",
+            poolSize = 2,
+            commandTimeout = COMMAND_TIMEOUT,
+        )
     }
 
     @AfterEach
@@ -59,6 +64,8 @@ class LettuceClusterGlobalCounterIT {
     }
 
     private companion object {
+        private val COMMAND_TIMEOUT: JavaDuration = JavaDuration.ofSeconds(2)
+
         const val PORT = 7379
         const val BUS_PORT = 17379
         const val WAIT_ATTEMPTS = 20
