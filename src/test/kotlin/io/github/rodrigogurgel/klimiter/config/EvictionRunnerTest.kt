@@ -8,9 +8,14 @@ import io.github.rodrigogurgel.klimiter.core.policy.Policy
 import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 import io.github.rodrigogurgel.klimiter.core.port.outbound.Clock
 import io.github.rodrigogurgel.klimiter.support.InMemoryGlobalCounter
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /** Cobre o ciclo de vida do runner de evicção (§4.2): a varredura periódica remove os buckets vencidos. */
 class EvictionRunnerTest {
@@ -33,6 +38,27 @@ class EvictionRunnerTest {
                 waited += 30
             }
             assertEquals(0, budget.size())
+        } finally {
+            runner.stop()
+        }
+    }
+
+    @Test
+    fun `a failing sweep does not kill the eviction loop`() {
+        val sweeps = CountDownLatch(2)
+        val budget = mockk<LocalBudget> {
+            every { evictExpired(any()) } answers {
+                sweeps.countDown()
+                if (sweeps.count == 1L) error("falha simulada da varredura")
+                0
+            }
+        }
+
+        val runner = EvictionRunner(budget, Clock { 0 }, EvictionProperties(Duration.ofMillis(20)))
+        runner.start()
+        try {
+            // 1ª varredura lança; a 2ª só acontece se o loop sobreviveu à falha.
+            assertTrue(sweeps.await(2, TimeUnit.SECONDS), "o loop de evicção morreu após uma falha")
         } finally {
             runner.stop()
         }

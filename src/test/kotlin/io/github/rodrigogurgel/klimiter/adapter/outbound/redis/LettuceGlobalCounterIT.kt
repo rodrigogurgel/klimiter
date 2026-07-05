@@ -12,6 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import java.time.Duration as JavaDuration
 
 /**
  * Integração do adapter contra um Redis real (Testcontainers). Sem Docker, é pulado
@@ -25,7 +26,7 @@ class LettuceGlobalCounterIT {
     @BeforeEach
     fun setUp() {
         val uri = "redis://${redis.host}:${redis.firstMappedPort}"
-        counter = LettuceGlobalCounter.standalone(uri, poolSize = 2)
+        counter = LettuceGlobalCounter.standalone(uri, poolSize = 2, commandTimeout = COMMAND_TIMEOUT)
     }
 
     @AfterEach
@@ -66,6 +67,8 @@ class LettuceGlobalCounterIT {
     }
 
     private companion object {
+        private val COMMAND_TIMEOUT: JavaDuration = JavaDuration.ofSeconds(2)
+
         @Container
         @JvmStatic
         private val redis: GenericContainer<*> =

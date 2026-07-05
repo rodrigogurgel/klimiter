@@ -33,15 +33,28 @@ class EvictionRunner(
         job = scope.launch {
             while (isActive) {
                 delay(properties.interval.toMillis().milliseconds)
-                val removed = budget.evictExpired(clock.nowMillis())
-                if (removed > 0) {
-                    log.atDebug()
-                        .addKeyValue("removed", removed)
-                        .addKeyValue("remaining", budget.size())
-                        .setMessage("evicção de buckets")
-                        .log()
-                }
+                sweep()
             }
+        }
+    }
+
+    /** Uma varredura. Falha NÃO derruba o loop: sem evicção o índice só cresce (vazamento silencioso). */
+    @Suppress("TooGenericExceptionCaught") // qualquer falha → loga e tenta de novo no próximo intervalo
+    private fun sweep() {
+        try {
+            val removed = budget.evictExpired(clock.nowMillis())
+            if (removed > 0) {
+                log.atDebug()
+                    .addKeyValue("removed", removed)
+                    .addKeyValue("remaining", budget.size())
+                    .setMessage("evicção de buckets")
+                    .log()
+            }
+        } catch (failure: Exception) {
+            log.atError()
+                .setCause(failure)
+                .setMessage("falha na varredura de evicção; nova tentativa no próximo intervalo")
+                .log()
         }
     }
 

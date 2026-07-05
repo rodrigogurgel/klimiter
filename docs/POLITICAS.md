@@ -192,3 +192,17 @@ Eventos em rajada (um único save costuma gerar vários eventos) são **coalesci
 configurável — `klimiter.policies.reload-debounce` (default 200ms, ver
 [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md)): após o último evento, espera-se esse
 intervalo de silêncio e recarrega-se **uma só vez**.
+
+### 6.1 Limitação conhecida: ConfigMap no Kubernetes
+
+O hot reload **não detecta** a atualização de um `ConfigMap` montado como volume. O kubelet propaga
+updates por uma **troca atômica de symlink**: o conteúdo novo é gravado num diretório temporário e o
+symlink interno `..data` é trocado para apontar a ele. O nome do arquivo vigiado (`policies.yaml`)
+nunca sofre `ENTRY_CREATE`/`ENTRY_MODIFY` — os eventos chegam para `..data`/`..data_tmp` e são
+descartados pelo filtro por nome do observador. Na prática, **editar a ConfigMap não recarrega as
+políticas até o pod reiniciar**, silenciosamente.
+
+Enquanto o observador não tiver um fallback de polling (mtime/hash do arquivo resolvido), aplique
+mudanças de política em Kubernetes com um **restart controlado** — o procedimento está em
+[`deployments/README.md`](../deployments/README.md). Fora de volumes de ConfigMap (arquivo real em
+disco, ou editado no host e montado via bind), o hot reload funciona normalmente.

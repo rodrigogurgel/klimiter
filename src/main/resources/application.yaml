@@ -16,6 +16,13 @@ klimiter:
     # Client de cluster (Redis Cluster / ElastiCache cluster mode enabled): roteamento por slot e
     # descoberta de topologia. Scripts são single-key, então sem CROSSSLOT. false = standalone.
     cluster: false
+    # Timeout de cada comando ao Redis (default da Lettuce é 60s — veneno no hot path). Estourar
+    # degrada o item para UNKNOWN (§7.4). Sobrescrevível por KLIMITER_REDIS_COMMAND_TIMEOUT.
+    command-timeout: 10ms
+  grpc:
+    # Máximo de descriptors por RateLimitRequest — lote acima disso é rejeitado com INVALID_ARGUMENT
+    # antes de tocar o core. Sobrescrevível por KLIMITER_GRPC_MAX_BATCH_SIZE.
+    max-batch-size: 100
   eviction:
     # Varredura do índice local de buckets (§4.2).
     interval: 60s

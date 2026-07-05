@@ -6,6 +6,7 @@ import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
+import io.lettuce.core.RedisURI
 import io.lettuce.core.api.coroutines
 import io.lettuce.core.api.coroutines.RedisScriptingCoroutinesCommands
 import io.lettuce.core.cluster.ClusterClientOptions
@@ -87,10 +88,14 @@ class LettuceGlobalCounter(
         /** Refresh periódico da topologia do cluster (além do adaptativo em MOVED/ASK). */
         private val CLUSTER_TOPOLOGY_REFRESH = JavaDuration.ofSeconds(30)
 
-        /** Standalone: client + [poolSize] conexões multiplexadas sempre abertas. */
-        fun standalone(redisUri: String, poolSize: Int): LettuceGlobalCounter {
+        /**
+         * Standalone: client + [poolSize] conexões multiplexadas sempre abertas. O [commandTimeout]
+         * é setado na [RedisURI] e vira o command timeout default de todas as conexões.
+         */
+        fun standalone(redisUri: String, poolSize: Int, commandTimeout: JavaDuration): LettuceGlobalCounter {
             require(poolSize > 0) { "poolSize deve ser > 0" }
-            val client = RedisClient.create(redisUri)
+            val uri = RedisURI.create(redisUri).apply { timeout = commandTimeout }
+            val client = RedisClient.create(uri)
             val connections = List(poolSize) { client.connect() }
             return LettuceGlobalCounter(connections.map { it.coroutines() }, closer(connections, client::shutdown))
         }
@@ -98,11 +103,13 @@ class LettuceGlobalCounter(
         /**
          * Cluster (Redis Cluster / ElastiCache cluster mode enabled): client com descoberta de
          * topologia (adaptive refresh em MOVED/ASK/reconnect + refresh periódico — sobrevive a
-         * failover/resharding) e [poolSize] conexões. Escritas roteiam para o master do slot.
+         * failover/resharding) e [poolSize] conexões. Escritas roteiam para o master do slot. O
+         * [commandTimeout] na [RedisURI] vira o command timeout default das conexões.
          */
-        fun cluster(redisUri: String, poolSize: Int): LettuceGlobalCounter {
+        fun cluster(redisUri: String, poolSize: Int, commandTimeout: JavaDuration): LettuceGlobalCounter {
             require(poolSize > 0) { "poolSize deve ser > 0" }
-            val client = RedisClusterClient.create(redisUri)
+            val uri = RedisURI.create(redisUri).apply { timeout = commandTimeout }
+            val client = RedisClusterClient.create(uri)
             client.setOptions(clusterOptions())
             val connections = List(poolSize) { client.connect() }
             return LettuceGlobalCounter(connections.map { it.coroutines() }, closer(connections, client::shutdown))

@@ -40,6 +40,29 @@ kubectl apply -f configmap-policies.yaml -f deployment.yaml -f service.yaml -f h
 
 > A ordem importa: `namespace` → `secret` + `configmap` → `deployment`/`service`/`hpa-pdb`.
 
+## Atualização de políticas (hot reload × ConfigMap)
+
+O hot reload de políticas ([`docs/POLITICAS.md §6.1`](../docs/POLITICAS.md)) usa o `WatchService`
+do JDK sobre o diretório do arquivo — e **isso não funciona com ConfigMap montada como volume**: o
+kubelet propaga o update por troca atômica de symlink (`..data`), o arquivo `policies.yaml` nunca
+gera evento de criação/modificação e o reload não dispara. Com estes manifestos, **mudar a
+ConfigMap não aplica ao vivo**.
+
+Aplique políticas novas com um restart controlado (rolling, sem downtime — o PDB cobre):
+
+```bash
+kubectl -n klimiter apply -f configmap-policies.yaml
+kubectl -n klimiter rollout restart deployment/klimiter
+```
+
+## Segurança (premissas)
+
+Estes manifestos assumem tráfego **interno ao cluster**: o gRPC é **plaintext e sem autenticação**,
+exposto só por um `Service` ClusterIP (sem Ingress). Não exponha a porta 9090 para fora do cluster
+sem colocar TLS/mTLS e autenticação na frente (ex.: service mesh — note que o `deployment.yaml`
+desliga a injeção do sidecar Istio; reavalie se o mesh for a sua camada de mTLS). A conexão com o
+Redis aceita TLS via `rediss://` no `Secret`.
+
 ## O que ajustar antes de subir
 
 - **`deployment.yaml`** — `image:` (aponte para o seu registry) e `KLIMITER_REDIS_POOL_SIZE`
