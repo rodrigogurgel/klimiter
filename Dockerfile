@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # ---- build: compila o bootJar com a toolchain JDK 21 ----
-FROM eclipse-temurin:21-jdk-ubi10-minimal AS build
+# Build na arquitetura nativa ($BUILDPLATFORM): o bootJar é bytecode portável, então
+# não precisa emular a arquitetura alvo — só a imagem JRE final é por-arch.
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-ubi10-minimal AS build
 WORKDIR /workspace
 
 # Arquivos de build primeiro (camada estável → melhor cache); depois o código-fonte.

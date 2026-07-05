@@ -9,6 +9,24 @@ Este arquivo é **gerado automaticamente** pelo [git-cliff](https://git-cliff.or
 a partir do histórico de commits — não edite à mão. Veja `cliff.toml` e o
 [CONTRIBUTING.md](CONTRIBUTING.md#changelog).
 
+## [0.2.0] - 2026-07-05
+
+### Adicionado
+
+- Eks manifests
+
+### Corrigido
+
+- **deployments:** Dimensiona heap da JVM pela regra >=1GB/core (SATURACAO.md §8)
+
+### Documentação
+
+- **deployments:** Documenta manifestos EKS e generaliza o deployment
+
+### Manutenção
+
+- **compose:** Alinha heap da JVM ao manifesto (Initial=Max=60)
+
 ## [0.1.2] - 2026-06-28
 
 ### Corrigido
