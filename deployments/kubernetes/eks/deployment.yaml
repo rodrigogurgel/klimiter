@@ -16,15 +16,9 @@ spec:
       annotations:
         admission.datadoghq.com/enabled: "false"
     spec:
-      # Comparação isolada: nó dedicado (NodePool bench-klimiter, taint workload=klimiter).
-      # Pool é amd64-only -> mesma arquitetura do glimiter, sem confound Graviton×x86 e
-      # sem compartilhar CPU com glimiter ou geradores ghz.
-      nodeSelector: { workload: klimiter }
-      tolerations:
-        - { key: workload, operator: Equal, value: klimiter, effect: NoSchedule }
       containers:
         - name: klimiter
-          image: 068064050187.dkr.ecr.us-east-1.amazonaws.com/klimiter:latest
+          image: klimiter:latest # YOUR KLIMITER IMAGE
           ports:
             - { containerPort: 9090, name: grpc }
           env:
@@ -33,15 +27,13 @@ spec:
             - name: KLIMITER_REDIS_KEY_PREFIX
               value: "klimiter"
             - name: KLIMITER_REDIS_POOL_SIZE
-              value: "64"
+              value: "8"
             - name: KLIMITER_REDIS_CLUSTER
               value: "false"
             - name: KLIMITER_POLICIES_PATH
               value: "/etc/klimiter/policies.yaml"
             - name: SPRING_GRPC_SERVER_PORT
               value: "9090"
-            # JVM como o klimiter usa em saturação: ZGC (baixa pausa), 2 processadores
-            # (≈ GOMAXPROCS=2 do glimiter), heap 512–768m.
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m"
           volumeMounts:
@@ -54,14 +46,10 @@ spec:
             grpc: { port: 9090 }
             initialDelaySeconds: 45
             periodSeconds: 10
-          # QoS Guaranteed: requests == limits -> CPU dedicada, sem throttling do CFS
-          # nem contenção. Envelope IDÊNTICO ao glimiter (2 CPU / 2Gi de teto).
           resources:
             requests: { cpu: "2", memory: "2Gi" }
             limits: { cpu: "2", memory: "2Gi" }
           securityContext:
-            # A imagem já define USER klimiter (não-root); runAsNonRoot omitido pois
-            # o USER é nominal (não-numérico) e o kubelet não consegue verificá-lo.
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
       volumes:

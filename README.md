@@ -125,6 +125,7 @@ make saturation PRIORITY=PRIORITY_HIGH     # sweep de RPS até o joelho (noutro 
 | [`docs/VARIAVEIS-DE-AMBIENTE.md`](docs/VARIAVEIS-DE-AMBIENTE.md) | Variáveis de ambiente (app, deps, JVM, build). |
 | [`docs/SATURACAO.md`](docs/SATURACAO.md) | Medição do joelho + deployment (K8s/Fargate). |
 | [`docs/OTIMIZACAO-THROUGHPUT.md`](docs/OTIMIZACAO-THROUGHPUT.md) | Otimização do joelho, escala por cores e dimensionamento. |
+| [`deployments/README.md`](deployments/README.md) | Manifestos de Kubernetes/EKS: pré-requisitos e ordem de aplicação. |
 | [`AGENTS.md`](AGENTS.md) | Guia rápido para agentes de IA e novos integrantes. |
 
 ## Contribuição

@@ -240,6 +240,9 @@ para achar o teto horizontal. Dimensione por **(cores ​**E**​ memória)** co
 Consolida as decisões de runtime. O **dimensionamento por carga** (cores p/ HIGH, pods p/ LOW) está em
 [OTIMIZACAO-THROUGHPUT.md](OTIMIZACAO-THROUGHPUT.md); aqui ficam **CPU/QoS, heap/memória e Fargate**.
 
+> Os **manifestos prontos** (Namespace, Secret, ConfigMap, Deployment, Service, HPA/PDB) e a ordem de
+> `kubectl apply` estão em [`deployments/README.md`](../deployments/README.md).
+
 ### 8.1 Heap e memória — o ZGC precisa de folga
 
 **Heap apertado derruba o joelho** (não por falta de throughput, mas porque o ZGC **stalla** sob rajada
