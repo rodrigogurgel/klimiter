@@ -35,7 +35,7 @@ spec:
             - name: SPRING_GRPC_SERVER_PORT
               value: "9090"
             - name: JAVA_TOOL_OPTIONS
-              value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -Xms512m -Xmx768m"
+              value: "-XX:+UseZGC -XX:+ZGenerational -XX:ActiveProcessorCount=2 -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
           volumeMounts:
             - { name: policies, mountPath: /etc/klimiter, readOnly: true }
           readinessProbe:
@@ -47,8 +47,8 @@ spec:
             initialDelaySeconds: 45
             periodSeconds: 10
           resources:
-            requests: { cpu: "2", memory: "2Gi" }
-            limits: { cpu: "2", memory: "2Gi" }
+            requests: { cpu: "2", memory: "4Gi" }
+            limits: { cpu: "2", memory: "4Gi" }
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
