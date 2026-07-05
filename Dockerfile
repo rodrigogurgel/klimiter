@@ -20,7 +20,8 @@ RUN cp build/libs/*.jar application.jar && \
     java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # ---- probe: binário estático do health check gRPC (grpc.health.v1.Health) ----
-FROM curlimages/curl:latest AS probe
+# Tag pinada (não `latest`): build reprodutível; o Dependabot propõe os bumps.
+FROM curlimages/curl:8.11.1 AS probe
 ARG TARGETARCH
 ARG GRPC_HEALTH_PROBE_VERSION=v0.4.52
 RUN curl -fsSL -o /tmp/grpc_health_probe \
