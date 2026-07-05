@@ -24,6 +24,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - **Debounce** ([PolicyProperties.reloadDebounce]): uma rajada de eventos vira um único reload.
  * - A resiliência (parse/validação falha → mantém a última config boa) vem do próprio
  *   [FilePolicyRepository.reload]; o observador segue vivo.
+ * - **Limitação conhecida — ConfigMap no Kubernetes:** o kubelet propaga updates por troca atômica
+ *   de symlink (`..data`), então o arquivo vigiado nunca gera `ENTRY_CREATE`/`ENTRY_MODIFY` e o
+ *   reload NÃO dispara. Ao montar as políticas via ConfigMap, aplique mudanças com um restart
+ *   controlado (ver `deployments/README.md` e POLITICAS.md §6.1).
  *
  * Gerenciado como [SmartLifecycle]: inicia após os beans (o snapshot já foi carregado no boot)
  * e encerra o serviço de watch de forma limpa no shutdown.
