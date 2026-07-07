@@ -4,19 +4,20 @@ import java.math.BigInteger
 import kotlin.time.Duration
 
 /**
- * Linha de liberação do pacing (§6.2), invariante crítica (§9).
- *
- * IDÊNTICA à fórmula das operações centrais (`pace_*`):
+ * Linha de liberação do pacing (§6.1), invariante crítica (§9):
  * ```
  * linha = min( capacidade , piso( capacidade * decorrido / duração ) + 1 )
  * ```
  * e `= capacidade` quando duração ≤ 0 ou decorrido ≥ duração. O `+1` admite a primeira unidade já
  * no início da janela.
  *
- * Calculada em **[Long] puro** (não [Double]): o piso inteiro é sempre ≥ o piso flutuante, então o
- * nó NUNCA é mais permissivo que o central (§6.3, §9). O caminho normal é alocação-zero; só recorre
- * a [BigInteger] se `capacidade * decorrido_ms` estourar [Long] (capacidades irreais), preservando a
- * exatidão exigida pelo §6.3.
+ * É a **única** implementação da linha no sistema (§6.3): o nó a usa para negar localmente (§5.2) e
+ * envia o mesmo valor como limiar pronto à operação central (`conditional_increment.lua` não tem
+ * matemática de domínio) — não existe segunda fórmula para divergir.
+ *
+ * Calculada em **[Long] puro** (não [Double]): piso inteiro exato para **qualquer capacidade**. O
+ * caminho normal é alocação-zero; só recorre a [BigInteger] se `capacidade * decorrido_ms` estourar
+ * [Long] (capacidades irreais), preservando a exatidão exigida pelo §6.3.
  */
 object ReleaseLine {
     fun line(capacity: Long, elapsed: Duration, duration: Duration): Long {

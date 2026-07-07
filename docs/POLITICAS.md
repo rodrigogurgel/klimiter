@@ -2,19 +2,19 @@
 
 Define o **formato do arquivo de políticas** (`config/policies/policies.yaml`), sua **validação**
 por JSON Schema e como ele é resolvido em runtime. É a fonte da verdade do **contrato de
-configuração** dos limites — não da lógica que os aplica (essa é o `DESIGN-CONCEITUAL.md`).
+configuração** dos limites — não da lógica que os aplica (essa é o `DESIGN-CONCEITUAL-V2.md`).
 
 > **Onde este documento se encaixa.**
 >
 > | Documento | Responde | Fonte da verdade de |
 > |-----------|----------|---------------------|
-> | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | **o quê** — fluxos, invariantes, premissas | comportamento |
+> | [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) | **o quê** — fluxos, invariantes, premissas | comportamento |
 > | [`ARQUITETURA.md`](ARQUITETURA.md) | **como o código é estruturado** — camadas, fronteiras | estrutura |
 > | **`POLITICAS.md`** (este) | **como configurar limites** — formato, schema, resolução | configuração de políticas |
 > | [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md) | configuração via ambiente | configuração de runtime |
 >
-> Referências `§N` apontam para seções do [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md). Se o
-> formato mudar, atualize **este documento e o schema** no mesmo PR.
+> Referências `§N` apontam para seções do [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md).
+> Se o formato mudar, atualize **este documento e o schema** no mesmo PR.
 
 ---
 
@@ -61,18 +61,14 @@ policies:
     default:                     # regra para qualquer valor sem override
       requests_per_unit: 1000    # capacidade (§3.1)
       unit: MINUTE               # SECOND | MINUTE | HOUR | DAY
-      prefetch:                  # opcional (§5) — 'percent' OU 'count', exclusivos
-        percent: 10              #   bloco = 10% da capacidade
     overrides:                   # exceções por valor exato (§8.1)
       service-account:
         requests_per_unit: 50000
         unit: MINUTE
-        prefetch:
-          count: 500             #   bloco = 500 unidades absolutas
   ip:
     default:
       requests_per_unit: 100
-      unit: SECOND               # sem prefetch
+      unit: SECOND
 ```
 
 | Chave | Obrigatório | Descrição |
@@ -93,7 +89,6 @@ unidade de tempo, não uma duração arbitrária (§3.1).
 |-------|-------------|------|-----------|
 | `requests_per_unit` | sim | inteiro ≥ 1 | Capacidade: requisições permitidas por **uma** `unit`. |
 | `unit` | sim | enum | Unidade da janela: `SECOND`, `MINUTE`, `HOUR`, `DAY`. |
-| `prefetch` | não | objeto | Amortização do lease de alta prioridade (§5). |
 | `detailed_metric` | não | booleano | Liga o contador por policy `klimiter.policy.reserve` desta regra (ver OBSERVABILIDADE.md). Default **`true`** na regra `default` da dimensão e **`false`** nos `overrides`. |
 
 A **janela tem sempre o tamanho de exatamente uma `unit`** (§3.1) e é alinhada ao epoch/UTC
@@ -106,16 +101,10 @@ A **janela tem sempre o tamanho de exatamente uma `unit`** (§3.1) e é alinhada
 | `HOUR` | 3600 s | topo da hora (UTC) |
 | `DAY` | 86400 s | meia-noite (UTC) |
 
-### Prefetch
-
-Na alta prioridade, em vez de arrendar exatamente N, arrenda-se um **bloco**; o excedente vira
-crédito local que serve as próximas requisições sem round-trip (§5). O tamanho do bloco vem da
-política, em **um** de dois modos mutuamente exclusivos:
-
-- `prefetch.percent` — percentual de `requests_per_unit` (1–100);
-- `prefetch.count` — número absoluto de unidades (≥ 0).
-
-Omitir `prefetch` significa **sem prefetch**: arrenda-se apenas o necessário.
+> **`prefetch` foi removido** (migração para o `DESIGN-CONCEITUAL-V2.md`): no V2 não há lease
+> local a amortizar — toda admissão é decidida no contador central (§4/§8.1). Um arquivo que
+> ainda contenha `prefetch` é **rejeitado no carregamento** como campo desconhecido; remova o
+> bloco antes de atualizar.
 
 ### Métrica detalhada por policy
 
@@ -157,8 +146,8 @@ por parse tipado:
    etc.).
 2. **Runtime** — o loader (`adapter.outbound.policy`) faz **parse tipado estrito**: campos
    desconhecidos são rejeitados (`FAIL_ON_UNKNOWN_PROPERTIES`) e cada valor passa pelas
-   **invariantes dos Value Objects** do `core.policy` (capacidade ≥ 1, `unit` no enum, `prefetch`
-   com exatamente um entre `percent`/`count`, `default` presente, `version` = 1). É equivalente ao
+   **invariantes dos Value Objects** do `core.policy` (capacidade ≥ 1, `unit` no enum,
+   `default` presente, `version` = 1). É equivalente ao
    schema, sem acoplar um motor de JSON Schema em runtime. Arquivo inválido → **mantém a última
    config boa** e loga o erro (§6).
 3. **Build/test** — testes carregam o `policies.yaml` versionado pelo próprio loader, garantindo
@@ -166,8 +155,8 @@ por parse tipado:
 
 As regras estruturais cobertas (em ambos os níveis): `version` correta, ao menos uma dimensão,
 `default` presente, `requests_per_unit` inteiro ≥ 1, `unit` num enum fechado
-(`SECOND`/`MINUTE`/`HOUR`/`DAY`), `prefetch` com exatamente um entre `percent`/`count`, e nenhum
-campo desconhecido — para pegar erros de digitação cedo.
+(`SECOND`/`MINUTE`/`HOUR`/`DAY`) e nenhum campo desconhecido — para pegar erros de digitação
+cedo (inclusive o `prefetch` legado, rejeitado desde a migração V2).
 
 > **Knobs globais não vivem aqui.** A carência de TTL (§3.2) e a conexão com o armazenamento
 > central são configuração de runtime — ficam em
@@ -192,3 +181,17 @@ Eventos em rajada (um único save costuma gerar vários eventos) são **coalesci
 configurável — `klimiter.policies.reload-debounce` (default 200ms, ver
 [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md)): após o último evento, espera-se esse
 intervalo de silêncio e recarrega-se **uma só vez**.
+
+### 6.1 Limitação conhecida: ConfigMap no Kubernetes
+
+O hot reload **não detecta** a atualização de um `ConfigMap` montado como volume. O kubelet propaga
+updates por uma **troca atômica de symlink**: o conteúdo novo é gravado num diretório temporário e o
+symlink interno `..data` é trocado para apontar a ele. O nome do arquivo vigiado (`policies.yaml`)
+nunca sofre `ENTRY_CREATE`/`ENTRY_MODIFY` — os eventos chegam para `..data`/`..data_tmp` e são
+descartados pelo filtro por nome do observador. Na prática, **editar a ConfigMap não recarrega as
+políticas até o pod reiniciar**, silenciosamente.
+
+Enquanto o observador não tiver um fallback de polling (mtime/hash do arquivo resolvido), aplique
+mudanças de política em Kubernetes com um **restart controlado** — o procedimento está em
+[`deployments/README.md`](../deployments/README.md). Fora de volumes de ConfigMap (arquivo real em
+disco, ou editado no host e montado via bind), o hot reload funciona normalmente.

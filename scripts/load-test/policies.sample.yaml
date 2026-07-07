@@ -12,27 +12,15 @@
 version: 1
 
 policies:
-  # Alta cardinalidade: raramente contende → mede o caminho ao Redis sem negar muito.
   rate_limit_account_id:
     default:
       requests_per_unit: 60
       unit: SECOND
-      prefetch:
-        percent: 10
-
-  # Cardinalidade média.
   rate_limit_source:
     default:
       requests_per_unit: 1000
       unit: SECOND
-      prefetch:
-        percent: 10
-
-  # Dimensão "quente" (use chave fixa: FLOW_DISTINCT_KEYS=1 no ghz / DISTINCT_KEYS=1 no k6).
-  # Cap mais baixo → a linha de pacing binda sob carga e a interação de prioridade (§6.5) aparece.
   rate_limit_flow:
     default:
       requests_per_unit: 6000
       unit: SECOND
-      prefetch:
-        percent: 10

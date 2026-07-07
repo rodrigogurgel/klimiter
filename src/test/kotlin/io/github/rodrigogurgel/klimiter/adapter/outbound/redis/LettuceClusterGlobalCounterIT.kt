@@ -12,7 +12,10 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
+import java.time.Duration as JavaDuration
 
 /**
  * Integração do adapter no modo **cluster** ([LettuceGlobalCounter.cluster]) contra um Redis real em
@@ -29,7 +32,11 @@ class LettuceClusterGlobalCounterIT {
     fun setUp() {
         redis.execInContainer("redis-cli", "-p", "$PORT", "cluster", "addslotsrange", "0", "16383")
         waitClusterOk()
-        counter = LettuceGlobalCounter.cluster("redis://${redis.host}:$PORT", poolSize = 2)
+        counter = LettuceGlobalCounter.cluster(
+            "redis://${redis.host}:$PORT",
+            poolSize = 2,
+            commandTimeout = COMMAND_TIMEOUT,
+        )
     }
 
     @AfterEach
@@ -38,15 +45,15 @@ class LettuceClusterGlobalCounterIT {
     }
 
     @Test
-    fun `lease routes by slot through the cluster client and reports free global`() = runBlocking {
-        val key = "klimiter:it:cluster:lease"
-        val first = counter.lease(key, capacity = 10, requested = 4, ttl = 1.minutes)
-        assertEquals(4, first.granted)
-        assertEquals(6, first.freeGlobal)
+    fun `tryAcquire routes by slot and never writes above the threshold`() = runBlocking {
+        val key = "klimiter:it:cluster:acquire"
+        val first = counter.tryAcquire(key, threshold = 4, hits = 4, ttl = 1.minutes)
+        assertTrue(first.admitted)
+        assertEquals(4, first.counter)
 
-        val second = counter.lease(key, capacity = 10, requested = 100, ttl = 1.minutes)
-        assertEquals(6, second.granted)
-        assertEquals(0, second.freeGlobal)
+        val denied = counter.tryAcquire(key, threshold = 4, hits = 1, ttl = 1.minutes)
+        assertFalse(denied.admitted)
+        assertEquals(4, denied.counter)
     }
 
     private fun waitClusterOk() {
@@ -59,6 +66,8 @@ class LettuceClusterGlobalCounterIT {
     }
 
     private companion object {
+        private val COMMAND_TIMEOUT: JavaDuration = JavaDuration.ofSeconds(2)
+
         const val PORT = 7379
         const val BUS_PORT = 17379
         const val WAIT_ATTEMPTS = 20

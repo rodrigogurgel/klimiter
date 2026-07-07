@@ -11,6 +11,6 @@ enum class Status {
     /** Recusado: janela esgotada ou `N > capacidade` (alta), ou acima da linha de pacing (baixa, §6). */
     DENIED,
 
-    /** Degradação por falha de backend ao reservar (§7.4) — não confundir com cancelamento. */
+    /** Degradação por falha de backend ao reservar (§7.5) — não confundir com cancelamento. */
     UNKNOWN,
 }

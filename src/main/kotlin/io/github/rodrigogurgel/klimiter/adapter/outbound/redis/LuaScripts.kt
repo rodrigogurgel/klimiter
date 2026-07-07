@@ -28,7 +28,7 @@ class LuaScript(resourcePath: String) {
 }
 
 /**
- * Registro dos scripts (§4.1, §6.4) + EVALSHA com fallback NOSCRIPT: após failover/flush o script
+ * Registro dos scripts (V2 §4) + EVALSHA com fallback NOSCRIPT: após failover/flush o script
  * some do cache do Redis → recarrega via EVAL (re-popula o cache) e segue. Stateless quanto à conexão
  * (os comandos vêm da conexão do pool em cada chamada), então uma instância serve o pool.
  */
@@ -36,13 +36,12 @@ class LuaScript(resourcePath: String) {
 class LuaScripts {
     private val log = LoggerFactory.getLogger(LuaScripts::class.java)
 
-    val lease = LuaScript("redis/lease.lua")
-    val paceLease = LuaScript("redis/pace_lease.lua")
+    val conditionalIncrement = LuaScript("redis/conditional_increment.lua")
 
     /**
      * Executa o script (saída MULTI → lista de inteiros), com EVALSHA → fallback EVAL no NOSCRIPT.
      * Devolve a lista crua do Lettuce; o caller lê as posições com [longAt] — evita alocar uma
-     * `List<Long>` intermediária no hot path (§4.1/§6.4, 1–3 chamadas por request).
+     * `List<Long>` intermediária no hot path (§4, 1–3 chamadas por request).
      */
     @Suppress("SpreadOperator") // varargs repassados à API do Lettuce
     suspend fun eval(

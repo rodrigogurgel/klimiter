@@ -1,6 +1,6 @@
 package io.github.rodrigogurgel.klimiter.config
 
-import io.github.rodrigogurgel.klimiter.core.application.LocalBudget
+import io.github.rodrigogurgel.klimiter.core.application.LocalState
 import io.github.rodrigogurgel.klimiter.core.port.outbound.Clock
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -15,12 +15,13 @@ import org.springframework.stereotype.Component
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Evicção periódica do índice local de buckets (§4.2): com o ciclo de vida do container
- * (`@PostConstruct`/`@PreDestroy`). Suspende entre varreduras (não bloqueia thread).
+ * Evicção periódica do índice local de buckets e da pressão fria (DESIGN-CONCEITUAL-V2.md §5.4):
+ * com o ciclo de vida do container (`@PostConstruct`/`@PreDestroy`). Suspende entre varreduras
+ * (não bloqueia thread).
  */
 @Component
 class EvictionRunner(
-    private val budget: LocalBudget,
+    private val budget: LocalState,
     private val clock: Clock,
     private val properties: EvictionProperties,
 ) {
@@ -33,15 +34,28 @@ class EvictionRunner(
         job = scope.launch {
             while (isActive) {
                 delay(properties.interval.toMillis().milliseconds)
-                val removed = budget.evictExpired(clock.nowMillis())
-                if (removed > 0) {
-                    log.atDebug()
-                        .addKeyValue("removed", removed)
-                        .addKeyValue("remaining", budget.size())
-                        .setMessage("evicção de buckets")
-                        .log()
-                }
+                sweep()
             }
+        }
+    }
+
+    /** Uma varredura. Falha NÃO derruba o loop: sem evicção o índice só cresce (vazamento silencioso). */
+    @Suppress("TooGenericExceptionCaught") // qualquer falha → loga e tenta de novo no próximo intervalo
+    private fun sweep() {
+        try {
+            val removed = budget.evictExpired(clock.nowMillis())
+            if (removed > 0) {
+                log.atDebug()
+                    .addKeyValue("removed", removed)
+                    .addKeyValue("remaining", budget.size())
+                    .setMessage("evicção de buckets")
+                    .log()
+            }
+        } catch (failure: Exception) {
+            log.atError()
+                .setCause(failure)
+                .setMessage("falha na varredura de evicção; nova tentativa no próximo intervalo")
+                .log()
         }
     }
 

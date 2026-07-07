@@ -5,7 +5,6 @@ import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyMeterKey
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyResolution
 import io.github.rodrigogurgel.klimiter.core.policy.PolicySnapshot
-import io.github.rodrigogurgel.klimiter.core.policy.Prefetch
 import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -20,17 +19,13 @@ class PolicyDocumentMapperTest {
         assertIs<PolicyResolution.Matched>(snapshot.resolve(Dimension(dim), DimensionValue(value))).policy
 
     @Test
-    fun `maps a valid document with default, override and both prefetch kinds`() {
+    fun `maps a valid document with default and override`() {
         val doc = PolicyDocument(
             version = 1,
             policies = mapOf(
                 "user_id" to DimensionDocument(
-                    default = RuleDocument(
-                        requestsPerUnit = 60,
-                        unit = "SECOND",
-                        prefetch = PrefetchDocument(percent = 10),
-                    ),
-                    overrides = mapOf("vip" to RuleDocument(1000, "MINUTE", PrefetchDocument(count = 5))),
+                    default = RuleDocument(requestsPerUnit = 60, unit = "SECOND"),
+                    overrides = mapOf("vip" to RuleDocument(1000, "MINUTE")),
                 ),
             ),
         )
@@ -40,17 +35,9 @@ class PolicyDocumentMapperTest {
         val def = policyOf(snapshot, "user_id", "anon")
         assertEquals(60, def.capacity.requestsPerUnit)
         assertEquals(RateLimitUnit.SECOND, def.unit)
-        assertIs<Prefetch.Percent>(def.prefetch)
 
         val vip = policyOf(snapshot, "user_id", "vip")
         assertEquals(RateLimitUnit.MINUTE, vip.unit)
-        assertIs<Prefetch.Count>(vip.prefetch)
-    }
-
-    @Test
-    fun `absent prefetch maps to None`() {
-        val doc = PolicyDocument(1, mapOf("d" to DimensionDocument(RuleDocument(10, "SECOND", prefetch = null))))
-        assertEquals(Prefetch.None, policyOf(doc.toSnapshot(), "d", "x").prefetch)
     }
 
     @Test
@@ -88,22 +75,6 @@ class PolicyDocumentMapperTest {
             PolicyDocument(1, mapOf("d" to DimensionDocument(RuleDocument(10, "DECADE")))).toSnapshot()
         }
         assertTrue(ex.message!!.contains("unit inválida"))
-    }
-
-    @Test
-    fun `rejects prefetch with both or neither percent and count`() {
-        assertFailsWith<IllegalArgumentException> {
-            PolicyDocument(
-                1,
-                mapOf("d" to DimensionDocument(RuleDocument(10, "SECOND", PrefetchDocument(percent = 10, count = 5)))),
-            ).toSnapshot()
-        }
-        assertFailsWith<IllegalArgumentException> {
-            PolicyDocument(
-                1,
-                mapOf("d" to DimensionDocument(RuleDocument(10, "SECOND", PrefetchDocument()))),
-            ).toSnapshot()
-        }
     }
 
     @Test
