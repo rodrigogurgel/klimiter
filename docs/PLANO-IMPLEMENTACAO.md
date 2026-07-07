@@ -8,7 +8,7 @@
 > operação `tryAcquire`; (c) o estado local chama-se `LocalState` (substitui `LocalBudget`).
 >
 > **Alvo:** o repositório existente `~/IdeaProjects/klimiter` (Spring Boot 4.1.0,
-> Kotlin 2.3.21, Java 21, hexagonal `core/` + `adapter/` com Konsist enforçando a regra de
+> Kotlin 2.3.21, Java 25, hexagonal `core/` + `adapter/` com Konsist enforçando a regra de
 > dependência). O projeto implementava o design **anterior** (leases locais + prefetch +
 > refund); este plano o migra para o `DESIGN-CONCEITUAL-V2.md` (decisão 100% central,
 > incremento condicional, sem refund, reserva ordenada por pressão).
@@ -59,9 +59,9 @@ O repositório já acerta quase tudo que o plano original pedia:
 
 Ajustes pontuais:
 
-- **Toolchain Java 21 → 25 (LTS)**: recomendado pelo ZGC geracional maduro (protege o
-  p99). Não é bloqueante — em 21, `-XX:+UseZGC -XX:+ZGenerational` já atende; tratar como
-  tarefa isolada de infra (M6).
+- **Toolchain Java 21 → 25 (LTS): concluído.** ZGC geracional maduro (protege o p99); em
+  25 o modo geracional é o padrão — basta `-XX:+UseZGC` (o flag `-XX:+ZGenerational` foi
+  removido). Também habilita compact object headers (`-XX:+UseCompactObjectHeaders`).
 - **Nota Lettuce/CPU:** a API de coroutines do Lettuce passa pela bridge do Reactor
   (alocação extra por chamada). Aceitável para começar — legibilidade primeiro; se o
   profiling do M6 apontar custo relevante, trocar **só o hot path** do adapter para a API
