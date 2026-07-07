@@ -122,7 +122,8 @@ tasks.withType<Test> {
 }
 
 jacoco {
-	toolVersion = "0.8.12"
+	// 0.8.14+ lê bytecode Java 25 (major 69); 0.8.12 falha com "Unsupported class file major version 69".
+	toolVersion = "0.8.15"
 }
 
 // Fora da métrica de cobertura: código gerado (protobuf/gRPC), o bootstrap, o composition root e a
