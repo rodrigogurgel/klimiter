@@ -17,7 +17,7 @@ import java.time.Duration
  *   há CROSSSLOT. `false` = standalone. Sobrescrevível por `KLIMITER_REDIS_CLUSTER`.
  * @property commandTimeout timeout de cada comando ao Redis (vira o command timeout default do
  *   Lettuce; default da lib é 60s, veneno no hot path). Estourar → `RedisCommandTimeoutException`,
- *   que o [BatchEvaluator] degrada para `UNKNOWN` por item (§7.4). Sobrescrevível por
+ *   que o [BatchEvaluator] degrada para `UNKNOWN` por item (§7.5). Sobrescrevível por
  *   `KLIMITER_REDIS_COMMAND_TIMEOUT`.
  */
 @ConfigurationProperties(prefix = "klimiter.redis")

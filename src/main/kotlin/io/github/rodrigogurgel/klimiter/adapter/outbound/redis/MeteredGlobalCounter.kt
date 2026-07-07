@@ -1,7 +1,6 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
-import io.github.rodrigogurgel.klimiter.core.domain.LeaseResult
-import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
+import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -17,20 +16,12 @@ import kotlin.time.Duration
 class MeteredGlobalCounter(private val delegate: GlobalCounter, registry: MeterRegistry) :
     GlobalCounter,
     AutoCloseable {
-    private val leaseTimer = registry.timer(ROUNDTRIP, OP, "lease")
-    private val paceLeaseTimer = registry.timer(ROUNDTRIP, OP, "pace_lease")
+    private val tryAcquireTimer = registry.timer(ROUNDTRIP, OP, "try_acquire")
 
-    override suspend fun lease(key: String, capacity: Long, requested: Long, ttl: Duration): LeaseResult =
-        timed(leaseTimer) { delegate.lease(key, capacity, requested, ttl) }
-
-    override suspend fun paceLease(
-        key: String,
-        capacity: Long,
-        missing: Long,
-        elapsed: Duration,
-        duration: Duration,
-        ttl: Duration,
-    ): PaceResult = timed(paceLeaseTimer) { delegate.paceLease(key, capacity, missing, elapsed, duration, ttl) }
+    override suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult =
+        timed(tryAcquireTimer) {
+            delegate.tryAcquire(key, threshold, hits, ttl)
+        }
 
     override fun close() {
         (delegate as? AutoCloseable)?.close()

@@ -15,12 +15,12 @@ preenchidas conforme adicionada (`_(a preencher)_` = placeholder).
 >
 > | Documento | Responde |
 > |-----------|----------|
-> | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | o quê — fluxos, invariantes |
+> | [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) | o quê — fluxos, invariantes |
 > | [`ARQUITETURA.md`](ARQUITETURA.md) | como o código é estruturado |
 > | **`OBSERVABILIDADE.md`** (este) | o que o serviço expõe para observação |
 > | [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md) | endpoints/sampling via `management.*` |
 >
-> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL.md`.
+> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL-V2.md`.
 
 ---
 
@@ -46,18 +46,24 @@ Instrumentação própria, registrada no `MeterRegistry` (Micrometer) e exportad
 
 | Nome | Tipo | Tags | Descrição |
 |------|------|------|-----------|
-| `klimiter.reserve` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | Reservas individuais (§5/§6). Registrado pelo `LocalBudget` via a **porta `RateLimitMetrics`** (núcleo desacoplado do framework). |
-| `klimiter.reserve.high` | counter | `path` = `l1`\|`l2`\|`l3`\|`l4` | Nível do caminho de reserva ALTA (§5): L1 crédito local, L2 esgotado, L3 impossível, L4 renovação (round-trip). Distribuição-chave para tunar o prefetch. |
-| `klimiter.batch.shortcircuit` | counter | — | Lotes natimortos pelo short-circuit (§7.2): a grande economia no regime de chave quente. |
-| `klimiter.batch.refund` | counter | — | Lotes refundados (§7.4): veredito coletivo não-PERMITIDO desfez as reservas. |
-| `klimiter.central.roundtrip` | timer | `op` = `lease`\|`pace_lease` | Latência de cada round-trip ao contador global em Redis (§4). Medido no boundary (`MeteredGlobalCounter`). |
-| `klimiter.bucket.index.size` | gauge | — | Tamanho do índice local de buckets por nó (§4.2); cresce com a cardinalidade e cai na evicção. |
-| `klimiter.policy.reserve.<dimensão>[.<valor>]` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | **Reserva por policy** (negócio), ligada por regra via `detailed_metric` (POLITICAS.md). A identidade da policy vai no **nome** do meter: `...<dimensão>` para a `default`, `...<dimensão>.<valor>` para um `override` (valor saneado). Emitida pelo `BatchEvaluator`; pré-criada/removida no reload (eager). |
+| `klimiter.reserve` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown`, `origin` = `local`\|`central` | Reservas individuais (V2 §4/§5.2). `origin=local` são negações **sem round-trip** (o nó local só nega, nunca admite); `origin=central` são confirmações do incremento condicional. Registrado pelo `LocalState` via a **porta `RateLimitMetrics`**. |
+| `klimiter.decision` | counter | `priority` = `high`\|`low`\|`mixed`, `status` = `allowed`\|`denied`\|`unknown` | Respostas por **request** (V2 §2.1) — a soma é o total de requests respondidos. `status` é o veredito coletivo do lote; `priority` é a prioridade **agregada**: lote homogêneo herda a dos itens, lote misto é `mixed`, lote vazio classifica como `high`. Difere de `klimiter.reserve`, que mede as tentativas por item do caminho de reserva (com a origem), não a resposta. |
+| `klimiter.batch.shortcircuit` | counter | — | Lotes natimortos na inspeção (V2 §7.1): zero escritas, zero round-trips. |
+| `klimiter.batch.aborted` | counter | `denier_position` = `0`\|`1`\|`2`\|`3+` | Lotes abortados na reserva sequencial (V2 §7.2), com a posição do negador na ordem por pressão. Posição frequentemente `> 0` = estatística de pressão ruim — e é o prefixo antes do negador que fica queimado. |
+| `klimiter.batch.degraded` | counter | — | Lotes abortados por **falha de backend** (V2 §7.5): um item degradou para UNKNOWN e os restantes não foram tentados. Separado de `batch.aborted` de propósito: a queima de prefixo durante um incidente (`reserved − served` subindo junto com `degraded`) não é culpa da estatística de pressão. |
+| `klimiter.hits.reserved` | counter | — | Hits **admitidos no central** (V2 §13) — inclui o prefixo queimado de lotes depois abortados. |
+| `klimiter.hits.served` | counter | — | Hits de lotes com veredito **PERMITIDO** (V2 §13) — a métrica de negócio. **`reserved − served` = queima de prefixo (V2 §7.4)**, o indicador do regime de saturação conjunta. |
+| `klimiter.central.roundtrip` | timer | `op` = `try_acquire` | Latência de cada round-trip ao contador global em Redis (V2 §4). Medido no boundary (`MeteredGlobalCounter`). |
+| `klimiter.bucket.index.size` | gauge | — | Tamanho do índice local de buckets por nó (V2 §5.4); cresce com a cardinalidade e cai na evicção. |
+| `klimiter.policy.reserve.<dimensão>[.<valor>]` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | **Reserva por policy** (negócio), ligada por regra via `detailed_metric` (POLITICAS.md). A identidade da policy vai no **nome** do meter: `...<dimensão>` para a `default`, `...<dimensão>.<valor>` para um `override` (partes saneadas para `[A-Za-z0-9_]` — o `.` do nome é só estrutural, então dimensão com `.` não colide com dimensão + override). Emitida pelo `BatchEvaluator`; pré-criada/removida no reload (eager). |
 
-**Derivações** (sem métrica própria, de propósito): o **shed do pré-portão** da BAIXA =
-`klimiter.reserve{priority=low}` − `klimiter.central.roundtrip{op=pace_*}` (a distribuição da ALTA já
-é explícita em `klimiter.reserve.high`). A recarga NOSCRIPT e a degradação de backend são observáveis
-por **log** (§3.3).
+**Derivações** (sem métrica própria, de propósito): a **efetividade da negação local** (V2 §6.4) =
+`klimiter.reserve{status=denied, origin=local}` / `klimiter.reserve{status=denied}` — mede o tráfego
+poupado do Redis. A recarga NOSCRIPT e a degradação de backend são observáveis por **log** (§3.3).
+
+> **Removidas na migração V2** (dashboards antigos precisam de ajuste): `klimiter.reserve.high`
+> (os níveis L1–L4 eram do caminho de lease) e `klimiter.batch.refund` (não existe refund no V2 —
+> o análogo é `klimiter.batch.aborted` + a queima medida por `hits.reserved − hits.served`).
 
 ### 1.3 Convenções
 
@@ -89,6 +95,16 @@ por **log** (§3.3).
 chamada — o maior overhead da telemetria no hot path. Pode ser amostrada por
 `klimiter.observability.grpc-sample-rate` (1.0 = todas; 0.0 = desliga); as não-amostradas viram NOOP.
 Ver [`SATURACAO.md`](SATURACAO.md) §5.2. Não afeta as métricas `klimiter.*` (§1.2) nem o export.
+
+**Atributos do klimiter no span `grpc.server`:** o handler anexa a **resposta** ao span da chamada —
+`klimiter.response.overall_status` (veredito coletivo, `allowed`|`denied`|`unknown`) e, por decisão,
+a família `klimiter.response.decisions.<dimensão>.{status,remaining,reset_after,capacity}`. A
+dimensão vem do descriptor correspondente do request (as decisões respondem na mesma ordem, §2.1);
+dimensão repetida no lote ganha sufixo de ocorrência (`user_id`, `user_id.2`, …). São key-values de
+**alta** cardinalidade: viram atributos do span, nunca tags do timer `grpc.server` (a cardinalidade
+das métricas fica intacta) e não carregam o `value` de tráfego (sem PII) — só a dimensão nomeia a
+decisão. A `Observation` chega ao handler pelo `CoroutineContext` (o Spring gRPC registra o
+`ObservationCoroutineContextServerInterceptor` junto com o de observação).
 
 **Propagação/amostragem:** contexto W3C Trace Context; amostragem configurável por
 `management.opentelemetry.tracing.sampler` (ver [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md) §3
@@ -136,6 +152,7 @@ O que cada nível representa **neste serviço** e quando deve ser usado.
 
 | Evento | Nível | Quando ocorre | Campos estruturados |
 |--------|-------|---------------|---------------------|
+| políticas carregadas | `INFO` | boot/hot reload trocam o snapshot (§8) | `path`, `dimensions`, `content` (o YAML **exato** carregado — auditoria da config em vigor) |
 | degradação por falha de backend | `WARN` | o contador global falha ao reservar (§7.4) → item vira `UNKNOWN` | `priority`, causa (exceção) |
 | recarga NOSCRIPT | `DEBUG` | script Lua ausente no cache do Redis → recarrega via `EVAL` | `sha1`, causa |
 | evicção de buckets | `DEBUG` | varredura remove buckets de janelas vencidas (§4.2) | `removed`, `remaining` |
@@ -147,5 +164,7 @@ O que cada nível representa **neste serviço** e quando deve ser usado.
   valor)`). **Não** interpolar dados na mensagem. Mensagens estáveis agrupam/filtram melhor e os
   pares viram **atributos estruturados** na exportação OTLP. Ex.:
   `log.atDebug().addKeyValue("removed", n).addKeyValue("remaining", size).setMessage("evicção de buckets").log()`.
-- **Dados sensíveis:** nunca logar `dimension`/`value`/chave (PII e alta cardinalidade) em nível
-  ≥ INFO; atributos/tags só de enums limitados (`status`, `priority`, `op`). Ver §1.3.
+- **Dados sensíveis:** nunca logar `dimension`/`value`/chave **do tráfego** (PII e alta
+  cardinalidade) em nível ≥ INFO; atributos/tags só de enums limitados (`status`, `priority`,
+  `op`). Exceção equivalente à do §1.3: o **conteúdo do arquivo de políticas** (log "políticas
+  carregadas") é config, não tráfego — cardinalidade limitada pela config e valor de auditoria.

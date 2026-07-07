@@ -10,7 +10,12 @@ import io.github.rodrigogurgel.klimiter.core.port.inbound.EvaluateUseCase
 import io.github.rodrigogurgel.klimiter.grpc.v1.RateLimitDescriptor
 import io.github.rodrigogurgel.klimiter.grpc.v1.RateLimitRequest
 import io.grpc.StatusException
+import io.micrometer.core.instrument.kotlin.asContextElement
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationHandler
+import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -51,6 +56,56 @@ class RateLimitServiceTest {
         assertEquals(ProtoStatus.STATUS_ALLOWED, response.overallStatus)
         assertEquals(5L, response.decisionsList.single().remaining)
     }
+
+    @Test
+    fun `attaches the response to the current observation as per-decision span attributes`() = runBlocking {
+        val useCase = object : EvaluateUseCase {
+            override suspend fun evaluate(batch: Batch): BatchResult = BatchResult(
+                overall = Status.DENIED,
+                decisions = listOf(
+                    Decision(Status.ALLOWED, Remaining(5), 1.seconds, ReportedCapacity(10)),
+                    Decision(Status.DENIED, Remaining.NONE, 30.seconds, ReportedCapacity(100)),
+                    Decision(Status.DENIED, Remaining.NONE, 30.seconds, ReportedCapacity(100)),
+                ),
+            )
+        }
+        val request = RateLimitRequest.newBuilder()
+            .addDescriptors(descriptor("ip", "1.2.3.4"))
+            .addDescriptors(descriptor("user_id", "u1"))
+            .addDescriptors(descriptor("user_id", "u2")) // dimensão repetida → sufixo de ocorrência
+            .build()
+        // Registry com um handler qualquer: sem handler toda Observation vira NOOP e nada é gravado.
+        val registry = ObservationRegistry.create()
+        registry.observationConfig().observationHandler(ObservationHandler<Observation.Context> { true })
+        val observation = Observation.start("grpc.server", registry)
+
+        try {
+            // Mesmo mecanismo do ObservationCoroutineContextServerInterceptor: escopo → CoroutineContext.
+            observation.openScope().use {
+                withContext(registry.asContextElement()) {
+                    RateLimitService(useCase, maxBatchSize = 100).shouldRateLimit(request)
+                }
+            }
+        } finally {
+            observation.stop()
+        }
+
+        val attributes = observation.context.highCardinalityKeyValues.associate { it.key to it.value }
+        assertEquals("denied", attributes["klimiter.response.overall_status"])
+        assertEquals("allowed", attributes["klimiter.response.decisions.ip.status"])
+        assertEquals("5", attributes["klimiter.response.decisions.ip.remaining"])
+        assertEquals("1s", attributes["klimiter.response.decisions.ip.reset_after"])
+        assertEquals("10", attributes["klimiter.response.decisions.ip.capacity"])
+        assertEquals("denied", attributes["klimiter.response.decisions.user_id.status"])
+        assertEquals("30s", attributes["klimiter.response.decisions.user_id.reset_after"])
+        assertEquals("100", attributes["klimiter.response.decisions.user_id.capacity"])
+        // A segunda ocorrência de user_id não sobrescreve a primeira.
+        assertEquals("denied", attributes["klimiter.response.decisions.user_id.2.status"])
+        assertEquals("0", attributes["klimiter.response.decisions.user_id.2.remaining"])
+    }
+
+    private fun descriptor(key: String, value: String): RateLimitDescriptor.Builder = RateLimitDescriptor.newBuilder()
+        .setKey(key).setValue(value).setHits(1).setPriority(ProtoPriority.PRIORITY_HIGH)
 
     @Test
     fun `a descriptor with a blank key is rejected with INVALID_ARGUMENT before reaching the core`() = runBlocking {

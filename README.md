@@ -3,14 +3,17 @@
 **Rate limiter distribuído por janela fixa (fixed window)**, exposto via **gRPC**, escrito em
 **Kotlin** sobre **Spring Boot 4 / Spring gRPC**.
 
-Vários nós (réplicas) compartilham um **contador por janela** num armazenamento central (Redis), mas
-cada nó **arrenda blocos de capacidade** (*lease*) e resolve a maioria das requisições **localmente**,
-sem ida ao Redis. Tráfego é classificado em **duas prioridades**: a **alta** consome agressivamente
-(prefetch); a **baixa** passa por *pacing* — uma linha de liberação que cresce no tempo e cede
-capacidade para a alta.
+Vários nós (réplicas) compartilham um **contador por janela** num armazenamento central (Redis,
+standalone ou cluster). Toda admissão é um **incremento condicional atômico** nesse contador —
+nunca escreve acima do limiar (over-admission zero por construção) e nega **sem escrever**. O nó
+local **só nega** (snapshot monotônico aprendido de cada resposta), nunca admite sozinho. Tráfego é
+classificado em **duas prioridades**: a **alta** é limitada só pela capacidade da janela; a
+**baixa** passa por *pacing* — uma linha de liberação que cresce no tempo e cede capacidade
+para a alta.
 
 > A lógica completa (invariantes, fluxos, premissas) está em
-> **[`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md)** — a fonte da verdade do comportamento.
+> **[`docs/DESIGN-CONCEITUAL-V2.md`](docs/DESIGN-CONCEITUAL-V2.md)** — a fonte da verdade do
+> comportamento.
 
 ---
 
@@ -27,16 +30,18 @@ capacidade para a alta.
 
 ## Como funciona (em 30s)
 
-- A **verdade global** é um contador por janela no Redis — só **cresce** dentro da janela e expira com ela.
-- Cada nó mantém um **budget local**: quanto já arrendou + quanto sobrava globalmente na última leitura.
-  Como o contador só cresce, qualquer snapshot local é um **limite inferior seguro** — dá pra decidir
-  muita coisa sem round-trip.
-- **Alta prioridade:** arrenda blocos (prefetch) e serve do crédito local; vai ao Redis só quando precisa.
+- A **verdade global** é um contador por janela no Redis — só **cresce** dentro da janela (não há
+  refund), nunca passa da capacidade (incremento **condicional**) e expira com ela.
+- Cada nó guarda um **snapshot monotônico** (o maior contador que já viu). Como o contador só cresce,
+  o snapshot é um **limite inferior garantido** — o nó **nega** de graça o que o central garantidamente
+  negaria; **admitir** exige sempre o round-trip.
+- **Alta prioridade:** limitada só pela capacidade da janela.
 - **Baixa prioridade (pacing):** só admite abaixo da **linha de liberação** (`capacidade × decorrido /
-  duração`), confirmada contra o contador verdadeiro — quando a alta consome forte, a baixa é estrangulada;
+  duração`), validada contra o contador verdadeiro — quando a alta consome forte, a baixa é estrangulada;
   quando a alta esvazia, a baixa acelera.
 - Um pedido do cliente é um **lote** de dimensões (ex.: por `user_id`, por `ip`, por `tenant`), avaliado
-  **all-or-nothing**.
+  **all-or-nothing**: reserva **sequencial, ordenada pela pressão observada** de cada chave (o negador
+  mais provável primeiro), abortando na primeira negação.
 
 ## Começando
 
@@ -104,10 +109,11 @@ Dimensão sem política → **pass-through** (admitida, não cobra nada). Format
 
 ## Performance e dimensionamento
 
-Como medir o **joelho** (saturação) e dimensionar por cores/pods (HIGH escala vertical ~linear; LOW é
-round-trip-bound e escala horizontal) está em [`docs/SATURACAO.md`](docs/SATURACAO.md) e
+Como medir o **joelho** (saturação) e dimensionar por cores/pods está em
+[`docs/SATURACAO.md`](docs/SATURACAO.md) e
 [`docs/OTIMIZACAO-THROUGHPUT.md`](docs/OTIMIZACAO-THROUGHPUT.md), incluindo recomendações para
-**Kubernetes e Fargate**.
+**Kubernetes e Fargate**. Atenção: os números publicados lá são **pré-V2** (medidos sobre a
+arquitetura de leases); re-medição é o marco M6 do [plano](docs/PLANO-IMPLEMENTACAO.md).
 
 ```bash
 make sat-server                            # serviço pinado em 2 cores, OTel off (harness de saturação)
@@ -118,7 +124,7 @@ make saturation PRIORITY=PRIORITY_HIGH     # sweep de RPS até o joelho (noutro 
 
 | Documento | Conteúdo |
 |-----------|----------|
-| [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md) | A lógica do rate limiter (*o quê*): invariantes, fluxos, premissas. |
+| [`docs/DESIGN-CONCEITUAL-V2.md`](docs/DESIGN-CONCEITUAL-V2.md) | A lógica do rate limiter (*o quê*): invariantes, fluxos, premissas. |
 | [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Estrutura do código e regras de fronteira (hexagonal). |
 | [`docs/POLITICAS.md`](docs/POLITICAS.md) | Formato do `policies.yaml`, JSON Schema e resolução. |
 | [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) | Métricas, traces/spans e logs expostos. |

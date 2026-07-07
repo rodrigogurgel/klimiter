@@ -11,17 +11,10 @@ class LuaScriptsTest {
     private val scripts = LuaScripts()
 
     @Test
-    fun `loads both scripts from the classpath with a 40-hex sha1`() {
-        for (script in listOf(scripts.lease, scripts.paceLease)) {
-            assertTrue(script.source.isNotBlank(), "fonte do script não deveria ser vazia")
-            assertTrue(script.sha1.matches(Regex("[0-9a-f]{40}")), "sha1 deveria ser 40 hex: ${script.sha1}")
-        }
-    }
-
-    @Test
-    fun `the two scripts have distinct sources and digests`() {
-        assertTrue(scripts.lease.source != scripts.paceLease.source)
-        assertTrue(scripts.lease.sha1 != scripts.paceLease.sha1)
+    fun `loads the conditional increment script from the classpath with a 40-hex sha1`() {
+        val script = scripts.conditionalIncrement
+        assertTrue(script.source.isNotBlank(), "fonte do script não deveria ser vazia")
+        assertTrue(script.sha1.matches(Regex("[0-9a-f]{40}")), "sha1 deveria ser 40 hex: ${script.sha1}")
     }
 
     @Test

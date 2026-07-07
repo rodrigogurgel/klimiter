@@ -12,17 +12,11 @@ data:
         default:
           requests_per_unit: 60
           unit: SECOND
-          prefetch:
-            percent: 10
       rate_limit_source:
         default:
           requests_per_unit: 1000
           unit: SECOND
-          prefetch:
-            percent: 10
       rate_limit_flow:
         default:
           requests_per_unit: 6000
           unit: SECOND
-          prefetch:
-            percent: 10

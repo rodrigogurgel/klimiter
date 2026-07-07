@@ -1,9 +1,10 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.metrics
 
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
+import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
-import io.github.rodrigogurgel.klimiter.core.domain.ReservePath
 import io.github.rodrigogurgel.klimiter.core.domain.Status
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyMeterKey
 import io.github.rodrigogurgel.klimiter.core.port.outbound.RateLimitMetrics
@@ -14,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Adapter Micrometer da porta [RateLimitMetrics] (OBSERVABILIDADE.md §1.2). Os contadores do hot path
- * são pré-criados (cardinalidade fechada: `priority` × `status`), evitando lookup no hot path.
+ * são pré-criados (cardinalidade fechada: `priority` × `status` × `origin`; posição do negador
+ * limitada a [ABORT_POSITION_CAP]), evitando lookup no hot path.
  *
  * O contador por policy `klimiter.policy.reserve` (§1.3, exceção deliberada) embute a identidade da
  * policy no **nome** do meter (`...reserve.<dimension>[.<value>]`, saneado) e é gerenciado por
@@ -23,11 +25,29 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Component
 class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimitMetrics {
-    private val reserveCounters: Map<Pair<Priority, Status>, Counter> =
+    private val reserveCounters: Map<Triple<Priority, Status, DecisionOrigin>, Counter> =
         Priority.entries.flatMap { priority ->
+            Status.entries.flatMap { status ->
+                DecisionOrigin.entries.map { origin ->
+                    Triple(priority, status, origin) to registry.counter(
+                        "klimiter.reserve",
+                        "priority",
+                        priority.name.lowercase(),
+                        "status",
+                        status.name.lowercase(),
+                        "origin",
+                        origin.name.lowercase(),
+                    )
+                }
+            }
+        }.toMap()
+
+    /** Respostas por REQUEST (§2.1): pré-criadas, cardinalidade fechada `priority` × `status`. */
+    private val decisionCounters: Map<Pair<BatchPriority, Status>, Counter> =
+        BatchPriority.entries.flatMap { priority ->
             Status.entries.map { status ->
                 (priority to status) to registry.counter(
-                    "klimiter.reserve",
+                    "klimiter.decision",
                     "priority",
                     priority.name.lowercase(),
                     "status",
@@ -36,28 +56,43 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
             }
         }.toMap()
 
-    private val reserveHighPathCounters: Map<ReservePath, Counter> =
-        ReservePath.entries.associateWith { path ->
-            registry.counter("klimiter.reserve.high", "path", path.name.lowercase())
-        }
-
     private val shortCircuit = registry.counter("klimiter.batch.shortcircuit")
-    private val refund = registry.counter("klimiter.batch.refund")
+
+    /** Lotes abortados por falha de backend (§7.5) — queima de incidente, não de ordenação. */
+    private val degraded = registry.counter("klimiter.batch.degraded")
+
+    /** Posição do negador na ordem por pressão (§7.3), limitada a `0..3+` para fechar a cardinalidade. */
+    private val abortedByPosition: List<Counter> = (0..ABORT_POSITION_CAP).map { position ->
+        val tag = if (position == ABORT_POSITION_CAP) "$ABORT_POSITION_CAP+" else position.toString()
+        registry.counter("klimiter.batch.aborted", "denier_position", tag)
+    }
+
+    /** §13: `reserved − served` é a queima de prefixo (§7.4 do design). */
+    private val reservedHits = registry.counter("klimiter.hits.reserved")
+    private val servedHits = registry.counter("klimiter.hits.served")
 
     /** Contadores por policy detalhada (mantém a referência para poder remover do registry). */
     private val policyCounters = ConcurrentHashMap<Triple<PolicyMeterKey, Priority, Status>, Counter>()
 
-    override fun reserve(priority: Priority, status: Status) {
-        reserveCounters.getValue(priority to status).increment()
+    override fun reserve(priority: Priority, status: Status, origin: DecisionOrigin) {
+        reserveCounters.getValue(Triple(priority, status, origin)).increment()
     }
 
-    override fun reserveHighPath(path: ReservePath) {
-        reserveHighPathCounters.getValue(path).increment()
+    override fun decided(priority: BatchPriority, status: Status) {
+        decisionCounters.getValue(priority to status).increment()
     }
 
     override fun batchShortCircuited() = shortCircuit.increment()
 
-    override fun batchRefunded() = refund.increment()
+    override fun batchAborted(denierPosition: Int) {
+        abortedByPosition[denierPosition.coerceIn(0, ABORT_POSITION_CAP)].increment()
+    }
+
+    override fun batchDegraded() = degraded.increment()
+
+    override fun reservedHits(hits: Long) = reservedHits.increment(hits.toDouble())
+
+    override fun servedHits(hits: Long) = servedHits.increment(hits.toDouble())
 
     override fun policyReserve(dimension: Dimension, override: DimensionValue?, priority: Priority, status: Status) {
         val key = PolicyMeterKey(dimension, override)
@@ -75,14 +110,22 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
                 }
             }
         }
-        // Remove do registry e do mapa os meters de policies que saíram da config (ou desligaram a flag).
+        // Remove do mapa os meters de policies que saíram da config (ou desligaram a flag).
+        val orphaned = ArrayList<Counter>()
         val iterator = policyCounters.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (entry.key.first !in active) {
-                registry.remove(entry.value)
+                orphaned += entry.value
                 iterator.remove()
             }
+        }
+        // Identidades saneadas podem colidir no MESMO meter (ex.: 'user-id' e 'user_id' → 'user_id');
+        // só remove do registry o counter que nenhuma policy sobrevivente compartilha — senão a
+        // removida silenciaria a outra até o próximo reload.
+        val survivors = HashSet<Counter>(policyCounters.values)
+        for (counter in orphaned) {
+            if (counter !in survivors) registry.remove(counter)
         }
     }
 
@@ -97,12 +140,22 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
         )
     }
 
-    /** `klimiter.policy.reserve.<dimension>[.<value>]`, saneando caracteres fora de `[A-Za-z0-9_.]`. */
+    /**
+     * `klimiter.policy.reserve.<dimension>[.<value>]`, saneando caracteres fora de `[A-Za-z0-9_]`.
+     * O `.` também é saneado: no nome ele é **só estrutural** (separa dimensão de valor), então uma
+     * dimensão `user.id` não colide com dimensão `user` + override `id`.
+     */
     private fun meterName(key: PolicyMeterKey): String {
-        val suffix = key.override?.let { ".${sanitize(it.raw)}" } ?: ""
-        return "klimiter.policy.reserve.${sanitize(key.dimension.raw)}$suffix"
+        val dimension = key.dimension.raw.replace(NON_METER_CHARS, "_")
+        val suffix = key.override?.let { ".${it.raw.replace(NON_METER_CHARS, "_")}" } ?: ""
+        return "klimiter.policy.reserve.$dimension$suffix"
     }
 
-    private fun sanitize(raw: String): String =
-        raw.map { c -> if (c.isLetterOrDigit() || c == '_' || c == '.') c else '_' }.joinToString("")
+    private companion object {
+        /** Posições acima disso agregam em `3+`: interessa "primeira posição ou não", não a cauda. */
+        const val ABORT_POSITION_CAP = 3
+
+        /** Fora de `[A-Za-z0-9_]` vira `_` — inclusive `.`, que no nome é só estrutural ([meterName]). */
+        val NON_METER_CHARS = Regex("[^A-Za-z0-9_]")
+    }
 }

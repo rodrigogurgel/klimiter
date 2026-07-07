@@ -9,11 +9,11 @@ option java_multiple_files = true;
 option java_outer_classname = "RateLimitProto";
 
 // Contrato gRPC do klimiter — espelha o §2 (Contrato de entrada e saída) do
-// docs/DESIGN-CONCEITUAL.md. Um pedido do cliente é um LOTE de descritores,
+// docs/DESIGN-CONCEITUAL-V2.md. Um pedido do cliente é um LOTE de descritores,
 // avaliado all-or-nothing (§7).
 
-// Prioridade do tráfego (§2.1). ALTA consome agressivamente (lease, §5);
-// BAIXA passa por pacing — só abaixo da linha de liberação (§6).
+// Prioridade do tráfego (§2.1). ALTA é limitada apenas pela capacidade da
+// janela (§4); BAIXA passa por pacing — só abaixo da linha de liberação (§6).
 enum Priority {
   PRIORITY_UNSPECIFIED = 0;
   PRIORITY_HIGH = 1; // ALTA
@@ -25,7 +25,7 @@ enum Status {
   STATUS_UNSPECIFIED = 0; // não preenchido (default proto)
   STATUS_ALLOWED = 1;     // PERMITIDO
   STATUS_DENIED = 2;      // NEGADO
-  STATUS_UNKNOWN = 3;     // DESCONHECIDO (degradação por falha de backend, §7.4)
+  STATUS_UNKNOWN = 3;     // DESCONHECIDO (degradação por falha de backend, §7.5)
 }
 
 // Um item do lote (§2.1).

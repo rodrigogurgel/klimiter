@@ -8,11 +8,11 @@ que um agente lê antes de agir.
 
 Um **rate limiter distribuído por janela fixa (fixed window)**, exposto via **gRPC**, escrito
 em **Kotlin** sobre **Spring Boot 4 / Spring gRPC**. Vários nós compartilham um contador por
-janela num armazenamento central (ex.: Redis) mas resolvem a maioria das requisições
-localmente via *lease* (arrendamento de blocos) + *pacing* (linha de liberação para tráfego
-de baixa prioridade).
+janela num armazenamento central (Redis, standalone ou cluster); toda admissão é um
+**incremento condicional atômico** nesse contador, e o nó local **só nega** (snapshot
+monotônico) — nunca admite sozinho. Baixa prioridade passa por *pacing* (linha de liberação).
 
-> **Fonte da verdade da lógica:** [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md).
+> **Fonte da verdade da lógica:** [`docs/DESIGN-CONCEITUAL-V2.md`](docs/DESIGN-CONCEITUAL-V2.md).
 > Leia-o antes de implementar ou alterar qualquer comportamento. Ele descreve *o que* fazer
 > (invariantes, fluxos, premissas), não nomes de classes. Se o código divergir do design,
 > trate como bug — e se o design mudar, atualize o documento no mesmo PR.
@@ -48,7 +48,7 @@ Sempre use o wrapper (`./gradlew`), nunca um Gradle global.
 - **Branches:** git flow. `main` (releasable) e `develop` (integração). Trabalhe em
   `feature/<slug>`, `hotfix/vX.Y.Z`, `release/vX.Y.Z`. Nunca commite direto em `main`/`develop`.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org) obrigatório —
-  o CHANGELOG é gerado pelo git-cliff (`cliff.toml`). Ex.: `feat(lease): ...`, `fix(pacing): ...`.
+  o CHANGELOG é gerado pelo git-cliff (`cliff.toml`). Ex.: `feat(core): ...`, `fix(redis): ...`.
   Breaking change → `tipo!:` e/ou rodapé `BREAKING CHANGE:`.
 - **Changelog:** gerado, **não** editar `CHANGELOG.md` à mão.
 - **Estilo:** detekt + detekt-formatting (ktlint), `.editorconfig`, linha máx. 120 colunas.
@@ -57,7 +57,7 @@ Sempre use o wrapper (`./gradlew`), nunca um Gradle global.
 ## Regras para o agente
 
 1. **Leia o design antes de codar.** Mudanças de comportamento precisam casar com
-   `docs/DESIGN-CONCEITUAL.md` e suas invariantes (contador só cresce, rollback local, piso
+   `docs/DESIGN-CONCEITUAL-V2.md` e suas invariantes (contador só cresce e nunca passa da capacidade, o nó local só nega, piso
    inteiro ≥ piso flutuante, etc.).
 2. **Não edite artefatos gerados:** `CHANGELOG.md` (git-cliff) e código gerado de protobuf
    em `build/generated/`.
@@ -112,7 +112,7 @@ settings.gradle.kts
 gradle/libs.versions.toml # version catalog: plugins + deps com versão própria (BOM fica sem versão)
 cliff.toml                # config do git-cliff (geração do CHANGELOG)
 config/detekt/detekt.yml  # regras do detekt (sobre o default)
-docs/DESIGN-CONCEITUAL.md # especificação da lógica (LER PRIMEIRO)
+docs/DESIGN-CONCEITUAL-V2.md # especificação da lógica (LER PRIMEIRO)
 docs/ARQUITETURA.md       # estrutura do código + regras de fronteira (hexagonal)
 docs/POLITICAS.md         # formato do config/policies/policies.yaml + JSON Schema
 docs/OBSERVABILIDADE.md   # contrato de telemetria: métricas, traces/spans, logs
@@ -128,7 +128,7 @@ AGENTS.md                 # este arquivo
 ## Documentos relacionados
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo completo, git flow, checklist de PR.
-- [`docs/DESIGN-CONCEITUAL.md`](docs/DESIGN-CONCEITUAL.md) — a lógica do rate limiter (*o quê*).
+- [`docs/DESIGN-CONCEITUAL-V2.md`](docs/DESIGN-CONCEITUAL-V2.md) — a lógica do rate limiter (*o quê*).
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — estrutura do código e regras de fronteira (*o como*).
 - [`docs/POLITICAS.md`](docs/POLITICAS.md) — formato do arquivo de políticas, JSON Schema e resolução.
 - [`docs/OBSERVABILIDADE.md`](docs/OBSERVABILIDADE.md) — métricas, traces/spans e logs expostos.

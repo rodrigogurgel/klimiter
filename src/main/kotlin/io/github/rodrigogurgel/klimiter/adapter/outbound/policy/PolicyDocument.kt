@@ -17,8 +17,5 @@ internal data class DimensionDocument(
 internal data class RuleDocument(
     @param:JsonProperty("requests_per_unit") val requestsPerUnit: Int? = null,
     val unit: String? = null,
-    val prefetch: PrefetchDocument? = null,
     @param:JsonProperty("detailed_metric") val detailedMetric: Boolean? = null,
 )
-
-internal data class PrefetchDocument(val percent: Int? = null, val count: Int? = null)

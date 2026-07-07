@@ -1,32 +1,62 @@
 package io.github.rodrigogurgel.klimiter.core.port.outbound
 
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
+import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
-import io.github.rodrigogurgel.klimiter.core.domain.ReservePath
 import io.github.rodrigogurgel.klimiter.core.domain.Status
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyMeterKey
 
 /**
- * Porta de saída de telemetria do caminho quente (§5/§6/§7). O núcleo registra **eventos de
- * domínio**, não meters concretos: o adapter os mapeia para Micrometer (regra de dependência §2),
- * mantendo o `core` livre de framework. Métodos têm corpo default vazio → [NOOP] é inerte.
+ * Porta de saída de telemetria do caminho quente (DESIGN-CONCEITUAL-V2.md §13). O núcleo registra
+ * **eventos de domínio**, não meters concretos: o adapter os mapeia para Micrometer (regra de
+ * dependência §2 da ARQUITETURA.md), mantendo o `core` livre de framework. Métodos têm corpo
+ * default vazio → [NOOP] é inerte.
  */
 interface RateLimitMetrics {
     /**
-     * Resultado de uma reserva individual (§5/§6). Combinado com `klimiter.central.roundtrip`,
-     * permite derivar a taxa de acerto local da ALTA e o shed do pré-portão da BAIXA.
+     * Resultado de uma reserva individual e a **origem** da decisão (§13): [DecisionOrigin.LOCAL]
+     * mede o que a negação local (§5.2) poupou do central; [DecisionOrigin.CENTRAL] são os
+     * round-trips reais do incremento condicional (§4).
      */
-    fun reserve(priority: Priority, status: Status) { /* corpo default vazio: a NOOP é inerte */ }
+    fun reserve(priority: Priority, status: Status, origin: DecisionOrigin) {
+        /* corpo default vazio: a NOOP é inerte */
+    }
 
-    /** Nível do caminho de reserva ALTA tomado (§5): distribuição L1–L4 para tunar o prefetch. */
-    fun reserveHighPath(path: ReservePath) { /* corpo default vazio: a NOOP é inerte */ }
+    /**
+     * Resposta de **uma requisição** (lote, §2.1) — fiel ao que o cliente recebeu: a soma é o total
+     * de requests respondidos, [status] é o veredito coletivo e [priority] a prioridade agregada do
+     * lote ([BatchPriority]). Difere de [reserve], que mede as tentativas por item do caminho de
+     * reserva (com a origem), não a resposta.
+     */
+    fun decided(priority: BatchPriority, status: Status) { /* corpo default vazio: a NOOP é inerte */ }
 
-    /** Lote natimorto pelo short-circuit (§7.2): nenhuma reserva/round-trip aconteceu. */
+    /** Lote natimorto na inspeção (§7.1): nenhuma reserva/round-trip aconteceu. */
     fun batchShortCircuited() { /* corpo default vazio: a NOOP é inerte */ }
 
-    /** Lote refundado (§7.4): veredito coletivo não-PERMITIDO desfez as reservas admitidas. */
-    fun batchRefunded() { /* corpo default vazio: a NOOP é inerte */ }
+    /**
+     * Lote abortado na reserva sequencial (§7.2) com o negador na posição [denierPosition]
+     * (0-based) da ordem por pressão. Posição frequentemente > 0 significa estatística de pressão
+     * ruim — e é exatamente o prefixo antes do negador que fica queimado (§7.4).
+     */
+    fun batchAborted(denierPosition: Int) { /* corpo default vazio: a NOOP é inerte */ }
+
+    /**
+     * Lote abortado por **falha de backend** (§7.5): um item degradou para UNKNOWN e os restantes
+     * não foram tentados. Separado de [batchAborted] de propósito — a queima de prefixo por falha
+     * (`reserved − served` durante um incidente) não é culpa da estatística de pressão (§7.3).
+     */
+    fun batchDegraded() { /* corpo default vazio: a NOOP é inerte */ }
+
+    /**
+     * Hits **admitidos no central** (§13, métrica `reserved`) — inclui o prefixo queimado de lotes
+     * depois abortados. `reserved − served` é o indicador da queima de prefixo (§7.4).
+     */
+    fun reservedHits(hits: Long) { /* corpo default vazio: a NOOP é inerte */ }
+
+    /** Hits de lotes com veredito PERMITIDO (§13, métrica `served`) — a métrica de negócio. */
+    fun servedHits(hits: Long) { /* corpo default vazio: a NOOP é inerte */ }
 
     /**
      * Reserva individual de uma policy com métrica detalhada ligada (OBSERVABILIDADE.md). [override]

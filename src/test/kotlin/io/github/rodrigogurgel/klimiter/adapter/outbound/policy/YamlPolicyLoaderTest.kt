@@ -4,10 +4,10 @@ import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.policy.Capacity
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyResolution
-import io.github.rodrigogurgel.klimiter.core.policy.Prefetch
 import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import kotlin.test.assertEquals
@@ -19,44 +19,28 @@ class YamlPolicyLoaderTest {
 
     @Test
     fun `loads bundled example policies yaml`() {
-        val snapshot = loader.load(Path.of("config/policies/policies.yaml"))
+        val path = Path.of("config/policies/policies.yaml")
+        val loaded = loader.load(path)
+        val snapshot = loaded.snapshot
+
+        // O conteúdo devolvido é o arquivo EXATO que produziu o snapshot (log de auditoria).
+        assertEquals(Files.readString(path), loaded.content)
 
         val userId = assertIs<PolicyResolution.Matched>(
             snapshot.resolve(Dimension("user_id"), DimensionValue("qualquer")),
         )
         assertEquals(Capacity(1000), userId.policy.capacity)
         assertEquals(RateLimitUnit.MINUTE, userId.policy.unit)
-        assertEquals(Prefetch.Percent(10), userId.policy.prefetch)
 
         val serviceAccount = assertIs<PolicyResolution.Matched>(
             snapshot.resolve(Dimension("user_id"), DimensionValue("service-account")),
         )
-        assertEquals(Prefetch.Count(500), serviceAccount.policy.prefetch)
+        assertEquals(Capacity(50000), serviceAccount.policy.capacity)
 
         assertEquals(
             PolicyResolution.PassThrough,
             snapshot.resolve(Dimension("desconhecida"), DimensionValue("x")),
         )
-    }
-
-    @Test
-    fun `rule without prefetch resolves to Prefetch None`(@TempDir dir: Path) {
-        val snapshot = loader.load(
-            dir.policiesYaml(
-                """
-                version: 1
-                policies:
-                  ip:
-                    default:
-                      requests_per_unit: 100
-                      unit: SECOND
-                """.trimIndent(),
-            ),
-        )
-        val matched = assertIs<PolicyResolution.Matched>(
-            snapshot.resolve(Dimension("ip"), DimensionValue("10.0.0.1")),
-        )
-        assertEquals(Prefetch.None, matched.policy.prefetch)
     }
 
     @Test
@@ -76,7 +60,7 @@ class YamlPolicyLoaderTest {
     }
 
     @Test
-    fun `prefetch with both percent and count is rejected`(@TempDir dir: Path) {
+    fun `prefetch is rejected as an unknown field (removed in the V2 design)`(@TempDir dir: Path) {
         val file = dir.policiesYaml(
             """
             version: 1
@@ -87,7 +71,6 @@ class YamlPolicyLoaderTest {
                   unit: SECOND
                   prefetch:
                     percent: 10
-                    count: 5
             """.trimIndent(),
         )
         assertFailsWith<PolicyFileException> { loader.load(file) }

@@ -4,8 +4,8 @@ package io.github.rodrigogurgel.klimiter.core.domain
  * Unidades que uma requisição quer consumir da janela (`N`, §2.1) — tipicamente 1; `0` = nada a
  * cobrar. Value Object com invariante de não-negatividade (R5 da ARQUITETURA.md).
  *
- * Modelado em [Long] (o proto trafega `uint32`) porque os contadores da janela e a aritmética de
- * lease/pacing trabalham em [Long] (§4); a conversão acontece na borda gRPC, não no núcleo.
+ * Modelado em [Long] (o proto trafega `uint32`) porque o contador da janela e a aritmética da
+ * linha trabalham em [Long] (§4, §6); a conversão acontece na borda gRPC, não no núcleo.
  */
 @JvmInline
 value class Hits(val value: Long) {
