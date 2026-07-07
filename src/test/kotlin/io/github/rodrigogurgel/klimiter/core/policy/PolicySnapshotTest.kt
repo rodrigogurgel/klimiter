@@ -9,7 +9,7 @@ import kotlin.test.assertIs
 
 class PolicySnapshotTest {
     private val default = Policy(Capacity(1000), RateLimitUnit.MINUTE)
-    private val override = Policy(Capacity(5000), RateLimitUnit.MINUTE, Prefetch.Count(200))
+    private val override = Policy(Capacity(5000), RateLimitUnit.MINUTE)
 
     private val snapshot = PolicySnapshot(
         mapOf(
@@ -80,17 +80,8 @@ class PolicySnapshotTest {
     }
 
     @Test
-    fun `prefetch percent resolves to floor of capacity percentage`() {
-        assertEquals(100, Prefetch.Percent(10).units(Capacity(1000)))
-        assertEquals(0, Prefetch.None.units(Capacity(1000)))
-        assertEquals(200, Prefetch.Count(200).units(Capacity(1000)))
-    }
-
-    @Test
     fun `value objects reject invalid values`() {
         assertFailsWith<IllegalArgumentException> { Capacity(0) }
-        assertFailsWith<IllegalArgumentException> { Prefetch.Percent(0) }
-        assertFailsWith<IllegalArgumentException> { Prefetch.Percent(101) }
         assertFailsWith<IllegalArgumentException> { Dimension(" ") }
         assertFailsWith<IllegalArgumentException> { DimensionValue("") }
     }

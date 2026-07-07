@@ -24,7 +24,7 @@ klimiter:
     # antes de tocar o core. Sobrescrevível por KLIMITER_GRPC_MAX_BATCH_SIZE.
     max-batch-size: 100
   eviction:
-    # Varredura do índice local de buckets (§4.2).
+    # Varredura do índice local de buckets e da pressão fria (V2 §5.4).
     interval: 60s
   observability:
     # Fração das observações por-RPC do gRPC a registrar (1.0=todas; 0=off p/ recuperar throughput

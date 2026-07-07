@@ -1,9 +1,9 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.metrics
 
+import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
-import io.github.rodrigogurgel.klimiter.core.domain.ReservePath
 import io.github.rodrigogurgel.klimiter.core.domain.Status
 import io.github.rodrigogurgel.klimiter.core.policy.PolicyMeterKey
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -13,36 +13,53 @@ import kotlin.test.assertNull
 
 class MicrometerRateLimitMetricsTest {
     @Test
-    fun `counts reserves by priority and status`() {
+    fun `counts reserves by priority, status and origin`() {
         val registry = SimpleMeterRegistry()
         val metrics = MicrometerRateLimitMetrics(registry)
-        metrics.reserve(Priority.HIGH, Status.ALLOWED)
-        metrics.reserve(Priority.HIGH, Status.ALLOWED)
-        metrics.reserve(Priority.LOW, Status.DENIED)
-        assertEquals(2.0, registry.counter("klimiter.reserve", "priority", "high", "status", "allowed").count())
-        assertEquals(1.0, registry.counter("klimiter.reserve", "priority", "low", "status", "denied").count())
+        metrics.reserve(Priority.HIGH, Status.ALLOWED, DecisionOrigin.CENTRAL)
+        metrics.reserve(Priority.HIGH, Status.ALLOWED, DecisionOrigin.CENTRAL)
+        metrics.reserve(Priority.LOW, Status.DENIED, DecisionOrigin.LOCAL)
+        assertEquals(
+            2.0,
+            registry.counter(
+                "klimiter.reserve",
+                "priority",
+                "high",
+                "status",
+                "allowed",
+                "origin",
+                "central",
+            ).count(),
+        )
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.reserve", "priority", "low", "status", "denied", "origin", "local").count(),
+        )
     }
 
     @Test
-    fun `counts reserve high path by level`() {
-        val registry = SimpleMeterRegistry()
-        val metrics = MicrometerRateLimitMetrics(registry)
-        metrics.reserveHighPath(ReservePath.L1)
-        metrics.reserveHighPath(ReservePath.L1)
-        metrics.reserveHighPath(ReservePath.L4)
-        assertEquals(2.0, registry.counter("klimiter.reserve.high", "path", "l1").count())
-        assertEquals(1.0, registry.counter("klimiter.reserve.high", "path", "l4").count())
-    }
-
-    @Test
-    fun `counts short-circuits and refunds`() {
+    fun `counts short-circuits and aborted batches by denier position`() {
         val registry = SimpleMeterRegistry()
         val metrics = MicrometerRateLimitMetrics(registry)
         metrics.batchShortCircuited()
-        metrics.batchRefunded()
-        metrics.batchRefunded()
+        metrics.batchAborted(0)
+        metrics.batchAborted(1)
+        metrics.batchAborted(7) // acima do teto → agrega em "3+"
         assertEquals(1.0, registry.counter("klimiter.batch.shortcircuit").count())
-        assertEquals(2.0, registry.counter("klimiter.batch.refund").count())
+        assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "0").count())
+        assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "1").count())
+        assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "3+").count())
+    }
+
+    @Test
+    fun `accumulates reserved and served hits - the delta is the prefix burn`() {
+        val registry = SimpleMeterRegistry()
+        val metrics = MicrometerRateLimitMetrics(registry)
+        metrics.reservedHits(3)
+        metrics.reservedHits(2)
+        metrics.servedHits(3)
+        assertEquals(5.0, registry.counter("klimiter.hits.reserved").count())
+        assertEquals(3.0, registry.counter("klimiter.hits.served").count())
     }
 
     @Test

@@ -6,7 +6,6 @@ import io.github.rodrigogurgel.klimiter.core.policy.Capacity
 import io.github.rodrigogurgel.klimiter.core.policy.DimensionPolicy
 import io.github.rodrigogurgel.klimiter.core.policy.Policy
 import io.github.rodrigogurgel.klimiter.core.policy.PolicySnapshot
-import io.github.rodrigogurgel.klimiter.core.policy.Prefetch
 import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 
 /** Versão de formato suportada (campo `version` do arquivo). */
@@ -46,22 +45,7 @@ private fun RuleDocument.toPolicy(defaultDetailed: Boolean): Policy {
     val rateLimitUnit = runCatching { RateLimitUnit.valueOf(unit) }.getOrElse {
         throw IllegalArgumentException("unit inválida '$unit' (use ${RateLimitUnit.entries.joinToString()})")
     }
-    return Policy(Capacity(requestsPerUnit), rateLimitUnit, prefetch.toPrefetch(), detailedMetric ?: defaultDetailed)
-}
-
-private fun PrefetchDocument?.toPrefetch(): Prefetch {
-    if (this == null) return Prefetch.None
-    return when {
-        percent != null && count != null -> throw IllegalArgumentException(
-            "prefetch aceita apenas um entre 'percent' e 'count'",
-        )
-
-        percent != null -> Prefetch.Percent(percent)
-
-        count != null -> Prefetch.Count(count)
-
-        else -> throw IllegalArgumentException("prefetch precisa de 'percent' ou 'count'")
-    }
+    return Policy(Capacity(requestsPerUnit), rateLimitUnit, detailedMetric ?: defaultDetailed)
 }
 
 private inline fun <T> inDimension(name: String, block: () -> T): T =

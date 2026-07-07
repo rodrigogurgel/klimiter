@@ -30,7 +30,7 @@ class YamlPolicyLoader {
      * Carrega o snapshot a partir de [path].
      *
      * @throws PolicyFileException se o arquivo não puder ser lido, o YAML for malformado ou o
-     *   conteúdo violar o contrato (campo ausente, unit inválida, prefetch ambíguo, etc.).
+     *   conteúdo violar o contrato (campo ausente, unit inválida, campo desconhecido, etc.).
      */
     fun load(path: Path): PolicySnapshot {
         val content = try {

@@ -15,51 +15,37 @@ class BucketTest {
     )
 
     @Test
-    fun `starts with no local credit and full free global`() {
+    fun `starts with snapshot zero (trivially true lower bound) and not exhausted`() {
         val bucket = bucket(100)
-        assertEquals(0, bucket.localCredit)
-        assertEquals(100, bucket.freeGlobal)
+        assertEquals(0, bucket.snapshot)
         assertFalse(bucket.exhausted)
     }
 
     @Test
-    fun `tryConsumeLocal consumes when enough and refuses otherwise`() {
+    fun `observe is monotonic - an out-of-order smaller counter is discarded`() {
         val bucket = bucket(100)
-        bucket.onLeaseResult(granted = 10, free = 90)
-        assertTrue(bucket.tryConsumeLocal(4))
-        assertEquals(6, bucket.localCredit)
-        assertFalse(bucket.tryConsumeLocal(7)) // só 6 disponíveis
-        assertEquals(6, bucket.localCredit)
+        bucket.observe(40)
+        assertEquals(40, bucket.snapshot)
+        bucket.observe(25) // resposta fora de ordem (menor) → descartada (§5.1)
+        assertEquals(40, bucket.snapshot)
+        bucket.observe(60)
+        assertEquals(60, bucket.snapshot)
     }
 
     @Test
-    fun `tryConsumeUpTo drains at most what is available`() {
+    fun `exhausted is terminal once the snapshot reaches the capacity`() {
         val bucket = bucket(100)
-        bucket.onLeaseResult(granted = 5, free = 95)
-        assertEquals(5, bucket.tryConsumeUpTo(8)) // só 5 cabiam
-        assertEquals(0, bucket.localCredit)
-        assertEquals(0, bucket.tryConsumeUpTo(3)) // nada sobrou
+        bucket.observe(99)
+        assertFalse(bucket.exhausted)
+        bucket.observe(100)
+        assertTrue(bucket.exhausted) // §5.2: o contador nunca desce → cheio é cheio até a janela virar
     }
 
     @Test
-    fun `refundLocal returns credit`() {
+    fun `allowed estimates remaining from the snapshot`() {
         val bucket = bucket(100)
-        bucket.onLeaseResult(10, 90)
-        bucket.tryConsumeLocal(10)
-        bucket.refundLocal(10)
-        assertEquals(10, bucket.localCredit)
-    }
-
-    @Test
-    fun `publishFreeGlobal is monotonic and latches exhausted at zero`() {
-        val bucket = bucket(100)
-        bucket.publishFreeGlobal(40)
-        assertEquals(40, bucket.freeGlobal)
-        bucket.publishFreeGlobal(70) // fora de ordem (maior) → descartado (§4.3)
-        assertEquals(40, bucket.freeGlobal)
-        bucket.publishFreeGlobal(0)
-        assertTrue(bucket.exhausted)
-        assertEquals(0, bucket.freeGlobal)
+        bucket.observe(30)
+        assertEquals(Remaining(70), bucket.allowed(nowMillis = 130_000).remaining)
     }
 
     @Test
@@ -72,5 +58,10 @@ class BucketTest {
         val denied = bucket.denied(nowMillis = 130_000)
         assertEquals(Status.DENIED, denied.status)
         assertEquals(Remaining.NONE, denied.remaining)
+    }
+
+    @Test
+    fun `expiry tracks the window end for the eviction sweep`() {
+        assertEquals(160_000, bucket().expiryMillis) // janela [100,160)s
     }
 }

@@ -1,101 +1,52 @@
 package io.github.rodrigogurgel.klimiter.core.domain
 
-import kotlinx.coroutines.sync.Mutex
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-/** Identidade do bucket: eixo + valor + início da janela (§4.2). */
+/** Identidade do bucket: eixo + valor + início da janela (§5.1). */
 data class BucketKey(val dimension: Dimension, val value: DimensionValue, val windowStartEpochSecond: Long)
 
 /**
- * Agregado local por (dimensão, valor, janela) e seus fast paths (§4.2, §5). Estado atômico sem
- * boxing no hot path: [AtomicLong]/[AtomicBoolean] + `compareAndSet`. A semântica volátil seq-cst
- * casa com a ordem de publicação do §5.
+ * A visão local de um bucket `(dimensão, valor, janela)` (DESIGN-CONCEITUAL-V2.md §5.1): **um único
+ * número** — o maior contador já observado do central ([snapshot], monotônico). Como o contador
+ * global só cresce dentro da janela (não há refund, §9), o snapshot é um **limite inferior
+ * garantido** do consumo real: suficiente para *negar* localmente (§5.2), nunca para admitir.
  *
- * Um bucket pertence a UMA janela; quando a janela vira, a evicção (§4.2) remove o velho e o índice
- * cria um novo, resetando o estado. O snapshot do livre global usa a representação **otimista** do
- * §4.2 (inicia em [capacity] ≡ "ninguém arrendou"), dispensando um flag "já observou".
+ * Um bucket pertence a UMA janela; quando a janela vira, a evicção (§5.4) remove o velho e o índice
+ * cria um novo, resetando o estado. O snapshot inicial `0` é um limite inferior trivialmente
+ * verdadeiro — dispensa flag de "já observou".
  */
 class Bucket(val key: BucketKey, val storageKey: String, val capacity: Long, val window: Window) {
-    /** Crédito ALTA já arrendado do contador e ainda não consumido localmente. */
-    private val creditCounter = AtomicLong(0)
+    private val snapshotCounter = AtomicLong(0)
 
-    /** Snapshot de `capacity − já_arrendado`. Monotônico decrescente na janela (§4.3). */
-    private val freeGlobalCounter = AtomicLong(capacity)
-
-    /** Latch terminal de janela cheia (`livre_global == 0`, §4.3). */
-    private val exhaustedLatch = AtomicBoolean(false)
-
-    /** Single-flight de renovação por bucket (§5): suspende, não bloqueia. */
-    val renewMutex = Mutex()
-
-    /** Fim da janela em ms — usado pela evicção (§4.2). */
+    /** Fim da janela em ms — usado pela evicção (§5.4). */
     val expiryMillis: Long = window.endEpochSecond * MILLIS_PER_SECOND
 
-    /** Crédito local disponível (§4.2). */
-    val localCredit: Long get() = creditCounter.get()
-
-    /** Snapshot do livre global (§4.3). */
-    val freeGlobal: Long get() = freeGlobalCounter.get()
-
-    /** Latch de esgotado (§4.3). */
-    val exhausted: Boolean get() = exhaustedLatch.get()
-
-    /** L1 (§5): consome `hits` do crédito local via CAS; `false` se não cabe. */
-    fun tryConsumeLocal(hits: Long): Boolean {
-        if (hits > 0) {
-            while (true) {
-                val cur = creditCounter.get()
-                if (cur < hits) return false
-                if (creditCounter.compareAndSet(cur, cur - hits)) break
-            }
-        }
-        return true
-    }
+    /** Maior contador observado do central (§5.1): limite inferior garantido do consumo real. */
+    val snapshot: Long get() = snapshotCounter.get()
 
     /**
-     * Consome **até** `hits` do crédito local via CAS, devolvendo quanto consumiu (`0..hits`). Usado
-     * pela BAIXA para drenar o prefetch já contado antes de arrendar o faltante (§6.1) — race-free:
-     * se a ALTA concorrente esvaziar o crédito no meio, devolve só o que coube.
+     * Esgotado terminal (§5.2): com o incremento condicional (§4) o contador nunca passa da
+     * capacidade nem desce — uma vez cheio, cheio até a janela virar. Derivado do snapshot, não é
+     * um estado separado.
      */
-    fun tryConsumeUpTo(hits: Long): Long {
-        if (hits <= 0) return 0
-        var taken = 0L
-        var settled = false
-        while (!settled) {
-            val cur = creditCounter.get()
-            if (cur <= 0) {
-                settled = true
-            } else {
-                val take = minOf(cur, hits)
-                settled = creditCounter.compareAndSet(cur, cur - take)
-                if (settled) taken = take
-            }
-        }
-        return taken
+    val exhausted: Boolean get() = snapshotCounter.get() >= capacity
+
+    /**
+     * Aprende o contador de **qualquer** resposta do central — admissões e negações (§5.1).
+     * Monotônico: uma resposta fora de ordem reportando valor menor é descartada, mantendo o
+     * snapshot um lower-bound apertado.
+     */
+    fun observe(counter: Long) {
+        snapshotCounter.updateAndGet { current -> maxOf(current, counter) }
     }
 
-    /** Refund local (§7.3): devolve crédito não usado. */
-    fun refundLocal(hits: Long) {
-        if (hits > 0) creditCounter.addAndGet(hits)
-    }
-
-    /** Publica o resultado de um lease (§5): primeiro o crédito local, depois o snapshot/latch. */
-    fun onLeaseResult(granted: Long, free: Long) {
-        if (granted > 0) creditCounter.addAndGet(granted)
-        publishFreeGlobal(free)
-    }
-
-    /** Atualiza o livre global monotonicamente (só encolhe, §4.3) e o latch de esgotado. */
-    fun publishFreeGlobal(free: Long) {
-        val clamped = free.coerceAtLeast(0)
-        val now = freeGlobalCounter.updateAndGet { cur -> minOf(cur, clamped) }
-        if (now == 0L) exhaustedLatch.set(true)
-    }
-
-    /** Decisão PERMITIDO com a capacidade restante estimada (§2.1). */
-    fun allowed(nowMillis: Long): Decision =
-        Decision(Status.ALLOWED, Remaining(freeGlobal), window.ttl(nowMillis), ReportedCapacity(capacity))
+    /** Decisão PERMITIDO com a capacidade restante estimada pelo snapshot (§2.1). */
+    fun allowed(nowMillis: Long): Decision = Decision(
+        Status.ALLOWED,
+        Remaining((capacity - snapshot).coerceAtLeast(0)),
+        window.ttl(nowMillis),
+        ReportedCapacity(capacity),
+    )
 
     /** Decisão NEGADO (§2.1). */
     fun denied(nowMillis: Long): Decision =
