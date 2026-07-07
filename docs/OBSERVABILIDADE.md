@@ -96,6 +96,16 @@ chamada — o maior overhead da telemetria no hot path. Pode ser amostrada por
 `klimiter.observability.grpc-sample-rate` (1.0 = todas; 0.0 = desliga); as não-amostradas viram NOOP.
 Ver [`SATURACAO.md`](SATURACAO.md) §5.2. Não afeta as métricas `klimiter.*` (§1.2) nem o export.
 
+**Atributos do klimiter no span `grpc.server`:** o handler anexa a **resposta** ao span da chamada —
+`klimiter.response.overall_status` (veredito coletivo, `allowed`|`denied`|`unknown`) e, por decisão,
+a família `klimiter.response.decisions.<dimensão>.{status,remaining,reset_after,capacity}`. A
+dimensão vem do descriptor correspondente do request (as decisões respondem na mesma ordem, §2.1);
+dimensão repetida no lote ganha sufixo de ocorrência (`user_id`, `user_id.2`, …). São key-values de
+**alta** cardinalidade: viram atributos do span, nunca tags do timer `grpc.server` (a cardinalidade
+das métricas fica intacta) e não carregam o `value` de tráfego (sem PII) — só a dimensão nomeia a
+decisão. A `Observation` chega ao handler pelo `CoroutineContext` (o Spring gRPC registra o
+`ObservationCoroutineContextServerInterceptor` junto com o de observação).
+
 **Propagação/amostragem:** contexto W3C Trace Context; amostragem configurável por
 `management.opentelemetry.tracing.sampler` (ver [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md) §3
 e a referência de tracing abaixo). Exportação OTLP quando o endpoint de traces estiver configurado.
