@@ -24,7 +24,7 @@ jobs:
           java-version: 25
 
       # Cache do Gradle + validação do wrapper.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build, testes e verificações
         run: ./gradlew check --no-daemon
