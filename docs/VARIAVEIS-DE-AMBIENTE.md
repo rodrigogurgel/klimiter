@@ -150,10 +150,10 @@ health, reflection, observação, exception-handling, etc. Nada definido no proj
 ## 5. JVM
 
 Opções de JVM e seleção de JDK por variáveis **nativas** (sem equivalente em `application.yaml`).
-Nada definido no projeto; a toolchain de compilação é JDK 21 (no `build.gradle.kts`, não via
+Nada definido no projeto; a toolchain de compilação é JDK 25 (no `build.gradle.kts`, não via
 ambiente).
 
-**Referência completa:** [The `java` Command — JDK 21](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html)
+**Referência completa:** [The `java` Command — JDK 25](https://docs.oracle.com/en/java/javase/25/docs/specs/man/java.html)
 (seção *Using the JDK_JAVA_OPTIONS / JAVA_TOOL_OPTIONS Environment Variables*).
 
 ---

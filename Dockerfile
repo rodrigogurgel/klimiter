@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# ---- build: compila o bootJar com a toolchain JDK 21 ----
+# ---- build: compila o bootJar com a toolchain JDK 25 ----
 # Build na arquitetura nativa ($BUILDPLATFORM): o bootJar é bytecode portável, então
 # não precisa emular a arquitetura alvo — só a imagem JRE final é por-arch.
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-ubi10-minimal AS build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk-ubi10-minimal AS build
 WORKDIR /workspace
 
 # Arquivos de build primeiro (camada estável → melhor cache); depois o código-fonte.
@@ -19,8 +19,8 @@ RUN --mount=type=cache,target=/root/.gradle \
 RUN cp build/libs/*.jar application.jar && \
     java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
-# ---- runtime: JRE 21 enxuta (UBI minimal: menor superfície/CVEs), usuário não-root ----
-FROM eclipse-temurin:21-jre-ubi10-minimal AS runtime
+# ---- runtime: JRE 25 enxuta (UBI minimal: menor superfície/CVEs), usuário não-root ----
+FROM eclipse-temurin:25-jre-ubi10-minimal AS runtime
 WORKDIR /application
 
 # `-U` cria o grupo homônimo junto (UBI minimal traz shadow-utils).

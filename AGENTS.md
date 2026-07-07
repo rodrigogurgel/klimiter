@@ -21,7 +21,7 @@ monotônico) — nunca admite sozinho. Baixa prioridade passa por *pacing* (linh
 
 | Item            | Valor                                              |
 |-----------------|----------------------------------------------------|
-| Linguagem       | Kotlin 2.3.21 (JVM, toolchain JDK 21)              |
+| Linguagem       | Kotlin 2.3.21 (JVM, toolchain JDK 25)              |
 | Framework       | Spring Boot 4.1 + Spring gRPC                       |
 | Build           | Gradle 9.6.0 (Kotlin DSL, via `./gradlew`)         |
 | RPC             | gRPC + Protobuf (plugin `com.google.protobuf`)     |
@@ -69,7 +69,7 @@ Sempre use o wrapper (`./gradlew`), nunca um Gradle global.
 7. **Antes de adicionar/atualizar uma dependência ou plugin:**
    - **Cheque a versão estável mais recente** na fonte oficial (Maven Central / Gradle Plugin
      Portal) — não chute nem copie versões de memória.
-   - **Confirme a compatibilidade** com o stack atual: Kotlin 2.3.21, JDK 21, Gradle
+   - **Confirme a compatibilidade** com o stack atual: Kotlin 2.3.21, JDK 25, Gradle
      (wrapper), Spring Boot 4.1. Este projeto usa versões de ponta e conflitos de
      compatibilidade são comuns — ex.: detekt × versão do Kotlin embutido, Dokka × Jackson
      forçado pelo BOM do Spring. Rode `./gradlew help` e `./gradlew check` após a mudança.
