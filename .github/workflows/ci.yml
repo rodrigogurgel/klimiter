@@ -32,7 +32,7 @@ jobs:
       # Relatórios de teste/cobertura/detekt para depurar falhas sem reproduzir localmente.
       - name: Publica relatórios em caso de falha
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: build/reports/
