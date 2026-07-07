@@ -7,7 +7,6 @@ import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
-import io.github.rodrigogurgel.klimiter.core.domain.ReleaseLine
 import io.github.rodrigogurgel.klimiter.core.domain.Status
 import io.github.rodrigogurgel.klimiter.core.policy.Policy
 import io.github.rodrigogurgel.klimiter.core.policy.WindowKey
@@ -78,11 +77,8 @@ class LocalState(
     private suspend fun acquireCentrally(bucket: Bucket, hits: Long, priority: Priority, nowMillis: Long): Decision {
         val result = counter.tryAcquire(
             bucket.storageKey,
-            bucket.capacity,
+            bucket.threshold(priority, nowMillis),
             hits,
-            priority,
-            bucket.window.elapsed(nowMillis),
-            bucket.window.duration,
             bucket.window.ttl(nowMillis),
         )
         bucket.observe(result.counter)
@@ -110,17 +106,11 @@ class LocalState(
 
     /**
      * Nega localmente **sse** o central garantidamente negaria (§5.2): `snapshot ≤ contador real`
-     * (monotônico, §5.1) e a linha local nunca é menor que a do central (§6.3) ⇒ negar aqui nunca
-     * nega o que o central admitiria. `hits > capacidade` é impossível por definição.
+     * (monotônico, §5.1) e o limiar testado aqui é o MESMO enviado ao central (§6.3) ⇒ negar aqui
+     * nunca nega o que o central admitiria. `hits > capacidade` é impossível por definição.
      */
-    private fun deniedLocally(bucket: Bucket, hits: Long, priority: Priority, nowMillis: Long): Boolean {
-        if (hits > bucket.capacity) return true
-        val threshold = when (priority) {
-            Priority.HIGH -> bucket.capacity
-            Priority.LOW -> ReleaseLine.line(bucket.capacity, bucket.window.elapsed(nowMillis), bucket.window.duration)
-        }
-        return bucket.snapshot + hits > threshold
-    }
+    private fun deniedLocally(bucket: Bucket, hits: Long, priority: Priority, nowMillis: Long): Boolean =
+        hits > bucket.capacity || bucket.snapshot + hits > bucket.threshold(priority, nowMillis)
 
     /**
      * Varredura de evicção (§5.4): remove buckets de janelas expiradas e estatísticas de pressão de

@@ -43,6 +43,9 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
 
     private val shortCircuit = registry.counter("klimiter.batch.shortcircuit")
 
+    /** Lotes abortados por falha de backend (§7.5) — queima de incidente, não de ordenação. */
+    private val degraded = registry.counter("klimiter.batch.degraded")
+
     /** Posição do negador na ordem por pressão (§7.3), limitada a `0..3+` para fechar a cardinalidade. */
     private val abortedByPosition: List<Counter> = (0..ABORT_POSITION_CAP).map { position ->
         val tag = if (position == ABORT_POSITION_CAP) "$ABORT_POSITION_CAP+" else position.toString()
@@ -66,6 +69,8 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
         abortedByPosition[denierPosition.coerceIn(0, ABORT_POSITION_CAP)].increment()
     }
 
+    override fun batchDegraded() = degraded.increment()
+
     override fun reservedHits(hits: Long) = reservedHits.increment(hits.toDouble())
 
     override fun servedHits(hits: Long) = servedHits.increment(hits.toDouble())
@@ -86,14 +91,22 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
                 }
             }
         }
-        // Remove do registry e do mapa os meters de policies que saíram da config (ou desligaram a flag).
+        // Remove do mapa os meters de policies que saíram da config (ou desligaram a flag).
+        val orphaned = ArrayList<Counter>()
         val iterator = policyCounters.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (entry.key.first !in active) {
-                registry.remove(entry.value)
+                orphaned += entry.value
                 iterator.remove()
             }
+        }
+        // Identidades saneadas podem colidir no MESMO meter (ex.: 'user-id' e 'user_id' → 'user_id');
+        // só remove do registry o counter que nenhuma policy sobrevivente compartilha — senão a
+        // removida silenciaria a outra até o próximo reload.
+        val survivors = HashSet<Counter>(policyCounters.values)
+        for (counter in orphaned) {
+            if (counter !in survivors) registry.remove(counter)
         }
     }
 
@@ -108,14 +121,18 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
         )
     }
 
-    /** `klimiter.policy.reserve.<dimension>[.<value>]`, saneando caracteres fora de `[A-Za-z0-9_.]`. */
+    /**
+     * `klimiter.policy.reserve.<dimension>[.<value>]`, saneando caracteres fora de `[A-Za-z0-9_]`.
+     * O `.` também é saneado: no nome ele é **só estrutural** (separa dimensão de valor), então uma
+     * dimensão `user.id` não colide com dimensão `user` + override `id`.
+     */
     private fun meterName(key: PolicyMeterKey): String {
         val suffix = key.override?.let { ".${sanitize(it.raw)}" } ?: ""
         return "klimiter.policy.reserve.${sanitize(key.dimension.raw)}$suffix"
     }
 
     private fun sanitize(raw: String): String =
-        raw.map { c -> if (c.isLetterOrDigit() || c == '_' || c == '.') c else '_' }.joinToString("")
+        raw.map { c -> if (c.isLetterOrDigit() || c == '_') c else '_' }.joinToString("")
 
     private companion object {
         /** Posições acima disso agregam em `3+`: interessa "primeira posição ou não", não a cauda. */

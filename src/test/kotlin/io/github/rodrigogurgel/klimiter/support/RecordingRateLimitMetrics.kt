@@ -28,6 +28,8 @@ class RecordingRateLimitMetrics : RateLimitMetrics {
         private set
     var shortCircuits = 0
         private set
+    var degradedBatches = 0
+        private set
     var reservedHits = 0L
         private set
     var servedHits = 0L
@@ -43,6 +45,10 @@ class RecordingRateLimitMetrics : RateLimitMetrics {
 
     override fun batchAborted(denierPosition: Int) {
         abortedPositions += denierPosition
+    }
+
+    override fun batchDegraded() {
+        degradedBatches++
     }
 
     override fun reservedHits(hits: Long) {

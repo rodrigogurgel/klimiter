@@ -36,17 +36,9 @@ class LocalStateTest {
         var tryAcquires = 0
             private set
 
-        override suspend fun tryAcquire(
-            key: String,
-            capacity: Long,
-            hits: Long,
-            priority: Priority,
-            elapsed: Duration,
-            duration: Duration,
-            ttl: Duration,
-        ): AcquireResult {
+        override suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult {
             tryAcquires++
-            return delegate.tryAcquire(key, capacity, hits, priority, elapsed, duration, ttl)
+            return delegate.tryAcquire(key, threshold, hits, ttl)
         }
     }
 

@@ -210,15 +210,16 @@ flowchart TD
 **Limiar por prioridade:**
 
 - **ALTA** → `limiar = capacidade`.
-- **BAIXA** → `limiar = linha de liberação` (§6.2), calculada **dentro da operação** a
-  partir de `decorrido` e `duração` fornecidos pelo nó. Como a linha já é
-  `min(capacidade, …)`, a baixa nunca excede a capacidade.
+- **BAIXA** → `limiar = linha de liberação` (§6.2), derivada **no nó** em aritmética
+  inteira exata, num único lugar (§6.3), e enviada **pronta** à operação. Como a linha já
+  é `min(capacidade, …)`, a baixa nunca excede a capacidade.
 
-**Contrato.** Entrada: `chave`, `capacidade`, `N`, `prioridade` (com `decorrido` e
-`duração` quando BAIXA), `ttl`. Saída: `admitido` (1/0) e `contador` (o valor corrente,
+**Contrato.** Entrada: `chave`, `limiar` (já derivado pelo nó: capacidade para ALTA,
+linha para BAIXA), `N`, `ttl`. Saída: `admitido` (1/0) e `contador` (o valor corrente,
 **sempre retornado** — inclusive na negação, para o aprendizado local do §5). Admite sse
 `contador + N ≤ limiar`; escreve somente quando admite. Aplica o TTL só quando a chave
-ainda não tem.
+ainda não tem. A operação **não tem matemática de domínio**: o limiar que ela testa é o
+mesmo número que a negação local usou (§5.2).
 
 **Propriedades que a condicionalidade compra:**
 
@@ -376,18 +377,18 @@ um argumento em três partes envolvendo crédito local.)
 
 ### 6.3 Cálculo local da linha (para a negação do §5.2)
 
-O nó calcula a linha localmente só para **negar**. Para isso valer:
+O nó calcula a linha localmente para **negar** e envia o mesmo valor como **limiar
+pronto** ao central (§4). Para isso valer:
 
 1. `snapshot ≤ contador_real` — garantido pela monotonicidade (§5.1).
 2. A linha local **nunca pode ser menor** que a do central, senão o nó negaria algo que o
-   central admitiria (sub-admissão infundada). O nó usa **aritmética inteira exata**; o
-   central, piso sobre ponto flutuante. Piso inteiro ≥ piso flutuante → a linha do nó é
-   sempre ≥ a do central. Essa exatidão deve valer para **qualquer capacidade**: se a
-   linha for computada em inteiros de largura fixa, o produto `capacidade × decorrido`
-   precisa ser protegido contra overflow (ampliando a precisão quando necessário).
-
-E o nó repassa ao central o mesmo `decorrido`/`duração` que usou localmente (§3.2), para
-que as duas matemáticas coincidam.
+   central admitiria (sub-admissão infundada). A garantia é **por construção**: a linha
+   tem uma única implementação, em **aritmética inteira exata** — o nó a usa na negação
+   local e a repassa pronta como limiar da operação central, que não tem matemática de
+   domínio. Não existe segunda fórmula para divergir. Essa exatidão deve valer para
+   **qualquer capacidade**: como a linha é computada em inteiros de largura fixa, o
+   produto `capacidade × decorrido` é protegido contra overflow (ampliando a precisão
+   quando necessário).
 
 ### 6.4 Efetividade da negação local depende da escala da chave
 
@@ -424,7 +425,7 @@ flowchart TD
     Sort --> Seq["reserva SEQUENCIAL:<br/>incremento condicional item a item (§4)"]
     Seq --> Out{"resultado do item?"}
     Out -->|NEGADO| Abort["abortar os restantes<br/>veredito: NEGADO<br/>(prefixo já reservado fica consumido)"]
-    Out -->|falha backend| Unk["item = DESCONHECIDO<br/>abortar os restantes<br/>veredito: DESCONHECIDO"]
+    Out -->|falha backend| Unk["item = DESCONHECIDO<br/>abortar os restantes + re-inspeção local<br/>veredito: DESCONHECIDO<br/>(ou NEGADO, se um nunca tentado<br/>já é negação garantida)"]
     Out -->|ADMITIDO| More{"há próximo item?"}
     More -->|sim| Seq
     More -->|não| OK["veredito: PERMITIDO"]
@@ -436,6 +437,12 @@ Antes de qualquer escrita, cada item passa pelas regras de negação local do §
 caso trivial `N ≤ 0` → permitido sem cobrar; pass-through → permitido sem cobrar). Se
 **qualquer** item é negação garantida, o lote inteiro morre aqui — **nenhuma chave é
 tocada, nenhuma unidade é consumida**.
+
+A inspeção também olha o **agregado por chave**: itens do lote que caem no mesmo bucket
+precisam caber **juntos** (all-or-nothing). Se `snapshot + Σhits` da chave já estoura a
+capacidade, nenhuma ordem de admissão salva o lote (o contador nunca passa da capacidade,
+§4) — negação garantida sem round-trip, em vez de reservar parte dos irmãos para descobrir
+a condenação no central e queimar o prefixo.
 
 A inspeção é a defesa principal do regime saturado: com uma chave escassa fora da linha, o
 next-admit exato (§5.2) nega os lotes seguintes de graça até o instante em que a chave
@@ -502,8 +509,11 @@ Redis Cluster). Ambas rejeitadas deliberadamente; ver Apêndice A.
 ### 7.5 Robustez: falha de backend e cancelamento
 
 Uma falha do central ao reservar um item degrada **aquele item** para DESCONHECIDO e
-aborta os itens restantes (não reservados). O veredito coletivo é DESCONHECIDO; o prefixo
-já reservado fica consumido (conservador, como em qualquer negação).
+aborta os itens restantes (não reservados). Antes de responder, os itens nunca tentados
+passam por uma **re-inspeção local** (§5.2, de graça — o snapshot pode ter aprendido desde
+a inspeção): se algum já é negação garantida, **NEGADO domina DESCONHECIDO** no veredito
+coletivo; caso contrário o veredito é DESCONHECIDO. O prefixo já reservado fica consumido
+(conservador, como em qualquer negação).
 
 Exceção deliberada: o **cancelamento** da operação (cliente desistiu, timeout do lote)
 **não** é mascarado como DESCONHECIDO — é **propagado**, abortando o processamento

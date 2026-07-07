@@ -5,6 +5,7 @@ import io.github.rodrigogurgel.klimiter.core.domain.BatchResult
 import io.github.rodrigogurgel.klimiter.core.domain.Bucket
 import io.github.rodrigogurgel.klimiter.core.domain.Decision
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
+import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.domain.Remaining
 import io.github.rodrigogurgel.klimiter.core.domain.ReportedCapacity
 import io.github.rodrigogurgel.klimiter.core.domain.Request
@@ -32,7 +33,9 @@ import kotlin.time.Duration
  * caso o prefixo — e, com a ordenação certa, o negador está na posição 0 e o desperdício é zero.
  *
  * Robustez (§7.5): falha do contador ao reservar degrada **aquele item** para [Status.UNKNOWN] e
- * aborta os restantes; o **cancelamento** é propagado (não mascarado).
+ * aborta os restantes — que ainda passam por re-inspeção local (de graça): uma negação garantida
+ * entre eles vira NEGADO no veredito, nunca mascarada pelo DESCONHECIDO. O **cancelamento** é
+ * propagado (não mascarado).
  */
 class BatchEvaluator(
     private val state: LocalState,
@@ -63,14 +66,46 @@ class BatchEvaluator(
         val nowMillis = clock.nowMillis()
         val snapshot = policies.current()
         val items = batch.requests.map { request -> inspect(request, snapshot, nowMillis) }
+        val doomed = aggregateDoom(items, nowMillis)
 
-        // §7.1: se a inspeção já condena, ninguém reserva — zero escritas, zero round-trips.
-        return if (items.any { it.inspection.status == Status.DENIED }) {
-            shortCircuit(items, nowMillis)
-            BatchResult(Status.DENIED, items.map(Inspected::inspection))
+        // §7.1: se a inspeção já condena — item a item ou pelo agregado por chave —, ninguém
+        // reserva: zero escritas, zero round-trips.
+        return if (doomed.isNotEmpty() || items.any { it.inspection.status == Status.DENIED }) {
+            shortCircuit(items, doomed, nowMillis)
+            BatchResult(Status.DENIED, items.mapIndexed { index, item -> doomed[index] ?: item.inspection })
         } else {
             reserveSequentially(items, nowMillis)
         }
+    }
+
+    /**
+     * §7.1 estendido ao agregado por chave: itens do lote que caem no MESMO bucket precisam caber
+     * **juntos** (all-or-nothing). Se `snapshot + Σhits` já estoura a capacidade, nenhuma ordem de
+     * admissão salva o lote (o contador nunca passa da capacidade, §4) — negação garantida sem
+     * round-trip, em vez de queimar prefixo para descobrir no central. O agrupamento é por
+     * identidade do [Bucket]: itens da mesma `(dimensão, valor)` resolvem para a mesma instância
+     * dentro de um `evaluate` ([LocalState.bucketFor] é get-or-create).
+     */
+    private fun aggregateDoom(items: List<Inspected>, nowMillis: Long): Map<Int, Decision> {
+        if (items.size < 2) return emptyMap()
+        val indicesByBucket = HashMap<Bucket, MutableList<Int>>()
+        for (index in items.indices) {
+            val matched = items[index].matched
+            if (matched == null || !items[index].goesCentral) continue
+            indicesByBucket.getOrPut(matched.bucket) { ArrayList(2) }.add(index)
+        }
+        val doomed = HashMap<Int, Decision>()
+        for ((bucket, indices) in indicesByBucket) {
+            if (indices.size < 2) continue // item único: a inspeção individual já é mais forte
+            val total = indices.sumOf { items[it].request.hits.value }
+            // Prioridade ALTA ⇒ limiar = capacidade: o único teto que vale para o agregado em
+            // qualquer mistura de prioridades (a linha da BAIXA é ≤ capacidade; só apertaria mais).
+            val combined = state.inspect(bucket, total, Priority.HIGH, nowMillis)
+            if (combined.status == Status.DENIED) {
+                for (index in indices) doomed[index] = combined
+            }
+        }
+        return doomed
     }
 
     /** §7.1: resolve a política (eixo sem política → pass-through, §8) + inspeção somente-leitura. */
@@ -90,11 +125,11 @@ class BatchEvaluator(
         }
 
     /** §7.1: registra o short-circuit e alimenta a pressão das chaves que condenaram o lote (§5.3). */
-    private fun shortCircuit(items: List<Inspected>, nowMillis: Long) {
+    private fun shortCircuit(items: List<Inspected>, doomed: Map<Int, Decision>, nowMillis: Long) {
         metrics.batchShortCircuited()
-        for (item in items) {
-            if (item.inspection.status == Status.DENIED) {
-                state.recordDenied(item.request.dimension, item.request.value, nowMillis)
+        for (index in items.indices) {
+            if (index in doomed || items[index].inspection.status == Status.DENIED) {
+                state.recordDenied(items[index].request.dimension, items[index].request.value, nowMillis)
             }
         }
     }
@@ -102,38 +137,51 @@ class BatchEvaluator(
     /**
      * §7.2: reserva um a um, na ordem de pressão decrescente, abortando na primeira não-admissão.
      * Itens nunca tentados (abortados, pass-through, `hits ≤ 0`) ecoam a decisão da inspeção — o
-     * veredito coletivo é quem manda no all-or-nothing.
+     * veredito coletivo é quem manda no all-or-nothing. Exceção (§7.5): num abort por falha, os
+     * nunca tentados são re-inspecionados localmente (de graça) e uma negação garantida entre eles
+     * faz NEGADO dominar DESCONHECIDO no veredito.
      */
     private suspend fun reserveSequentially(items: List<Inspected>, nowMillis: Long): BatchResult {
         val order = reservationOrder(items)
         val decisions = arrayOfNulls<Decision>(items.size)
         var denierPosition = -1
-        var sawUnknown = false
+        var unknownPosition = -1
 
         for (position in order.indices) {
             val index = order[position]
             val decision = reserveOne(items[index], nowMillis)
             decisions[index] = decision
             if (decision.status != Status.ALLOWED) {
-                if (decision.status == Status.DENIED) denierPosition = position else sawUnknown = true
+                if (decision.status == Status.DENIED) denierPosition = position else unknownPosition = position
                 break // aborta os restantes — nunca tocados (§7.2)
             }
         }
+
+        // §7.5: o abort por falha não mascara uma negação garantida — o snapshot pode ter aprendido
+        // desde a inspeção (ex.: um lote concorrente esgotou a chave) e re-inspecionar é local.
+        val deniedUntried = unknownPosition >= 0 &&
+            denyUntried(items, order, unknownPosition + 1, decisions, nowMillis)
 
         for (i in items.indices) {
             if (decisions[i] == null) decisions[i] = items[i].inspection
         }
         val overall = when {
-            denierPosition >= 0 -> Status.DENIED
-            sawUnknown -> Status.UNKNOWN
+            denierPosition >= 0 || deniedUntried -> Status.DENIED
+            unknownPosition >= 0 -> Status.UNKNOWN
             else -> Status.ALLOWED
         }
+        recordOutcome(overall, denierPosition, items)
+        @Suppress("UNCHECKED_CAST")
+        return BatchResult(overall, decisions.asList() as List<Decision>)
+    }
+
+    /** §13: o desfecho do lote vira métrica — served, abort por negador (§7.3) ou por falha (§7.5). */
+    private fun recordOutcome(overall: Status, denierPosition: Int, items: List<Inspected>) {
         when {
             overall == Status.ALLOWED -> recordServed(items)
             denierPosition >= 0 -> metrics.batchAborted(denierPosition)
+            else -> metrics.batchDegraded() // abort por falha (§7.5): não há negador na ordem
         }
-        @Suppress("UNCHECKED_CAST")
-        return BatchResult(overall, decisions.asList() as List<Decision>)
     }
 
     /**
@@ -159,10 +207,43 @@ class BatchEvaluator(
         return central
     }
 
-    /** §7.5: falha de backend degrada o item para DESCONHECIDO; cancelamento propaga. */
+    /**
+     * §7.5: re-inspeciona os itens nunca tentados (posições `from..fim` da ordem) após um abort por
+     * falha; negações garantidas substituem o eco da inspeção em [decisions] e alimentam a pressão.
+     * Devolve se achou alguma.
+     */
+    private fun denyUntried(
+        items: List<Inspected>,
+        order: List<Int>,
+        from: Int,
+        decisions: Array<Decision?>,
+        nowMillis: Long,
+    ): Boolean {
+        var denied = false
+        for (position in from until order.size) {
+            val index = order[position]
+            val item = items[index]
+            // Total por defesa em profundidade: pass-through não entra na ordem; se entrar, só ecoa.
+            val matched = item.matched ?: continue
+            val fresh = state.inspect(matched.bucket, item.request.hits.value, item.request.priority, nowMillis)
+            if (fresh.status == Status.DENIED) {
+                state.recordDenied(item.request.dimension, item.request.value, nowMillis)
+                decisions[index] = fresh
+                denied = true
+            }
+        }
+        return denied
+    }
+
+    /**
+     * §7.5: falha de backend degrada o item para DESCONHECIDO; cancelamento propaga. **Total**: um
+     * item sem política casada ecoa a própria inspeção (pass-through) — a ordenação (§7.3) filtra
+     * esses itens como otimização, nunca como precondição de corretude, então um caller novo (ou
+     * uma mudança no filtro) não vira exceção em tráfego vivo.
+     */
     @Suppress("TooGenericExceptionCaught") // a porta abstrai o backend: qualquer falha → UNKNOWN (§7.5)
     private suspend fun reserveOne(item: Inspected, nowMillis: Long): Decision {
-        val matched = checkNotNull(item.matched) { "só itens com política casada entram na ordem de reserva" }
+        val matched = item.matched ?: return item.inspection
         val request = item.request
         val decision = try {
             state.reserve(matched.bucket, request.hits.value, request.priority, nowMillis)

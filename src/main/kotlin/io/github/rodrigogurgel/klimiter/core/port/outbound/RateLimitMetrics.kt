@@ -34,6 +34,13 @@ interface RateLimitMetrics {
     fun batchAborted(denierPosition: Int) { /* corpo default vazio: a NOOP é inerte */ }
 
     /**
+     * Lote abortado por **falha de backend** (§7.5): um item degradou para UNKNOWN e os restantes
+     * não foram tentados. Separado de [batchAborted] de propósito — a queima de prefixo por falha
+     * (`reserved − served` durante um incidente) não é culpa da estatística de pressão (§7.3).
+     */
+    fun batchDegraded() { /* corpo default vazio: a NOOP é inerte */ }
+
+    /**
      * Hits **admitidos no central** (§13, métrica `reserved`) — inclui o prefixo queimado de lotes
      * depois abortados. `reserved − served` é o indicador da queima de prefixo (§7.4).
      */

@@ -1,7 +1,6 @@
 package io.github.rodrigogurgel.klimiter.core.port.outbound
 
 import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
-import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import kotlin.time.Duration
 
 /**
@@ -14,24 +13,17 @@ import kotlin.time.Duration
  * — em Redis, um script Lua roteável por slot (compatível com cluster). Implementá-la como comandos
  * separados quebra a corretude sob concorrência.
  *
- * `capacity`/`hits` são contagens do contador (em [Long]); `ttl`/`elapsed`/`duration` são
- * [Duration] — o adapter as converte para os ms que a operação usa (§6.1).
+ * O **limiar chega pronto do núcleo** (§6.3): capacidade para ALTA, linha de liberação para BAIXA,
+ * ambos derivados em aritmética exata num único lugar ([io.github.rodrigogurgel.klimiter.core.domain.ReleaseLine]).
+ * A operação central não tem matemática de domínio — o limiar que nega localmente e o que o central
+ * testa são **o mesmo número**, por construção.
  */
 fun interface GlobalCounter {
     /**
-     * Incremento condicional atômico (§4): admite sse `contador + hits ≤ limiar` e só então
-     * incrementa — nunca escreve acima do limiar e nega **sem escrever**. O limiar é a capacidade
-     * ([Priority.HIGH]) ou a linha de liberação derivada de [elapsed]/[duration]
-     * ([Priority.LOW], §6.1). O contador retornado vem preenchido em admissões E em negações, para
-     * alimentar o snapshot monotônico local (§5.1).
+     * Incremento condicional atômico (§4): admite sse `contador + hits ≤ threshold` e só então
+     * incrementa — nunca escreve acima do limiar e nega **sem escrever**. O contador retornado vem
+     * preenchido em admissões E em negações, para alimentar o snapshot monotônico local (§5.1).
+     * [ttl] é aplicado apenas quando a operação cria a chave (o adapter converte para ms, §6.1).
      */
-    suspend fun tryAcquire(
-        key: String,
-        capacity: Long,
-        hits: Long,
-        priority: Priority,
-        elapsed: Duration,
-        duration: Duration,
-        ttl: Duration,
-    ): AcquireResult
+    suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult
 }

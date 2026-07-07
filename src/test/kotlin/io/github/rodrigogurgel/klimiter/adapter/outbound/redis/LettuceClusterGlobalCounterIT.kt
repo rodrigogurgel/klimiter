@@ -3,7 +3,6 @@ package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 import com.github.dockerjava.api.model.ExposedPort
 import com.github.dockerjava.api.model.PortBinding
 import com.github.dockerjava.api.model.Ports
-import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -16,7 +15,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import java.time.Duration as JavaDuration
 
 /**
@@ -49,19 +47,11 @@ class LettuceClusterGlobalCounterIT {
     @Test
     fun `tryAcquire routes by slot and never writes above the threshold`() = runBlocking {
         val key = "klimiter:it:cluster:acquire"
-        val first = counter.tryAcquire(
-            key,
-            capacity = 4,
-            hits = 4,
-            priority = Priority.HIGH,
-            elapsed = 0.seconds,
-            duration = 60.seconds,
-            ttl = 1.minutes,
-        )
+        val first = counter.tryAcquire(key, threshold = 4, hits = 4, ttl = 1.minutes)
         assertTrue(first.admitted)
         assertEquals(4, first.counter)
 
-        val denied = counter.tryAcquire(key, 4, 1, Priority.HIGH, 0.seconds, 60.seconds, 1.minutes)
+        val denied = counter.tryAcquire(key, threshold = 4, hits = 1, ttl = 1.minutes)
         assertFalse(denied.admitted)
         assertEquals(4, denied.counter)
     }

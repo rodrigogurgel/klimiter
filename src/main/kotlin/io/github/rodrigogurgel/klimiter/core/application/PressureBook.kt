@@ -11,25 +11,26 @@ import java.util.concurrent.atomic.AtomicLong
  * — o negador mais provável vai primeiro. É heurística: erro na pressão degrada utilização
  * marginalmente, nunca corretude.
  *
- * Estrutura em dois níveis (dimensão → valor → stat) para lookup sem alocação no hot path. O EWMA
- * vive num [AtomicLong] com os bits do [Double] (CAS lock-free, sem boxing).
+ * Um único [ConcurrentHashMap] chaveado por `(dimensão, valor)`: sem mapa interno, não existe a
+ * corrida "evicção remove o mapa vazio que um `record` concorrente acabou de obter" (a alocação da
+ * chave é ruído perto do round-trip que acompanha cada registro). O EWMA vive num [AtomicLong] com
+ * os bits do [Double] (CAS lock-free, sem boxing).
  */
 class PressureBook {
-    private class Stat {
+    /** Identidade da estatística: eixo + valor. */
+    private data class Key(val dimension: Dimension, val value: DimensionValue)
+
+    /** Nasce com o toque corrente: a varredura concorrente nunca vê um Stat novo "ocioso desde 0". */
+    private class Stat(@Volatile var lastTouchMillis: Long) {
         /** Bits do Double do EWMA; `0L` == `0.0`. */
         val ewmaBits = AtomicLong(0L)
-
-        @Volatile
-        var lastTouchMillis = 0L
     }
 
-    private val stats = ConcurrentHashMap<Dimension, ConcurrentHashMap<DimensionValue, Stat>>()
+    private val stats = ConcurrentHashMap<Key, Stat>()
 
     /** Registra o desfecho de uma reserva/negação da chave e atualiza o EWMA (lock-free). */
     fun record(dimension: Dimension, value: DimensionValue, denied: Boolean, nowMillis: Long) {
-        val stat = stats
-            .computeIfAbsent(dimension) { ConcurrentHashMap() }
-            .computeIfAbsent(value) { Stat() }
+        val stat = stats.computeIfAbsent(Key(dimension, value)) { Stat(nowMillis) }
         stat.lastTouchMillis = nowMillis
         val outcome = if (denied) 1.0 else 0.0
         while (true) {
@@ -41,29 +42,28 @@ class PressureBook {
 
     /** Pressão observada da chave (`0.0` quando nunca vista) — a chave da ordenação (§7.3). */
     fun pressureOf(dimension: Dimension, value: DimensionValue): Double {
-        val stat = stats[dimension]?.get(value) ?: return 0.0
+        val stat = stats[Key(dimension, value)] ?: return 0.0
         return Double.fromBits(stat.ewmaBits.get())
     }
 
-    /** Evicção de chaves frias (§5.4): remove entradas sem toque há mais de [idleMillis]. */
+    /**
+     * Evicção de chaves frias (§5.4): remove entradas sem toque há mais de [idleMillis]. Um `record`
+     * concorrente pode ressuscitar uma entrada já escolhida para remoção e perder aquele desfecho —
+     * inofensivo para uma heurística (a chave renasce zerada no toque seguinte).
+     */
     fun evictIdle(nowMillis: Long, idleMillis: Long): Int {
         var removed = 0
-        val byDimension = stats.entries.iterator()
-        while (byDimension.hasNext()) {
-            val byValue = byDimension.next().value
-            val entries = byValue.entries.iterator()
-            while (entries.hasNext()) {
-                if (nowMillis - entries.next().value.lastTouchMillis > idleMillis) {
-                    entries.remove()
-                    removed++
-                }
+        val iterator = stats.entries.iterator()
+        while (iterator.hasNext()) {
+            if (nowMillis - iterator.next().value.lastTouchMillis > idleMillis) {
+                iterator.remove()
+                removed++
             }
-            if (byValue.isEmpty()) byDimension.remove()
         }
         return removed
     }
 
-    fun size(): Int = stats.values.sumOf { it.size }
+    fun size(): Int = stats.size
 
     private companion object {
         /** Peso do desfecho mais recente no EWMA: converge em ~dezenas de eventos por chave. */

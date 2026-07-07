@@ -1,7 +1,6 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
 import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
-import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -19,17 +18,10 @@ class MeteredGlobalCounter(private val delegate: GlobalCounter, registry: MeterR
     AutoCloseable {
     private val tryAcquireTimer = registry.timer(ROUNDTRIP, OP, "try_acquire")
 
-    override suspend fun tryAcquire(
-        key: String,
-        capacity: Long,
-        hits: Long,
-        priority: Priority,
-        elapsed: Duration,
-        duration: Duration,
-        ttl: Duration,
-    ): AcquireResult = timed(tryAcquireTimer) {
-        delegate.tryAcquire(key, capacity, hits, priority, elapsed, duration, ttl)
-    }
+    override suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult =
+        timed(tryAcquireTimer) {
+            delegate.tryAcquire(key, threshold, hits, ttl)
+        }
 
     override fun close() {
         (delegate as? AutoCloseable)?.close()

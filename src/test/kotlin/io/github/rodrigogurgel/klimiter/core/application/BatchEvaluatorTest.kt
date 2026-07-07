@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.core.application
 
+import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
 import io.github.rodrigogurgel.klimiter.core.domain.Batch
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
@@ -25,6 +26,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -55,7 +57,7 @@ class BatchEvaluatorTest {
 
     /** Enche a janela da chave no central, sem o nó local saber (outro nó consumiu). */
     private suspend fun fillCentrally(counter: InMemoryGlobalCounter, value: String) {
-        counter.tryAcquire("klimiter:user_id:$value:60", 100, 100, Priority.HIGH, 0.seconds, 60.seconds, 60.seconds)
+        counter.tryAcquire("klimiter:user_id:$value:60", threshold = 100, hits = 100, ttl = 60.seconds)
     }
 
     @Test
@@ -147,13 +149,58 @@ class BatchEvaluatorTest {
     }
 
     @Test
-    fun `backend failure degrades the item to UNKNOWN and aborts the rest`() = runTest {
-        val state = stateWith(ThrowingGlobalCounter { IllegalStateException("redis down") })
+    fun `duplicate keys whose combined hits are doomed short-circuit without burning the prefix`() = runTest {
+        val counter = InMemoryGlobalCounter()
+        // Outro nó consumiu 99 dos 100 da janela de uA; o local ainda não sabe.
+        counter.tryAcquire("klimiter:user_id:uA:60", threshold = 100, hits = 99, ttl = 60.seconds)
+        val metrics = RecordingRateLimitMetrics()
+        val state = stateWith(counter, metrics)
+        val evaluator = evaluatorWith(state, metrics)
+        evaluator.evaluate(Batch(listOf(req("uA", hits = 2)))) // negado no central: o snapshot aprende 99
+
+        // Individualmente cada item cabe (99+1 ≤ 100); juntos não (99+2 > 100): condenação agregada.
+        val result = evaluator.evaluate(Batch(listOf(req("uA"), req("uA"))))
+
+        assertEquals(Status.DENIED, result.overall)
+        assertTrue(result.decisions.all { it.status == Status.DENIED })
+        assertEquals(99, counter.counterOf("klimiter:user_id:uA:60")) // nada queimou (§7.1)
+        assertEquals(1, metrics.shortCircuits)
+    }
+
+    @Test
+    fun `a guaranteed denial among untried items dominates an UNKNOWN abort`() = runTest {
+        // uA falha no central; no mesmo instante outro lote/nó esgota uB e o snapshot local aprende.
+        lateinit var state: LocalState
+        val counter = object : GlobalCounter {
+            override suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult {
+                state.bucketFor(Dimension("user_id"), DimensionValue("uB"), policy, 60).observe(100)
+                throw IllegalStateException("redis down")
+            }
+        }
+        state = stateWith(counter)
+        // Pressão alta em uA: ela vai primeiro na ordem (§7.3) e uB nunca chega a ser tentada.
+        repeat(10) { state.recordDenied(Dimension("user_id"), DimensionValue("uA"), now) }
+
         val result = evaluatorWith(state).evaluate(Batch(listOf(req("uA"), req("uB"))))
+
+        // A re-inspeção dos nunca tentados (§7.5) acha a negação garantida: NEGADO domina.
+        assertEquals(Status.DENIED, result.overall)
+        assertEquals(Status.UNKNOWN, result.decisions.first().status)
+        assertEquals(Status.DENIED, result.decisions.last().status)
+    }
+
+    @Test
+    fun `backend failure degrades the item to UNKNOWN and aborts the rest`() = runTest {
+        val metrics = RecordingRateLimitMetrics()
+        val state = stateWith(ThrowingGlobalCounter { IllegalStateException("redis down") }, metrics)
+        val result = evaluatorWith(state, metrics).evaluate(Batch(listOf(req("uA"), req("uB"))))
         assertEquals(Status.UNKNOWN, result.overall)
         assertEquals(Status.UNKNOWN, result.decisions.first().status)
         // O segundo item foi abortado sem reserva: ecoa a inspeção (o veredito coletivo manda, §7.2).
         assertEquals(Status.ALLOWED, result.decisions.last().status)
+        // Abort por falha conta em batch.degraded — não em batch.aborted (não há negador, §7.5).
+        assertEquals(1, metrics.degradedBatches)
+        assertTrue(metrics.abortedPositions.isEmpty())
     }
 
     @Test

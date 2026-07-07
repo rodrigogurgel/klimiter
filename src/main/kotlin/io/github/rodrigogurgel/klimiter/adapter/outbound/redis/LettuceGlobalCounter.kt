@@ -2,7 +2,6 @@ package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
 import io.github.rodrigogurgel.klimiter.adapter.outbound.redis.LuaScripts.Companion.longAt
 import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
-import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
@@ -28,8 +27,8 @@ import java.time.Duration as JavaDuration
  *
  * **Standalone ou cluster** ([standalone]/[cluster]): como o script é single-key (`KEYS[1]`), o
  * cluster roteia cada comando por slot sem CROSSSLOT; o adapter só depende da interface de comandos
- * ([RedisScriptingCoroutinesCommands]), comum aos dois modos. As [Duration] da porta viram os ms do
- * script Lua (§6.1). [closeable] encerra conexões e client.
+ * ([RedisScriptingCoroutinesCommands]), comum aos dois modos. O limiar chega pronto do núcleo (§6.3)
+ * e a [Duration] do TTL vira os ms do script (§6.1). [closeable] encerra conexões e client.
  */
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
 class LettuceGlobalCounter(
@@ -49,24 +48,13 @@ class LettuceGlobalCounter(
     private fun next(): RedisScriptingCoroutinesCommands<String, String> =
         commands[(cursor.getAndIncrement() and Int.MAX_VALUE) % commands.size]
 
-    override suspend fun tryAcquire(
-        key: String,
-        capacity: Long,
-        hits: Long,
-        priority: Priority,
-        elapsed: Duration,
-        duration: Duration,
-        ttl: Duration,
-    ): AcquireResult {
+    override suspend fun tryAcquire(key: String, threshold: Long, hits: Long, ttl: Duration): AcquireResult {
         val result = scripts.eval(
             next(),
             scripts.conditionalIncrement,
             key,
-            capacity.toString(),
+            threshold.toString(),
             hits.toString(),
-            if (priority == Priority.LOW) "1" else "0",
-            elapsed.inWholeMilliseconds.toString(),
-            duration.inWholeMilliseconds.toString(),
             ttl.inWholeMilliseconds.toString(),
         )
         return AcquireResult(admitted = result.longAt(0) == 1L, counter = result.longAt(1))

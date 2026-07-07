@@ -40,6 +40,16 @@ class Bucket(val key: BucketKey, val storageKey: String, val capacity: Long, val
         snapshotCounter.updateAndGet { current -> maxOf(current, counter) }
     }
 
+    /**
+     * Limiar da reserva (§4): capacidade para ALTA; linha de liberação (§6.1) para BAIXA. Derivado
+     * em aritmética exata ([ReleaseLine]) num único lugar — o valor que a negação local testa (§5.2)
+     * é o mesmo que vai pronto ao central, então as duas pontas não podem divergir (§6.3).
+     */
+    fun threshold(priority: Priority, nowMillis: Long): Long = when (priority) {
+        Priority.HIGH -> capacity
+        Priority.LOW -> ReleaseLine.line(capacity, window.elapsed(nowMillis), window.duration)
+    }
+
     /** Decisão PERMITIDO com a capacidade restante estimada pelo snapshot (§2.1). */
     fun allowed(nowMillis: Long): Decision = Decision(
         Status.ALLOWED,

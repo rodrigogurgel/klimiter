@@ -45,7 +45,9 @@ class MicrometerRateLimitMetricsTest {
         metrics.batchAborted(0)
         metrics.batchAborted(1)
         metrics.batchAborted(7) // acima do teto → agrega em "3+"
+        metrics.batchDegraded()
         assertEquals(1.0, registry.counter("klimiter.batch.shortcircuit").count())
+        assertEquals(1.0, registry.counter("klimiter.batch.degraded").count())
         assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "0").count())
         assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "1").count())
         assertEquals(1.0, registry.counter("klimiter.batch.aborted", "denier_position", "3+").count())
@@ -73,11 +75,51 @@ class MicrometerRateLimitMetricsTest {
             1.0,
             registry.counter("klimiter.policy.reserve.user_id", "priority", "high", "status", "allowed").count(),
         )
-        // '-' fora de [A-Za-z0-9_.] é saneado para '_'.
+        // '-' fora de [A-Za-z0-9_] é saneado para '_'.
         assertEquals(
             1.0,
             registry.counter("klimiter.policy.reserve.user_id.user_42", "priority", "low", "status", "denied").count(),
         )
+    }
+
+    @Test
+    fun `a dotted dimension does not collide with dimension plus override`() {
+        val registry = SimpleMeterRegistry()
+        val metrics = MicrometerRateLimitMetrics(registry)
+        // O '.' do nome é só estrutural: 'user.id' vira 'user_id'; 'user' + override 'id' vira 'user.id'.
+        metrics.policyReserve(Dimension("user.id"), override = null, Priority.HIGH, Status.ALLOWED)
+        metrics.policyReserve(Dimension("user"), DimensionValue("id"), Priority.HIGH, Status.ALLOWED)
+
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.policy.reserve.user_id", "priority", "high", "status", "allowed").count(),
+        )
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.policy.reserve.user.id", "priority", "high", "status", "allowed").count(),
+        )
+    }
+
+    @Test
+    fun `sync keeps a collided meter alive while a colliding policy survives`() {
+        val registry = SimpleMeterRegistry()
+        val metrics = MicrometerRateLimitMetrics(registry)
+        // Identidades diferentes, mesmo nome saneado: 'user-id' e 'user_id' → 'user_id'.
+        val dashed = PolicyMeterKey(Dimension("user-id"), null)
+        val underscored = PolicyMeterKey(Dimension("user_id"), null)
+        metrics.syncDetailedPolicies(setOf(dashed, underscored))
+
+        // 'user-id' sai da config: o meter compartilhado sobrevive para 'user_id'.
+        metrics.syncDetailedPolicies(setOf(underscored))
+        metrics.policyReserve(Dimension("user_id"), override = null, Priority.HIGH, Status.ALLOWED)
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.policy.reserve.user_id", "priority", "high", "status", "allowed").count(),
+        )
+
+        // Última policy do nome sai: aí sim o meter é removido do registry.
+        metrics.syncDetailedPolicies(emptySet())
+        assertNull(registry.find("klimiter.policy.reserve.user_id").counter())
     }
 
     @Test
