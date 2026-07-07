@@ -142,6 +142,7 @@ O que cada nível representa **neste serviço** e quando deve ser usado.
 
 | Evento | Nível | Quando ocorre | Campos estruturados |
 |--------|-------|---------------|---------------------|
+| políticas carregadas | `INFO` | boot/hot reload trocam o snapshot (§8) | `path`, `dimensions`, `content` (o YAML **exato** carregado — auditoria da config em vigor) |
 | degradação por falha de backend | `WARN` | o contador global falha ao reservar (§7.4) → item vira `UNKNOWN` | `priority`, causa (exceção) |
 | recarga NOSCRIPT | `DEBUG` | script Lua ausente no cache do Redis → recarrega via `EVAL` | `sha1`, causa |
 | evicção de buckets | `DEBUG` | varredura remove buckets de janelas vencidas (§4.2) | `removed`, `remaining` |
@@ -153,5 +154,7 @@ O que cada nível representa **neste serviço** e quando deve ser usado.
   valor)`). **Não** interpolar dados na mensagem. Mensagens estáveis agrupam/filtram melhor e os
   pares viram **atributos estruturados** na exportação OTLP. Ex.:
   `log.atDebug().addKeyValue("removed", n).addKeyValue("remaining", size).setMessage("evicção de buckets").log()`.
-- **Dados sensíveis:** nunca logar `dimension`/`value`/chave (PII e alta cardinalidade) em nível
-  ≥ INFO; atributos/tags só de enums limitados (`status`, `priority`, `op`). Ver §1.3.
+- **Dados sensíveis:** nunca logar `dimension`/`value`/chave **do tráfego** (PII e alta
+  cardinalidade) em nível ≥ INFO; atributos/tags só de enums limitados (`status`, `priority`,
+  `op`). Exceção equivalente à do §1.3: o **conteúdo do arquivo de políticas** (log "políticas
+  carregadas") é config, não tráfego — cardinalidade limitada pela config e valor de auditoria.

@@ -46,12 +46,15 @@ class FilePolicyRepository(
         }
         try {
             val loaded = loader.load(path)
-            snapshot.set(loaded)
+            snapshot.set(loaded.snapshot)
             // Reconcilia os meters por policy com o novo snapshot (cria os novos, remove os que saíram).
-            metrics.syncDetailedPolicies(loaded.detailedMeterKeys())
+            metrics.syncDetailedPolicies(loaded.snapshot.detailedMeterKeys())
+            // `content` é o YAML exato que produziu o snapshot: auditoria da config em vigor. É
+            // config, não tráfego — a exceção de PII/cardinalidade do §1.3 vale aqui também.
             logger.atInfo()
                 .addKeyValue("path", path)
-                .addKeyValue("dimensions", loaded.size)
+                .addKeyValue("dimensions", loaded.snapshot.size)
+                .addKeyValue("content", loaded.content)
                 .setMessage("políticas carregadas")
                 .log()
         } catch (e: PolicyFileException) {

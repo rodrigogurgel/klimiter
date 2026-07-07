@@ -14,6 +14,13 @@ import java.nio.file.Path
 class PolicyFileException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 /**
+ * Resultado do carregamento: o [snapshot] e o [content] **exato** do arquivo que o produziu — lidos
+ * na mesma operação, então o par nunca diverge (um reload concorrente não mistura conteúdo de uma
+ * versão com snapshot de outra). O conteúdo alimenta o log de auditoria "políticas carregadas".
+ */
+data class PolicyLoad(val snapshot: PolicySnapshot, val content: String)
+
+/**
  * Lê e valida o `policies.yaml`, produzindo um [PolicySnapshot]. A validação é por parse tipado
  * estrito (`FAIL_ON_UNKNOWN_PROPERTIES` pega campos desconhecidos) somado às invariantes dos
  * Value Objects na conversão (ver [toSnapshot]) — equivalente ao JSON Schema, sem dependência
@@ -27,12 +34,12 @@ class YamlPolicyLoader {
         .build()
 
     /**
-     * Carrega o snapshot a partir de [path].
+     * Carrega o snapshot a partir de [path], devolvendo também o conteúdo exato lido ([PolicyLoad]).
      *
      * @throws PolicyFileException se o arquivo não puder ser lido, o YAML for malformado ou o
      *   conteúdo violar o contrato (campo ausente, unit inválida, campo desconhecido, etc.).
      */
-    fun load(path: Path): PolicySnapshot {
+    fun load(path: Path): PolicyLoad {
         val content = try {
             Files.readString(path)
         } catch (e: IOException) {
@@ -46,7 +53,7 @@ class YamlPolicyLoader {
         }
 
         return try {
-            document.toSnapshot()
+            PolicyLoad(document.toSnapshot(), content)
         } catch (e: IllegalArgumentException) {
             fail("política inválida em $path: ${e.message}", e)
         }

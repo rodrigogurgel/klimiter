@@ -7,6 +7,7 @@ import io.github.rodrigogurgel.klimiter.core.policy.PolicyResolution
 import io.github.rodrigogurgel.klimiter.core.policy.RateLimitUnit
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import kotlin.test.assertEquals
@@ -18,7 +19,12 @@ class YamlPolicyLoaderTest {
 
     @Test
     fun `loads bundled example policies yaml`() {
-        val snapshot = loader.load(Path.of("config/policies/policies.yaml"))
+        val path = Path.of("config/policies/policies.yaml")
+        val loaded = loader.load(path)
+        val snapshot = loaded.snapshot
+
+        // O conteúdo devolvido é o arquivo EXATO que produziu o snapshot (log de auditoria).
+        assertEquals(Files.readString(path), loaded.content)
 
         val userId = assertIs<PolicyResolution.Matched>(
             snapshot.resolve(Dimension("user_id"), DimensionValue("qualquer")),
