@@ -27,11 +27,15 @@ x-klimiter-env: &klimiter-env
   # rápido em testes locais. É a env de management.otlp.metrics.export.step — a OTEL_METRIC_EXPORT_INTERVAL
   # do SDK NÃO afeta este registry (confirmado no log "OtlpMeterRegistry every <X>").
   MANAGEMENT_OTLP_METRICS_EXPORT_STEP: 10s
-  # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional + heap relativo ao container.
+  # Tuning de JVM/GC fora da imagem (PA-3): ZGC geracional (default no Java 25 — o antigo
+  # -XX:+ZGenerational foi removido no 24/JEP 490) + heap relativo ao container.
+  # UseCompactObjectHeaders (product no Java 25 via JEP 519, off por default) encolhe o header
+  # dos objetos de 12→8 bytes: economia de memória a medir no load-test antes de levar ao EKS.
   JAVA_TOOL_OPTIONS: >-
-    -XX:+UseZGC -XX:+ZGenerational
+    -XX:+UseZGC
     -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60
     -XX:+ExitOnOutOfMemoryError
+    -XX:+UseCompactObjectHeaders
 
 # Config comum aos dois klimiter (build, porta, volumes, limites).
 x-klimiter-base: &klimiter-base
