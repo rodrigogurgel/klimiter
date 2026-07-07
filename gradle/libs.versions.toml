@@ -10,7 +10,7 @@ dokka = "2.2.0"
 sonar = "7.2.2.6593"
 mockk = "1.14.11"
 benManesVersions = "0.54.0"
-testcontainers = "1.21.4"
+testcontainers = "2.0.5"
 
 # Apenas deps com versão própria. Deps gerenciadas por BOM/plugin (sem versão) são
 # declaradas como coordenada direta no build.gradle.kts — ver CONTRIBUTING.md.
