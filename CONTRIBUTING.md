@@ -160,7 +160,7 @@ BOM. Antes de adicionar ou atualizar uma dependência:
 
 - **Cheque a versão estável mais recente** na fonte oficial (Maven Central / Gradle Plugin
   Portal); não copie versões de memória.
-- **Confirme a compatibilidade** com o stack atual (Kotlin 2.3.21, JDK 21, Gradle do wrapper,
+- **Confirme a compatibilidade** com o stack atual (Kotlin 2.3.21, JDK 25, Gradle do wrapper,
   Spring Boot 4.1). O projeto usa versões de ponta e conflitos são comuns — ex.: detekt × a
   versão do Kotlin que ele embute, Dokka × Jackson forçado pelo BOM do Spring. Rode
   `./gradlew help` e `./gradlew check` após a mudança.

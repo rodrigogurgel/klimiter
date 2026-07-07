@@ -21,7 +21,7 @@ para a alta.
 
 | Item        | Valor                                          |
 |-------------|------------------------------------------------|
-| Linguagem   | Kotlin 2.3.21 (JVM, toolchain JDK 21)          |
+| Linguagem   | Kotlin 2.3.21 (JVM, toolchain JDK 25)          |
 | Framework   | Spring Boot 4.1 + Spring gRPC                  |
 | Transporte  | gRPC + Protobuf                                |
 | Build       | Gradle 9.6 (Kotlin DSL, via `./gradlew`)       |
@@ -45,7 +45,7 @@ para a alta.
 
 ## Começando
 
-Pré-requisitos: **JDK 21** e **Docker** (para o Redis).
+Pré-requisitos: **JDK 25** e **Docker** (para o Redis).
 
 ### Stack local completa (Docker)
 
