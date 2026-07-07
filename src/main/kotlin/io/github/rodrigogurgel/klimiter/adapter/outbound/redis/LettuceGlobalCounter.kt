@@ -1,8 +1,10 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
 import io.github.rodrigogurgel.klimiter.adapter.outbound.redis.LuaScripts.Companion.longAt
+import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
 import io.github.rodrigogurgel.klimiter.core.domain.LeaseResult
 import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
+import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
@@ -48,6 +50,29 @@ class LettuceGlobalCounter(
 
     private fun next(): RedisScriptingCoroutinesCommands<String, String> =
         commands[(cursor.getAndIncrement() and Int.MAX_VALUE) % commands.size]
+
+    override suspend fun tryAcquire(
+        key: String,
+        capacity: Long,
+        hits: Long,
+        priority: Priority,
+        elapsed: Duration,
+        duration: Duration,
+        ttl: Duration,
+    ): AcquireResult {
+        val result = scripts.eval(
+            next(),
+            scripts.conditionalIncrement,
+            key,
+            capacity.toString(),
+            hits.toString(),
+            if (priority == Priority.LOW) "1" else "0",
+            elapsed.inWholeMilliseconds.toString(),
+            duration.inWholeMilliseconds.toString(),
+            ttl.inWholeMilliseconds.toString(),
+        )
+        return AcquireResult(admitted = result.longAt(0) == 1L, counter = result.longAt(1))
+    }
 
     override suspend fun lease(key: String, capacity: Long, requested: Long, ttl: Duration): LeaseResult {
         val result = scripts.eval(

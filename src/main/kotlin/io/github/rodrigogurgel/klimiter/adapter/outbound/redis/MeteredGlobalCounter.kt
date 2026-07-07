@@ -1,7 +1,9 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.redis
 
+import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
 import io.github.rodrigogurgel.klimiter.core.domain.LeaseResult
 import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
+import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -17,8 +19,21 @@ import kotlin.time.Duration
 class MeteredGlobalCounter(private val delegate: GlobalCounter, registry: MeterRegistry) :
     GlobalCounter,
     AutoCloseable {
+    private val tryAcquireTimer = registry.timer(ROUNDTRIP, OP, "try_acquire")
     private val leaseTimer = registry.timer(ROUNDTRIP, OP, "lease")
     private val paceLeaseTimer = registry.timer(ROUNDTRIP, OP, "pace_lease")
+
+    override suspend fun tryAcquire(
+        key: String,
+        capacity: Long,
+        hits: Long,
+        priority: Priority,
+        elapsed: Duration,
+        duration: Duration,
+        ttl: Duration,
+    ): AcquireResult = timed(tryAcquireTimer) {
+        delegate.tryAcquire(key, capacity, hits, priority, elapsed, duration, ttl)
+    }
 
     override suspend fun lease(key: String, capacity: Long, requested: Long, ttl: Duration): LeaseResult =
         timed(leaseTimer) { delegate.lease(key, capacity, requested, ttl) }

@@ -36,6 +36,7 @@ class LuaScript(resourcePath: String) {
 class LuaScripts {
     private val log = LoggerFactory.getLogger(LuaScripts::class.java)
 
+    val conditionalIncrement = LuaScript("redis/conditional_increment.lua")
     val lease = LuaScript("redis/lease.lua")
     val paceLease = LuaScript("redis/pace_lease.lua")
 
