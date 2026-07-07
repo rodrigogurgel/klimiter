@@ -1,6 +1,7 @@
 package io.github.rodrigogurgel.klimiter.core.application
 
 import io.github.rodrigogurgel.klimiter.core.domain.Batch
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
 import io.github.rodrigogurgel.klimiter.core.domain.BatchResult
 import io.github.rodrigogurgel.klimiter.core.domain.Bucket
 import io.github.rodrigogurgel.klimiter.core.domain.Decision
@@ -61,7 +62,11 @@ class BatchEvaluator(
     private class Matched(val policy: Policy, val bucket: Bucket, val override: DimensionValue?)
 
     override suspend fun evaluate(batch: Batch): BatchResult {
-        if (batch.requests.isEmpty()) return BatchResult(Status.ALLOWED, emptyList())
+        if (batch.requests.isEmpty()) {
+            // §2.1: lote vazio ainda é uma resposta — conta no total (vazio classifica como HIGH).
+            metrics.decided(BatchPriority.of(batch.requests), Status.ALLOWED)
+            return BatchResult(Status.ALLOWED, emptyList())
+        }
 
         val nowMillis = clock.nowMillis()
         val snapshot = policies.current()
@@ -70,12 +75,15 @@ class BatchEvaluator(
 
         // §7.1: se a inspeção já condena — item a item ou pelo agregado por chave —, ninguém
         // reserva: zero escritas, zero round-trips.
-        return if (doomed.isNotEmpty() || items.any { it.inspection.status == Status.DENIED }) {
+        val result = if (doomed.isNotEmpty() || items.any { it.inspection.status == Status.DENIED }) {
             shortCircuit(items, doomed, nowMillis)
             BatchResult(Status.DENIED, items.mapIndexed { index, item -> doomed[index] ?: item.inspection })
         } else {
             reserveSequentially(items, nowMillis)
         }
+        // §2.1: uma resposta contada por REQUEST — veredito coletivo + prioridade agregada do lote.
+        metrics.decided(BatchPriority.of(batch.requests), result.overall)
+        return result
     }
 
     /**
@@ -128,7 +136,8 @@ class BatchEvaluator(
     private fun shortCircuit(items: List<Inspected>, doomed: Map<Int, Decision>, nowMillis: Long) {
         metrics.batchShortCircuited()
         for (index in items.indices) {
-            if (index in doomed || items[index].inspection.status == Status.DENIED) {
+            val decision = doomed[index] ?: items[index].inspection
+            if (decision.status == Status.DENIED) {
                 state.recordDenied(items[index].request.dimension, items[index].request.value, nowMillis)
             }
         }

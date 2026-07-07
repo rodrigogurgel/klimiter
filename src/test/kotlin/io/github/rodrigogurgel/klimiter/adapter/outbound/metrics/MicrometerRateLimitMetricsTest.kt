@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.metrics
 
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
 import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
@@ -34,6 +35,28 @@ class MicrometerRateLimitMetricsTest {
         assertEquals(
             1.0,
             registry.counter("klimiter.reserve", "priority", "low", "status", "denied", "origin", "local").count(),
+        )
+    }
+
+    @Test
+    fun `counts responded requests by batch priority and overall status`() {
+        val registry = SimpleMeterRegistry()
+        val metrics = MicrometerRateLimitMetrics(registry)
+        metrics.decided(BatchPriority.HIGH, Status.ALLOWED)
+        metrics.decided(BatchPriority.HIGH, Status.ALLOWED)
+        metrics.decided(BatchPriority.LOW, Status.UNKNOWN)
+        metrics.decided(BatchPriority.MIXED, Status.DENIED)
+        assertEquals(
+            2.0,
+            registry.counter("klimiter.decision", "priority", "high", "status", "allowed").count(),
+        )
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.decision", "priority", "low", "status", "unknown").count(),
+        )
+        assertEquals(
+            1.0,
+            registry.counter("klimiter.decision", "priority", "mixed", "status", "denied").count(),
         )
     }
 

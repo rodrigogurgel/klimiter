@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.adapter.outbound.metrics
 
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
 import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
@@ -41,6 +42,20 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
             }
         }.toMap()
 
+    /** Respostas por REQUEST (§2.1): pré-criadas, cardinalidade fechada `priority` × `status`. */
+    private val decisionCounters: Map<Pair<BatchPriority, Status>, Counter> =
+        BatchPriority.entries.flatMap { priority ->
+            Status.entries.map { status ->
+                (priority to status) to registry.counter(
+                    "klimiter.decision",
+                    "priority",
+                    priority.name.lowercase(),
+                    "status",
+                    status.name.lowercase(),
+                )
+            }
+        }.toMap()
+
     private val shortCircuit = registry.counter("klimiter.batch.shortcircuit")
 
     /** Lotes abortados por falha de backend (§7.5) — queima de incidente, não de ordenação. */
@@ -61,6 +76,10 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
 
     override fun reserve(priority: Priority, status: Status, origin: DecisionOrigin) {
         reserveCounters.getValue(Triple(priority, status, origin)).increment()
+    }
+
+    override fun decided(priority: BatchPriority, status: Status) {
+        decisionCounters.getValue(priority to status).increment()
     }
 
     override fun batchShortCircuited() = shortCircuit.increment()
@@ -127,15 +146,16 @@ class MicrometerRateLimitMetrics(private val registry: MeterRegistry) : RateLimi
      * dimensão `user.id` não colide com dimensão `user` + override `id`.
      */
     private fun meterName(key: PolicyMeterKey): String {
-        val suffix = key.override?.let { ".${sanitize(it.raw)}" } ?: ""
-        return "klimiter.policy.reserve.${sanitize(key.dimension.raw)}$suffix"
+        val dimension = key.dimension.raw.replace(NON_METER_CHARS, "_")
+        val suffix = key.override?.let { ".${it.raw.replace(NON_METER_CHARS, "_")}" } ?: ""
+        return "klimiter.policy.reserve.$dimension$suffix"
     }
-
-    private fun sanitize(raw: String): String =
-        raw.map { c -> if (c.isLetterOrDigit() || c == '_') c else '_' }.joinToString("")
 
     private companion object {
         /** Posições acima disso agregam em `3+`: interessa "primeira posição ou não", não a cauda. */
         const val ABORT_POSITION_CAP = 3
+
+        /** Fora de `[A-Za-z0-9_]` vira `_` — inclusive `.`, que no nome é só estrutural ([meterName]). */
+        val NON_METER_CHARS = Regex("[^A-Za-z0-9_]")
     }
 }

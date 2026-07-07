@@ -1,5 +1,6 @@
 package io.github.rodrigogurgel.klimiter.core.port.outbound
 
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
 import io.github.rodrigogurgel.klimiter.core.domain.DecisionOrigin
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
@@ -22,6 +23,14 @@ interface RateLimitMetrics {
     fun reserve(priority: Priority, status: Status, origin: DecisionOrigin) {
         /* corpo default vazio: a NOOP é inerte */
     }
+
+    /**
+     * Resposta de **uma requisição** (lote, §2.1) — fiel ao que o cliente recebeu: a soma é o total
+     * de requests respondidos, [status] é o veredito coletivo e [priority] a prioridade agregada do
+     * lote ([BatchPriority]). Difere de [reserve], que mede as tentativas por item do caminho de
+     * reserva (com a origem), não a resposta.
+     */
+    fun decided(priority: BatchPriority, status: Status) { /* corpo default vazio: a NOOP é inerte */ }
 
     /** Lote natimorto na inspeção (§7.1): nenhuma reserva/round-trip aconteceu. */
     fun batchShortCircuited() { /* corpo default vazio: a NOOP é inerte */ }

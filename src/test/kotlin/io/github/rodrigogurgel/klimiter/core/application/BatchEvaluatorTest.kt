@@ -2,6 +2,7 @@ package io.github.rodrigogurgel.klimiter.core.application
 
 import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
 import io.github.rodrigogurgel.klimiter.core.domain.Batch
+import io.github.rodrigogurgel.klimiter.core.domain.BatchPriority
 import io.github.rodrigogurgel.klimiter.core.domain.Dimension
 import io.github.rodrigogurgel.klimiter.core.domain.DimensionValue
 import io.github.rodrigogurgel.klimiter.core.domain.Hits
@@ -96,6 +97,11 @@ class BatchEvaluatorTest {
         assertEquals(Status.DENIED, result.overall)
         assertEquals(0, counter.counterOf("klimiter:user_id:uA:60")) // ninguém reservou (§7.1)
         assertEquals(1, metrics.shortCircuits)
+        // O short-circuit também é uma resposta: o request conta com o veredito coletivo (§2.1).
+        assertEquals(
+            listOf(RecordingRateLimitMetrics.Decided(BatchPriority.HIGH, Status.DENIED)),
+            metrics.decidedRequests,
+        )
     }
 
     @Test
@@ -146,6 +152,33 @@ class BatchEvaluatorTest {
         // uB (maior pressão) foi primeiro e negou de graça: uA nunca foi tocada (§7.3).
         assertEquals(0, counter.counterOf("klimiter:user_id:uA:60"))
         assertEquals(listOf(0), metrics.abortedPositions)
+    }
+
+    @Test
+    fun `every response is counted once per request with the overall status and batch priority`() = runTest {
+        val counter = InMemoryGlobalCounter()
+        fillCentrally(counter, "uB")
+        val metrics = RecordingRateLimitMetrics()
+        val state = stateWith(counter, metrics)
+        val evaluator = evaluatorWith(state, metrics)
+
+        evaluator.evaluate(Batch(listOf(req("uA")))) // homogêneo HIGH, permitido
+        // Homogêneo LOW em chave virgem: dentro da linha de liberação (slot 1 da janela).
+        evaluator.evaluate(Batch(listOf(req("uC", priority = Priority.LOW))))
+        // Lote misto negado: uB está esgotada no central.
+        evaluator.evaluate(Batch(listOf(req("uA", priority = Priority.LOW), req("uB"))))
+        evaluator.evaluate(Batch(emptyList())) // lote vazio ainda é uma resposta
+
+        // Soma = total de requests respondidos (4), com o veredito coletivo e a prioridade agregada.
+        assertEquals(
+            listOf(
+                RecordingRateLimitMetrics.Decided(BatchPriority.HIGH, Status.ALLOWED),
+                RecordingRateLimitMetrics.Decided(BatchPriority.LOW, Status.ALLOWED),
+                RecordingRateLimitMetrics.Decided(BatchPriority.MIXED, Status.DENIED),
+                RecordingRateLimitMetrics.Decided(BatchPriority.HIGH, Status.ALLOWED),
+            ),
+            metrics.decidedRequests,
+        )
     }
 
     @Test
