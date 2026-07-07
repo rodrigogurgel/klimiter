@@ -28,7 +28,7 @@ class LuaScript(resourcePath: String) {
 }
 
 /**
- * Registro dos scripts (§4.1, §6.4) + EVALSHA com fallback NOSCRIPT: após failover/flush o script
+ * Registro dos scripts (V2 §4) + EVALSHA com fallback NOSCRIPT: após failover/flush o script
  * some do cache do Redis → recarrega via EVAL (re-popula o cache) e segue. Stateless quanto à conexão
  * (os comandos vêm da conexão do pool em cada chamada), então uma instância serve o pool.
  */
@@ -37,8 +37,6 @@ class LuaScripts {
     private val log = LoggerFactory.getLogger(LuaScripts::class.java)
 
     val conditionalIncrement = LuaScript("redis/conditional_increment.lua")
-    val lease = LuaScript("redis/lease.lua")
-    val paceLease = LuaScript("redis/pace_lease.lua")
 
     /**
      * Executa o script (saída MULTI → lista de inteiros), com EVALSHA → fallback EVAL no NOSCRIPT.

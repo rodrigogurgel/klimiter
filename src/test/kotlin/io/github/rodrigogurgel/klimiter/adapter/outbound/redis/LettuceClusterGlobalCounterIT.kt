@@ -66,18 +66,6 @@ class LettuceClusterGlobalCounterIT {
         assertEquals(4, denied.counter)
     }
 
-    @Test
-    fun `lease routes by slot through the cluster client and reports free global`() = runBlocking {
-        val key = "klimiter:it:cluster:lease"
-        val first = counter.lease(key, capacity = 10, requested = 4, ttl = 1.minutes)
-        assertEquals(4, first.granted)
-        assertEquals(6, first.freeGlobal)
-
-        val second = counter.lease(key, capacity = 10, requested = 100, ttl = 1.minutes)
-        assertEquals(6, second.granted)
-        assertEquals(0, second.freeGlobal)
-    }
-
     private fun waitClusterOk() {
         repeat(WAIT_ATTEMPTS) {
             val info = redis.execInContainer("redis-cli", "-p", "$PORT", "cluster", "info").stdout

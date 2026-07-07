@@ -92,7 +92,7 @@ class BatchEvaluatorTest {
         val batch = Batch(listOf(req("uA"), req("uB", hits = 101))) // uB: hits > capacidade
         val result = evaluatorWith(state, metrics).evaluate(batch)
         assertEquals(Status.DENIED, result.overall)
-        assertEquals(0, counter.leasedOf("klimiter:user_id:uA:60")) // ninguém reservou (§7.1)
+        assertEquals(0, counter.counterOf("klimiter:user_id:uA:60")) // ninguém reservou (§7.1)
         assertEquals(1, metrics.shortCircuits)
     }
 
@@ -107,7 +107,7 @@ class BatchEvaluatorTest {
 
         assertEquals(Status.DENIED, result.overall)
         // uA (posição 0 da ordem) reservou antes de uB negar: o slot fica consumido (§7.4).
-        assertEquals(1, counter.leasedOf("klimiter:user_id:uA:60"))
+        assertEquals(1, counter.counterOf("klimiter:user_id:uA:60"))
         assertEquals(listOf(1), metrics.abortedPositions) // negador na posição 1
         assertEquals(0L, metrics.servedHits)
         assertEquals(1L, metrics.reservedHits) // reserved − served = queima de prefixo (§13)
@@ -126,7 +126,7 @@ class BatchEvaluatorTest {
 
         assertEquals(Status.DENIED, result.overall)
         assertEquals(1, metrics.shortCircuits) // o segundo lote morreu na inspeção
-        assertEquals(1, counter.leasedOf("klimiter:user_id:uA:60")) // só o primeiro queimou
+        assertEquals(1, counter.counterOf("klimiter:user_id:uA:60")) // só o primeiro queimou
     }
 
     @Test
@@ -142,7 +142,7 @@ class BatchEvaluatorTest {
 
         assertEquals(Status.DENIED, result.overall)
         // uB (maior pressão) foi primeiro e negou de graça: uA nunca foi tocada (§7.3).
-        assertEquals(0, counter.leasedOf("klimiter:user_id:uA:60"))
+        assertEquals(0, counter.counterOf("klimiter:user_id:uA:60"))
         assertEquals(listOf(0), metrics.abortedPositions)
     }
 

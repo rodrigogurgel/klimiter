@@ -1,21 +1,20 @@
 package io.github.rodrigogurgel.klimiter.support
 
 import io.github.rodrigogurgel.klimiter.core.domain.AcquireResult
-import io.github.rodrigogurgel.klimiter.core.domain.LeaseResult
-import io.github.rodrigogurgel.klimiter.core.domain.PaceResult
 import io.github.rodrigogurgel.klimiter.core.domain.Priority
 import io.github.rodrigogurgel.klimiter.core.domain.ReleaseLine
 import io.github.rodrigogurgel.klimiter.core.port.outbound.GlobalCounter
 import kotlin.time.Duration
 
 /**
- * Contador global em memória que espelha a semântica dos scripts Lua, para testar o core sem Redis.
- * Não thread-safe: uso em testes single-threaded.
+ * Contador global em memória que espelha a semântica do `conditional_increment.lua` (V2 §4), para
+ * testar o core sem Redis. Não thread-safe: uso em testes single-threaded.
  */
 class InMemoryGlobalCounter : GlobalCounter {
     private val counters = HashMap<String, Long>()
 
-    fun leasedOf(key: String): Long = counters[key] ?: 0
+    /** O contador corrente da chave (0 quando nunca escrita) — para asserções de queima/consumo. */
+    fun counterOf(key: String): Long = counters[key] ?: 0
 
     override suspend fun tryAcquire(
         key: String,
@@ -38,28 +37,5 @@ class InMemoryGlobalCounter : GlobalCounter {
         } else {
             AcquireResult(admitted = false, counter = counter)
         }
-    }
-
-    override suspend fun lease(key: String, capacity: Long, requested: Long, ttl: Duration): LeaseResult {
-        val leased = counters[key] ?: 0
-        val granted = if (leased < capacity) minOf(requested, capacity - leased) else 0
-        val total = leased + granted
-        counters[key] = total
-        return LeaseResult(granted, (capacity - total).coerceAtLeast(0))
-    }
-
-    override suspend fun paceLease(
-        key: String,
-        capacity: Long,
-        missing: Long,
-        elapsed: Duration,
-        duration: Duration,
-        ttl: Duration,
-    ): PaceResult {
-        val leased = counters[key] ?: 0
-        val admitted = leased + missing <= ReleaseLine.line(capacity, elapsed, duration)
-        val total = if (admitted && missing > 0) leased + missing else leased
-        if (admitted && missing > 0) counters[key] = total
-        return PaceResult(admitted, (capacity - total).coerceAtLeast(0))
     }
 }
