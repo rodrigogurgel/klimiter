@@ -3,7 +3,7 @@
 # ---- build: compila o bootJar com a toolchain JDK 21 ----
 # Build na arquitetura nativa ($BUILDPLATFORM): o bootJar é bytecode portável, então
 # não precisa emular a arquitetura alvo — só a imagem JRE final é por-arch.
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-ubi10-minimal AS build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk-ubi10-minimal AS build
 WORKDIR /workspace
 
 # Arquivos de build primeiro (camada estável → melhor cache); depois o código-fonte.
@@ -29,7 +29,7 @@ RUN curl -fsSL -o /tmp/grpc_health_probe \
     && chmod +x /tmp/grpc_health_probe
 
 # ---- runtime: JRE 21 enxuta (UBI minimal: menor superfície/CVEs), usuário não-root ----
-FROM eclipse-temurin:21-jre-ubi10-minimal AS runtime
+FROM eclipse-temurin:25-jre-ubi10-minimal AS runtime
 WORKDIR /application
 
 # `-U` cria o grupo homônimo junto (UBI minimal traz shadow-utils).
