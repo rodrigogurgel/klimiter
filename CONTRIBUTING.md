@@ -2,7 +2,7 @@
 
 Bem-vindo! O **klimiter** é um *rate limiter* distribuído por janela fixa, exposto via
 **gRPC** e escrito em **Kotlin**. Antes de mexer no código, leia o
-[Design Conceitual](docs/DESIGN-CONCEITUAL.md) — ele descreve a lógica (lease, pacing,
+[Design Conceitual](docs/DESIGN-CONCEITUAL-V2.md) — ele descreve a lógica (incremento condicional, pacing,
 batch all-or-nothing, hot reload) de forma independente de implementação e é a fonte da
 verdade sobre *o que* o serviço deve fazer. Para *como* o código é estruturado (camadas
 hexagonais, layout de pacotes e regras de fronteira), veja a
@@ -215,7 +215,7 @@ faça o commit `chore(release): vX.Y.Z`, mescle em `main`, e crie a tag `vX.Y.Z`
 - [ ] Se mexeu em dependências/plugins: `./gradlew dependencyUpdates` rodado e versões novas
       conferidas (última dentro de um major compatível).
 - [ ] Cobertura não regrediu de forma relevante.
-- [ ] Comportamento condizente com o [Design Conceitual](docs/DESIGN-CONCEITUAL.md);
+- [ ] Comportamento condizente com o [Design Conceitual](docs/DESIGN-CONCEITUAL-V2.md);
       se o design mudou, o documento foi atualizado no mesmo PR.
 - [ ] Estrutura condizente com a [Arquitetura](docs/ARQUITETURA.md) (regras de fronteira
       hexagonais); se a estrutura mudou, o documento foi atualizado no mesmo PR.

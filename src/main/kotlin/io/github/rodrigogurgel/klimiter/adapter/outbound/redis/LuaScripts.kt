@@ -41,7 +41,7 @@ class LuaScripts {
     /**
      * Executa o script (saída MULTI → lista de inteiros), com EVALSHA → fallback EVAL no NOSCRIPT.
      * Devolve a lista crua do Lettuce; o caller lê as posições com [longAt] — evita alocar uma
-     * `List<Long>` intermediária no hot path (§4.1/§6.4, 1–3 chamadas por request).
+     * `List<Long>` intermediária no hot path (§4, 1–3 chamadas por request).
      */
     @Suppress("SpreadOperator") // varargs repassados à API do Lettuce
     suspend fun eval(

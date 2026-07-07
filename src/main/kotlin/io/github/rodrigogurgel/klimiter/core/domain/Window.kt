@@ -26,11 +26,11 @@ data class Window(val startEpochSecond: Long, val duration: Duration) {
     private val startMillis: Long get() = startEpochSecond * MILLIS_PER_SECOND
     private val endMillis: Long get() = endEpochSecond * MILLIS_PER_SECOND
 
-    /** Decorrido na janela, fixado a `[0, duração]` (§6.2). */
+    /** Decorrido na janela, fixado a `[0, duração]` (§6.1). */
     fun elapsed(nowMillis: Long): Duration =
         (nowMillis - startMillis).coerceIn(0, duration.inWholeMilliseconds).milliseconds
 
-    /** TTL restante da janela, nunca negativo (§4.1) — também o `reset_after` da decisão (§2.1). */
+    /** TTL restante da janela, nunca negativo (§4) — também o `reset_after` da decisão (§2.1). */
     fun ttl(nowMillis: Long): Duration = (endMillis - nowMillis).coerceAtLeast(0).milliseconds
 
     companion object {

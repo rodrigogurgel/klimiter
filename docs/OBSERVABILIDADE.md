@@ -15,12 +15,12 @@ preenchidas conforme adicionada (`_(a preencher)_` = placeholder).
 >
 > | Documento | Responde |
 > |-----------|----------|
-> | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | o quê — fluxos, invariantes |
+> | [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) | o quê — fluxos, invariantes |
 > | [`ARQUITETURA.md`](ARQUITETURA.md) | como o código é estruturado |
 > | **`OBSERVABILIDADE.md`** (este) | o que o serviço expõe para observação |
 > | [`VARIAVEIS-DE-AMBIENTE.md`](VARIAVEIS-DE-AMBIENTE.md) | endpoints/sampling via `management.*` |
 >
-> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL.md`.
+> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL-V2.md`.
 
 ---
 
@@ -46,18 +46,22 @@ Instrumentação própria, registrada no `MeterRegistry` (Micrometer) e exportad
 
 | Nome | Tipo | Tags | Descrição |
 |------|------|------|-----------|
-| `klimiter.reserve` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | Reservas individuais (§5/§6). Registrado pelo `LocalBudget` via a **porta `RateLimitMetrics`** (núcleo desacoplado do framework). |
-| `klimiter.reserve.high` | counter | `path` = `l1`\|`l2`\|`l3`\|`l4` | Nível do caminho de reserva ALTA (§5): L1 crédito local, L2 esgotado, L3 impossível, L4 renovação (round-trip). Distribuição-chave para tunar o prefetch. |
-| `klimiter.batch.shortcircuit` | counter | — | Lotes natimortos pelo short-circuit (§7.2): a grande economia no regime de chave quente. |
-| `klimiter.batch.refund` | counter | — | Lotes refundados (§7.4): veredito coletivo não-PERMITIDO desfez as reservas. |
-| `klimiter.central.roundtrip` | timer | `op` = `lease`\|`pace_lease` | Latência de cada round-trip ao contador global em Redis (§4). Medido no boundary (`MeteredGlobalCounter`). |
-| `klimiter.bucket.index.size` | gauge | — | Tamanho do índice local de buckets por nó (§4.2); cresce com a cardinalidade e cai na evicção. |
+| `klimiter.reserve` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown`, `origin` = `local`\|`central` | Reservas individuais (V2 §4/§5.2). `origin=local` são negações **sem round-trip** (o nó local só nega, nunca admite); `origin=central` são confirmações do incremento condicional. Registrado pelo `LocalState` via a **porta `RateLimitMetrics`**. |
+| `klimiter.batch.shortcircuit` | counter | — | Lotes natimortos na inspeção (V2 §7.1): zero escritas, zero round-trips. |
+| `klimiter.batch.aborted` | counter | `denier_position` = `0`\|`1`\|`2`\|`3+` | Lotes abortados na reserva sequencial (V2 §7.2), com a posição do negador na ordem por pressão. Posição frequentemente `> 0` = estatística de pressão ruim — e é o prefixo antes do negador que fica queimado. |
+| `klimiter.hits.reserved` | counter | — | Hits **admitidos no central** (V2 §13) — inclui o prefixo queimado de lotes depois abortados. |
+| `klimiter.hits.served` | counter | — | Hits de lotes com veredito **PERMITIDO** (V2 §13) — a métrica de negócio. **`reserved − served` = queima de prefixo (V2 §7.4)**, o indicador do regime de saturação conjunta. |
+| `klimiter.central.roundtrip` | timer | `op` = `try_acquire` | Latência de cada round-trip ao contador global em Redis (V2 §4). Medido no boundary (`MeteredGlobalCounter`). |
+| `klimiter.bucket.index.size` | gauge | — | Tamanho do índice local de buckets por nó (V2 §5.4); cresce com a cardinalidade e cai na evicção. |
 | `klimiter.policy.reserve.<dimensão>[.<valor>]` | counter | `priority` = `high`\|`low`, `status` = `allowed`\|`denied`\|`unknown` | **Reserva por policy** (negócio), ligada por regra via `detailed_metric` (POLITICAS.md). A identidade da policy vai no **nome** do meter: `...<dimensão>` para a `default`, `...<dimensão>.<valor>` para um `override` (valor saneado). Emitida pelo `BatchEvaluator`; pré-criada/removida no reload (eager). |
 
-**Derivações** (sem métrica própria, de propósito): o **shed do pré-portão** da BAIXA =
-`klimiter.reserve{priority=low}` − `klimiter.central.roundtrip{op=pace_*}` (a distribuição da ALTA já
-é explícita em `klimiter.reserve.high`). A recarga NOSCRIPT e a degradação de backend são observáveis
-por **log** (§3.3).
+**Derivações** (sem métrica própria, de propósito): a **efetividade da negação local** (V2 §6.4) =
+`klimiter.reserve{status=denied, origin=local}` / `klimiter.reserve{status=denied}` — mede o tráfego
+poupado do Redis. A recarga NOSCRIPT e a degradação de backend são observáveis por **log** (§3.3).
+
+> **Removidas na migração V2** (dashboards antigos precisam de ajuste): `klimiter.reserve.high`
+> (os níveis L1–L4 eram do caminho de lease) e `klimiter.batch.refund` (não existe refund no V2 —
+> o análogo é `klimiter.batch.aborted` + a queima medida por `hits.reserved − hits.served`).
 
 ### 1.3 Convenções
 

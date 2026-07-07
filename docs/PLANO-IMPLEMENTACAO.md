@@ -1,8 +1,15 @@
 # Plano de Implementação — migração do klimiter para o DESIGN-CONCEITUAL-V2
 
+> **Status: M1–M5 executados** na branch `feature/design-v2-migration`; resta o **M6**
+> (hardening de desempenho + validação do SLO com ElastiCache). Desvios registrados na
+> execução: (a) o índice de buckets ficou em `ConcurrentHashMap` + `EvictionRunner` (padrão
+> já existente e vigiado pelo Konsist) em vez de Caffeine — o core não ganha dependência
+> externa; (b) a porta manteve o nome `GlobalCounter`, agora `fun interface` com a única
+> operação `tryAcquire`; (c) o estado local chama-se `LocalState` (substitui `LocalBudget`).
+>
 > **Alvo:** o repositório existente `~/IdeaProjects/klimiter` (Spring Boot 4.1.0,
 > Kotlin 2.3.21, Java 21, hexagonal `core/` + `adapter/` com Konsist enforçando a regra de
-> dependência). O projeto implementa hoje o design **anterior** (leases locais + prefetch +
+> dependência). O projeto implementava o design **anterior** (leases locais + prefetch +
 > refund); este plano o migra para o `DESIGN-CONCEITUAL-V2.md` (decisão 100% central,
 > incremento condicional, sem refund, reserva ordenada por pressão).
 >

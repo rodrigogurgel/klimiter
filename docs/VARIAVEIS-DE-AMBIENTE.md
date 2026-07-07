@@ -14,7 +14,7 @@ esse catálogo — ele registra apenas:
 >
 > | Documento | Responde |
 > |-----------|----------|
-> | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | o quê — fluxos, invariantes |
+> | [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) | o quê — fluxos, invariantes |
 > | [`ARQUITETURA.md`](ARQUITETURA.md) | como o código é estruturado |
 > | [`POLITICAS.md`](POLITICAS.md) | formato do arquivo de políticas (limites por dimensão) |
 > | [`OBSERVABILIDADE.md`](OBSERVABILIDADE.md) | o que o serviço expõe para observação |

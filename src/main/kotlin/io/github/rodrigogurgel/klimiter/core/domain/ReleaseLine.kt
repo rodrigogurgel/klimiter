@@ -4,9 +4,9 @@ import java.math.BigInteger
 import kotlin.time.Duration
 
 /**
- * Linha de liberação do pacing (§6.2), invariante crítica (§9).
+ * Linha de liberação do pacing (§6.1), invariante crítica (§9).
  *
- * IDÊNTICA à fórmula das operações centrais (`pace_*`):
+ * IDÊNTICA à fórmula da operação central (`conditional_increment.lua`):
  * ```
  * linha = min( capacidade , piso( capacidade * decorrido / duração ) + 1 )
  * ```

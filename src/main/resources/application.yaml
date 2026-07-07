@@ -17,7 +17,7 @@ klimiter:
     # descoberta de topologia. Scripts são single-key, então sem CROSSSLOT. false = standalone.
     cluster: false
     # Timeout de cada comando ao Redis (default da Lettuce é 60s — veneno no hot path). Estourar
-    # degrada o item para UNKNOWN (§7.4). Sobrescrevível por KLIMITER_REDIS_COMMAND_TIMEOUT.
+    # degrada o item para UNKNOWN (§7.5). Sobrescrevível por KLIMITER_REDIS_COMMAND_TIMEOUT.
     command-timeout: 10ms
   grpc:
     # Máximo de descriptors por RateLimitRequest — lote acima disso é rejeitado com INVALID_ARGUMENT

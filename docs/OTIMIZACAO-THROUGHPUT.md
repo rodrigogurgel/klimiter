@@ -1,8 +1,16 @@
 # Otimização de throughput — branch `feature/throughput-optimization`
 
+> **⚠️ Registro histórico (pré-V2).** Esta rodada foi feita sobre a arquitetura **anterior**
+> (leases locais + prefetch), removida na migração para o
+> [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md). Os números e a análise
+> "HIGH é local-bound / LOW é Redis-bound" **não valem mais** — no V2 toda admissão vai ao
+> central. Permanecem válidos e incorporados: o TTL-só-na-criação nos scripts Lua (item 1) e a
+> resolução única do bucket por item (parte do item 3). A régua por cores precisa ser
+> re-derivada no marco M6 do [plano](PLANO-IMPLEMENTACAO.md).
+
 > Relatório de uma rodada de otimização do teto de throughput (joelho) do klimiter, com foco em
 > **subir o joelho de HIGH e LOW preservando o comportamento de prioridade** (§5/§6/§6.5 do
-> [DESIGN-CONCEITUAL](DESIGN-CONCEITUAL.md)), feita na branch `feature/throughput-optimization`.
+> design da época), feita na branch `feature/throughput-optimization`.
 > A **régua de dimensionamento** (escala por cores) está em [§ Escalabilidade](#escalabilidade-por-cores--instrumentação-onoff-dimensionamento);
 > as **premissas de transferência p/ Kubernetes** ficam no [SATURACAO.md §7](SATURACAO.md#7-premissas-de-transferência-p-kubernetes-o-que-a-régua-não-captura).
 

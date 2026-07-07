@@ -8,13 +8,13 @@ descreve fronteiras e restrições, não escolhas de implementação.
 >
 > | Documento | Responde | Fonte da verdade de |
 > |-----------|----------|---------------------|
-> | [`DESIGN-CONCEITUAL.md`](DESIGN-CONCEITUAL.md) | **o quê** — fluxos, invariantes, premissas | comportamento |
+> | [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) | **o quê** — fluxos, invariantes, premissas | comportamento |
 > | **`ARQUITETURA.md`** (este) | **como o código é estruturado** — camadas, fronteiras | estrutura |
 > | [`POLITICAS.md`](POLITICAS.md) | **como configurar limites** — formato, schema, resolução | configuração de políticas |
 > | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | como **interagir** com o projeto | git flow, qualidade |
 > | [`AGENTS.md`](../AGENTS.md) | quickref operacional | comandos e convenções |
 >
-> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL.md`. Se o código divergir desta
+> Referências `§N` apontam para seções do `DESIGN-CONCEITUAL-V2.md`. Se o código divergir desta
 > estrutura, é bug; se a estrutura mudar, atualize este documento no mesmo PR.
 
 ---

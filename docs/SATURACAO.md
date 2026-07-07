@@ -6,6 +6,12 @@ servidor gRPC; cada requisição é o lote all-or-nothing de 3 dimensões (§7).
 
 > Scripts em [`scripts/load-test/`](../scripts/load-test/README.md). Esta página é a **metodologia + como rodar**.
 
+> **⚠️ Números pré-V2.** Os valores de joelho citados nesta página foram medidos sobre a
+> arquitetura **anterior** (leases locais, amortização por prefetch). Após a migração para o
+> [`DESIGN-CONCEITUAL-V2.md`](DESIGN-CONCEITUAL-V2.md) — toda admissão paga round-trip ao central;
+> negações locais continuam de graça — **os joelhos de HIGH e LOW precisam ser re-medidos** (marco
+> M6 do [plano](PLANO-IMPLEMENTACAO.md)). A **metodologia** desta página permanece válida.
+
 ---
 
 ## 1. Metodologia (apples-to-apples)
@@ -61,7 +67,7 @@ STEPS="2000 8000 12000 14000 16000 18000" DURATION=15s PRIORITY=PRIORITY_LOW \
 
 | Variável | Default | O que faz |
 |---|---|---|
-| `PRIORITY` (`SAT_…` no make) | `PRIORITY_HIGH` | `PRIORITY_LOW` (pacing, 1 round-trip/req) ou `PRIORITY_HIGH` (prefetch + short-circuit) |
+| `PRIORITY` (`SAT_…` no make) | `PRIORITY_HIGH` | `PRIORITY_LOW` (pacing: limiar = linha) ou `PRIORITY_HIGH` (limiar = capacidade). No V2 ambas pagam 1 round-trip/req admitida; negações aprendidas são locais |
 | `STEPS` / `SAT_STEPS` | degraus de RPS | lista de degraus |
 | `DURATION` / `SAT_DURATION` | `20s` | duração de cada degrau |
 | `KNEE_MS` | `15` | limite de p99 que define o joelho |
@@ -129,9 +135,10 @@ pelo `GrpcServerObservationAutoConfiguration`. Ele embrulha **toda** chamada num
 Removendo **só ela**, o joelho volta a ~14k: ou seja, **o export OTLP, o tracing e nossos contadores
 `klimiter.*` custam ~nada** — o peso é praticamente todo o interceptor por-RPC.
 
-Por que o `LOW` sente e o `HIGH` quase não: o LOW é Redis-bound sob 2 cores (cada request já espera o
-round-trip), então a CPU gasta na observação por-RPC empurra a p99 sobre 15 ms mais cedo; o HIGH
-amortiza local (prefetch + short-circuit) e absorve.
+Por que o `LOW` sentia e o `HIGH` quase não (medição pré-V2): o LOW era Redis-bound sob 2 cores
+(cada request já esperava o round-trip), então a CPU gasta na observação por-RPC empurrava a p99
+sobre 15 ms mais cedo; o HIGH amortizava local (prefetch + short-circuit) e absorvia. **No V2 os
+dois caminhos são Redis-bound no tráfego admitido** — a assimetria tende a desaparecer; re-medir.
 
 > **Nota de harness:** no Docker (`cpuset` + export container→lgtm) o custo aparente chega a ~−40%;
 > no jar+`taskset` o número real é ~−20%, **todo** atribuível à observação por-RPC. Sempre meça o
@@ -221,9 +228,9 @@ RPS/core; LOW plateau ~18k/pod; instrumentação ON ~−20% no HIGH — ver
   **prioridade pura**; a dinâmica de **prioridade mista** no mesmo lote (§6.5) **não foi medida sob
   carga**.
 - **SLO-específico.** O joelho é definido por `KNEE_MS` (p99 < 15 ms aqui). Outro SLA → outro joelho.
-- **Zero efeitos distribuídos.** Foi **1 processo**. Skew de relógio, durabilidade do Redis no failover,
-  thundering-herd do latch e prefetch encalhado entre pods são **premissas de corretude** (§11), não de
-  perf, e **não** são exercitadas aqui.
+- **Zero efeitos distribuídos.** Foi **1 processo**. Skew de relógio, durabilidade do Redis no
+  failover e a queima de prefixo sob saturação conjunta entre pods (V2 §7.4) são **premissas/
+  limitações de corretude** (§10/§11), não de perf, e **não** são exercitadas aqui.
 - **Cold start.** Medido com JIT quente; pod recém-escalado pela HPA entrega bem menos por ~30–60 s —
   deixe **headroom**/pré-aquecimento.
 
