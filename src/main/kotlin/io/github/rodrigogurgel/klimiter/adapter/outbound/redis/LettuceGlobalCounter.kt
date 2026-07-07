@@ -95,7 +95,6 @@ class LettuceGlobalCounter(
 
         private fun clusterOptions(): ClusterClientOptions {
             val topology = ClusterTopologyRefreshOptions.builder()
-                .enableAllAdaptiveRefreshTriggers()
                 .enablePeriodicRefresh(CLUSTER_TOPOLOGY_REFRESH)
                 .build()
             return ClusterClientOptions.builder().topologyRefreshOptions(topology).build()
